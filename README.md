@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CortexEDR 🧠🛡️
 
-## Getting Started
+> **AI-Powered Code Analysis & Security Platform**
+> *Instant security, architecture, and code quality insights for your repositories.*
 
-First, run the development server:
+CortexEDR is a next-generation code analysis tool that uses advanced AI (Gemini 1.5 Pro / Grok) to deeply understand your codebase. It goes beyond simple linting to find logic flaws, architectural bottlenecks, and security vulnerabilities that traditional tools miss.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Security Layer**: Detects exposed secrets, SQL injection, XSS, and OWASP vulnerabilities.
+- **Architecture Review**: Identifies coupling issues, design pattern violations, and scalability bottlenecks.
+- **Code Quality**: Measures complexity, duplication, and adherence to best practices.
+- **Technical Debt**: Tracks TODOs, deprecated dependencies, and "quick hacks".
+- **AI-Specific Analysis**: Finds over-engineered AI code, inconsistent styles, and hallucinated patterns.
+- **"Fix Prompts"**: Don't just see the problem—get the exact prompt to fix it with your AI coding assistant.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💰 Pricing Tiers
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Feature | 🆓 Scout ($0/mo) | 💼 Sentinel ($15/mo) | 🚀 Guardian ($49/mo) | 🏢 Fortress (Custom) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Repos** | 1 / month | 3 active | 10 active | Unlimited |
+| **Repo Size** | < 5k lines | < 50k lines | < 200k lines | Custom |
+| **History** | 7 days | 30 days | Forever | Forever |
+| **Security** | Basic | Complete | Complete | Custom Rules |
+| **Architecture** | ❌ | ✅ | ✅ | ✅ |
+| **Fix Prompts** | ❌ | ✅ | ✅ | Custom Models |
+| **Support** | Community | Email | Priority | Dedicated |
 
-## Learn More
+## 🛠️ Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Frontend**: Next.js 14, Tailwind CSS, install `lucide-react`
+- **Backend**: Next.js API Routes, Supabase Edge Functions
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth (GitHub, Google, Email)
+- **AI Engine**: Gemini 1.5 Pro (Production), Grok (Local/Free)
+- **Payments**: Stripe Checkout
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚦 Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Prerequisites
 
-## Deploy on Vercel
+- Node.js 18+
+- Supabase Account
+- Gemini / Grok API Key
+- Stripe Account (for payments)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Installation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/yourusername/cortex-edr.git
+    cd cortex-edr
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Environment Setup:**
+    Create a `.env.local` file:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+    GEMINI_API_KEY=your_gemini_key
+    STRIPE_SECRET_KEY=your_stripe_key
+    ```
+
+4.  **Run Locally:**
+    ```bash
+    npm run dev
+    ```
+
+## 🗺️ Roadmap
+
+- [ ] **Phase 1**: Core Platform & Auth
+- [ ] **Phase 2**: Analysis Engine & Report Generation
+- [ ] **Phase 3**: Dashboard & Payment Integration
+- [ ] **Phase 4**: Advanced Architecture Scans
+- [ ] **Phase 5**: Enterprise Features (SSO, CI/CD)
+
+---
+
+Built with ❤️ by [Your Name/Team]
