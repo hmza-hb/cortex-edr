@@ -1,5 +1,6 @@
 import { SharedMemory, AgentEvent, Issue } from '@/types/agent';
 import { supabaseService } from '@/lib/supabase/service';
+import { runGitCloneAgent } from './agent0-git-clone';
 import { runReconAgent } from './agent1-recon';
 import { runSecurityAgent } from './agent2-security';
 import { runArchitectureAgent } from './agent3-architecture';
@@ -8,10 +9,10 @@ import { runDebtAgent } from './agent5-debt';
 import { runAISpecificAgent } from './agent6-ai-specific';
 import { runSynthesisAgent } from './agent7-synthesis';
 
-export async function startScanPipeline(scanId: string, repoUrl: string, repoPath: string) {
+export async function startScanPipeline(scanId: string, repoUrl: string) {
     const sharedMemory: SharedMemory = {
         scanId,
-        repoPath,
+        repoPath: '', // Will be set by Agent 0
         repoUrl,
         fileTree: [],
         techStack: { languages: [], frameworks: [], dependencies: {} },
@@ -37,6 +38,11 @@ export async function startScanPipeline(scanId: string, repoUrl: string, repoPat
     };
 
     try {
+        // Agent 0: Git Clone
+        const cloneResults = await runGitCloneAgent(scanId, repoUrl, emitEvent);
+        sharedMemory.repoPath = cloneResults.repoPath;
+        await updateScanStatus(scanId, 'processing', 0);
+
         // Agent 1: Recon
         const reconResults = await runReconAgent(sharedMemory, emitEvent);
         Object.assign(sharedMemory, reconResults);

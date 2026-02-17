@@ -33,12 +33,9 @@ export async function GET(
 
         // 3. Parse summary if exists
         let summary = {};
+        // Summary is now a plain string, not JSON
         if (scan.summary) {
-            try {
-                summary = typeof scan.summary === 'string' ? JSON.parse(scan.summary) : scan.summary;
-            } catch (e) {
-                console.error('Error parsing scan summary JSON:', e);
-            }
+            summary = typeof scan.summary === 'string' ? scan.summary : JSON.stringify(scan.summary);
         }
 
         return NextResponse.json({

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { cloneRepository, cleanupRepository } from '@/lib/repo/cloner';
-import { startScanPipeline } from '@/lib/agents/orchestrator';
+import { runPipeline } from '@/lib/agents/pipeline';
 
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
@@ -35,31 +34,23 @@ export async function POST(req: NextRequest) {
             .insert({
                 user_id: user.id,
                 repo_url,
+                repo_name: repo_url.split('/').slice(-2).join('/'),
                 status: 'pending',
+                current_agent: 0
             })
             .select()
             .single();
 
         if (scanError) throw scanError;
 
-        // 3. Increment scans used / decrement remaining
+        // 3. Decrement scans remaining
         await supabaseService
             .from('profiles')
             .update({ scans_remaining: profile.scans_remaining - 1 })
             .eq('id', user.id);
 
-        // 4. Start pipeline in background
-        // We don't await the pipeline because we want to return the scan ID immediately
-        (async () => {
-            try {
-                const repoPath = await cloneRepository(scan.id, repo_url);
-                await startScanPipeline(scan.id, repo_url, repoPath);
-                await cleanupRepository(scan.id);
-            } catch (err) {
-                console.error(`Background scan failed for ${scan.id}:`, err);
-                // Error is handled inside startScanPipeline with 'failed' status
-            }
-        })();
+        // 4. Run pipeline in background WITHOUT await
+        runPipeline(scan.id, repo_url).catch(console.error);
 
         return NextResponse.json({ scan_id: scan.id });
     } catch (error) {

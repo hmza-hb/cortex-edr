@@ -35,15 +35,16 @@ export async function runSecurityAgent(
     // 2. Read contents of critical files
     const fileContents: Record<string, string> = {};
     for (const file of criticalFiles) {
+        await onEvent({
+            agent_id: agentId,
+            agent_name: agentName,
+            event_type: 'processing',
+            message: `Scanning: ${file}`
+        });
+
         const content = await readFileContent(sharedMemory.repoPath, file);
         if (content) {
             fileContents[file] = content;
-            await onEvent({
-                agent_id: agentId,
-                agent_name: agentName,
-                event_type: 'processing',
-                message: `Reading: ${file}`
-            });
         }
     }
 

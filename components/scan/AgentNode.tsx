@@ -9,6 +9,10 @@ interface AgentNodeProps {
     name: string;
     status: AgentStatus;
     repoName?: string;
+    message?: string;
+    issueCount?: number;
+    filesProcessed?: number;
+    totalFiles?: number;
 }
 
 const GithubLogo = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
@@ -36,157 +40,229 @@ const ICONS = {
 
 const STATUS_MESSAGES = ["Initializing...", "Connecting...", "Cloning...", "Cloned ✓"];
 
-export const AgentNode: React.FC<AgentNodeProps> = ({ id, name, status, repoName }) => {
-    const Icon = ICONS[id as keyof typeof ICONS] || Bug;
-    const isActive = status === 'active';
-    const isCompleted = status === 'completed';
-    const [statusIndex, setStatusIndex] = useState(0);
-    const [typedRepo, setTypedRepo] = useState("");
+export const AgentNode = React.forwardRef<HTMLDivElement, AgentNodeProps>(
+    ({ id, name, status, repoName, message, issueCount = 0, filesProcessed = 0, totalFiles = 0 }, ref) => {
+        const Icon = ICONS[id as keyof typeof ICONS] || Bug;
 
-    // Typewriter effect for repo URL
-    useEffect(() => {
-        if (isCompleted && repoName) {
-            let i = 0;
-            const fullText = `github.com/${repoName}`;
-            const interval = setInterval(() => {
-                setTypedRepo(fullText.slice(0, i));
-                i++;
-                if (i > fullText.length) clearInterval(interval);
-            }, 50);
-            return () => clearInterval(interval);
-        }
-    }, [isCompleted, repoName]);
+        const isWaiting = status === 'waiting' && id !== 0;
+        const isActive = status === 'active';
+        const isCompleted = status === 'completed';
+        const isIdle = !isActive && !isCompleted && !isWaiting;
 
-    // Status cycle animation
-    useEffect(() => {
-        if (isActive && id === 0) {
-            const interval = setInterval(() => {
-                setStatusIndex((prev) => (prev < 2 ? prev + 1 : 2));
-            }, 2000);
-            return () => clearInterval(interval);
-        } else if (isCompleted && id === 0) {
-            setStatusIndex(3);
-        }
-    }, [isActive, isCompleted, id]);
+        const [typedRepo, setTypedRepo] = useState("");
+        const isGit = id === 0;
 
-    return (
-        <div className={cn(
-            "relative w-[280px] h-[160px] flex flex-col transition-all duration-700",
-            isActive ? "z-50" : "z-10"
-        )}>
-            {/* Top-left Indicator */}
-            <div className={cn(
-                "absolute top-[-5px] left-[-5px] w-[10px] h-[10px] rounded-full z-20 transition-all duration-500",
-                isActive || isCompleted ? "bg-[#3b82f6] shadow-[0_0_10px_#3b82f6]" : "bg-white/10"
-            )} />
+        // Issue badge state for animation
+        const [prevIssues, setPrevIssues] = useState(issueCount);
+        const [shouldPulse, setShouldPulse] = useState(false);
 
-            {/* Main Box */}
-            <div className={cn(
-                "flex-1 bg-[#0d0d0d] border rounded-[20px] relative overflow-hidden transition-all duration-700 flex flex-col p-[4px]",
-                isActive ? "border-[#3b82f6] shadow-[0_0_25px_rgba(59,130,246,0.3),inset_0_0_15px_rgba(59,130,246,0.1)] scale-[1.02]" :
-                    isCompleted ? "border-[#3b82f6]/40 opacity-90 shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "border-[#1a1a1a]"
-            )}>
-                {/* Top Section */}
+        useEffect(() => {
+            if (issueCount > prevIssues) {
+                setShouldPulse(true);
+                const timer = setTimeout(() => setShouldPulse(false), 500);
+                setPrevIssues(issueCount);
+                return () => clearTimeout(timer);
+            }
+        }, [issueCount, prevIssues]);
+
+        useEffect(() => {
+            if (isCompleted && repoName && isGit) {
+                let i = 0;
+                const fullText = `github.com/${repoName}`;
+                const interval = setInterval(() => {
+                    setTypedRepo(fullText.slice(0, i));
+                    i++;
+                    if (i > fullText.length) clearInterval(interval);
+                }, 50);
+                return () => clearInterval(interval);
+            }
+        }, [isCompleted, repoName, isGit]);
+
+        const getStyles = () => {
+            if (isActive) return {
+                border: "border-[#3b82f6]",
+                glow: "shadow-[0_0_20px_rgba(59,130,246,0.3)]",
+                circle: "bg-[#3b82f6] shadow-[0_0_10px_#3b82f6]",
+                pill: "bg-[#3b82f6]/20 text-[#3b82f6]",
+                opacity: "opacity-100",
+                status: "ACTIVE",
+                theme: "#3b82f6"
+            };
+            if (isWaiting) return {
+                border: "border-[#f59e0b]",
+                glow: "shadow-[0_0_20px_rgba(245,158,11,0.2)]",
+                circle: "bg-[#f59e0b] shadow-[0_0_10px_#f59e0b]",
+                pill: "bg-[#f59e0b]/20 text-[#f59e0b]",
+                opacity: "opacity-100",
+                status: "WAITING",
+                theme: "#f59e0b"
+            };
+            if (isCompleted) return {
+                border: "border-[#10b981]",
+                glow: "shadow-[0_0_15px_rgba(16,185,129,0.1)]",
+                circle: "bg-[#10b981] shadow-[0_0_10px_#10b981]",
+                pill: "bg-[#10b981]/20 text-[#10b981]",
+                opacity: "opacity-100",
+                status: "COMPLETE",
+                theme: "#10b981"
+            };
+            return { // idle
+                border: "border-[#1e1e2e]",
+                glow: "shadow-none",
+                circle: "bg-white/10",
+                pill: "bg-white/5 text-white/40",
+                opacity: "opacity-70",
+                status: "IDLE",
+                theme: "#1e1e2e"
+            };
+        };
+
+        const currentStyle = getStyles();
+        const progressPercent = totalFiles > 0 ? (filesProcessed / totalFiles) * 100 : 0;
+
+        return (
+            <div
+                ref={ref}
+                className={cn(
+                    "relative flex flex-col transition-all duration-700 w-[220px] h-[140px]",
+                    isActive ? "z-50" : "z-10",
+                    currentStyle.opacity
+                )}
+            >
+                {/* Status Indicator (Top-Left) */}
                 <div className={cn(
-                    "p-3 flex-1 flex flex-col gap-4 transition-opacity duration-700",
-                    !isActive && isCompleted && "opacity-70"
-                )}>
-                    <div className="flex items-center gap-3">
-                        <div className={cn(
-                            "transition-all duration-500",
-                            isActive ? "text-[#3b82f6] drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" : isCompleted ? "text-[#3b82f6]/60" : "text-white/20"
-                        )}>
-                            <Icon size={32} />
-                        </div>
+                    "absolute top-[-3px] left-[-3px] w-2.5 h-2.5 rounded-full z-20 transition-all duration-500",
+                    currentStyle.circle
+                )} />
 
-                        <div className="flex items-center h-8">
+                {/* Issue Badge (Top-Right) */}
+                <AnimatePresence>
+                    {issueCount > 0 && (
+                        <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{
+                                scale: shouldPulse ? 1.2 : 1,
+                                opacity: 1
+                            }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            className="absolute -top-2 -right-2 z-20 flex items-center gap-1 bg-red-500/90 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                        >
+                            <span className="text-[12px] leading-none">🔴</span>
+                            {issueCount}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Main Box */}
+                <div className={cn(
+                    "flex-1 bg-[#0d0d0d] border rounded-[12px] relative overflow-hidden transition-all duration-700 flex flex-col",
+                    currentStyle.border,
+                    currentStyle.glow
+                )}>
+                    {/* Internal Container */}
+                    <div className="flex-1 flex flex-col p-[14px] overflow-hidden">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">
+                                {isGit ? "SOURCE" : "AGENT MODULE"}
+                            </span>
                             {isActive && (
-                                <div className="flex gap-1.5 px-2">
+                                <div className="flex items-center gap-1">
                                     {[0, 1, 2].map((i) => (
-                                        <div
+                                        <motion.div
                                             key={i}
-                                            className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-pulse"
-                                            style={{ animationDelay: `${i * 300}ms` }}
+                                            animate={{ opacity: [0.2, 1, 0.2] }}
+                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                            className="w-1 h-1 rounded-full bg-[#3b82f6]"
                                         />
                                     ))}
                                 </div>
                             )}
-                            {isCompleted && !isActive && (
-                                <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="text-[#3b82f6]/40"
-                                >
-                                    <Check size={20} strokeWidth={3} />
-                                </motion.div>
-                            )}
                         </div>
+
+                        {isActive ? (
+                            <div className="flex-1 flex flex-col gap-2.5">
+                                <div className="flex items-center gap-3">
+                                    <div className="text-[#3b82f6]">
+                                        <Icon size={32} />
+                                    </div>
+                                    <span className="text-sm font-bold text-white tracking-tight truncate">
+                                        {name}
+                                    </span>
+                                </div>
+
+                                <div className="h-4 overflow-hidden">
+                                    <AnimatePresence mode="wait">
+                                        <motion.p
+                                            key={message || 'waiting'}
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -5 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-[9px] font-mono text-[#a0a0a0] truncate"
+                                        >
+                                            {message || "Processing..."}
+                                        </motion.p>
+                                    </AnimatePresence>
+                                </div>
+
+                                <div className="mt-auto space-y-1.5">
+                                    <div className="flex items-center justify-between text-[8px] font-mono text-white/30">
+                                        <div className="flex gap-0.5">
+                                            {Array.from({ length: 12 }).map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className={cn(
+                                                        "h-2 w-1 rounded-[1px]",
+                                                        i < Math.floor(progressPercent / 8.33) ? "bg-[#3b82f6]" : "bg-white/5"
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+                                        <span>{filesProcessed}/{totalFiles} FILES</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col">
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "transition-all duration-500",
+                                        isCompleted ? "text-[#10b981]" : "text-white/20"
+                                    )}>
+                                        <Icon size={24} />
+                                    </div>
+                                    <span className="text-[15px] font-bold text-white tracking-tight">
+                                        {name}
+                                    </span>
+                                </div>
+
+                                <div className="mt-auto">
+                                    <p className="text-[10px] font-mono text-white/40 truncate">
+                                        {isGit && isCompleted ? `cloned: ${typedRepo}` :
+                                            isCompleted ? "analysis cycle finished" : "waiting for nexus signal"}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
-                            {id === 0 ? "GitHub Source" : "Agent Module"}
-                        </span>
-                        <div className="h-6">
-                            {id === 0 && isCompleted ? (
-                                <span className="text-xs font-mono text-white/80">Cloned: {typedRepo}</span>
-                            ) : (
-                                <span className="text-sm font-bold text-white">{name}</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Section */}
-                <div className={cn(
-                    "h-12 border-t border-white/5 bg-white/[0.02] px-4 flex items-center justify-between transition-opacity duration-700",
-                    !isActive && isCompleted && "opacity-50"
-                )}>
-                    <div className="flex flex-col">
+                    {/* Bottom Bar */}
+                    <div className="h-9 border-t border-white/5 bg-white/[0.02] px-[14px] flex items-center justify-between">
                         <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">
-                            {id === 0 ? "GITHUB CONNECT" : "ENGINE STATUS"}
+                            {isActive ? "ENGINE.LIVE" : "SYSTEM.IDLE"}
                         </span>
-                        <span className="text-[9px] font-bold text-white/40 uppercase">
-                            {id === 0 ? "Clone Repo" : "Processing"}
-                        </span>
-                    </div>
 
-                    <div className="relative h-4 w-24">
-                        <AnimatePresence mode="wait">
-                            <motion.span
-                                key={statusIndex}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -5 }}
-                                className={cn(
-                                    "absolute right-0 text-[10px] font-mono font-bold whitespace-nowrap",
-                                    isCompleted && !isActive ? "text-[#3b82f6]/60" : "text-[#3b82f6]"
-                                )}
-                            >
-                                {id === 0 ? STATUS_MESSAGES[statusIndex] :
-                                    isActive ? "ACTIVE..." : isCompleted ? "COMPLETED" : "IDLE"}
-                            </motion.span>
-                        </AnimatePresence>
+                        <div className={cn(
+                            "px-2 py-0.5 rounded text-[8px] font-black tracking-tighter uppercase",
+                            currentStyle.pill
+                        )}>
+                            {currentStyle.status}
+                        </div>
                     </div>
                 </div>
             </div>
+        );
+    }
+);
 
-            {/* Connection Point (RIGHT EDGE) */}
-            <div className={cn(
-                "absolute top-1/2 right-[-4px] transform -translate-y-1/2 w-[8px] h-[8px] rounded-full z-20 transition-all duration-500",
-                isCompleted ? "bg-[#3b82f6] shadow-[0_0_15px_#3b82f6]" : "bg-white/10"
-            )}>
-                {isActive && (
-                    <div className="absolute inset-0 bg-[#3b82f6] rounded-full animate-ping opacity-75" />
-                )}
-            </div>
-
-            <style jsx>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.3; transform: scale(0.8); }
-                    50% { opacity: 1; transform: scale(1.1); }
-                }
-            `}</style>
-        </div>
-    );
-};
+AgentNode.displayName = 'AgentNode';

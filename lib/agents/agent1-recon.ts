@@ -19,6 +19,17 @@ export async function runReconAgent(
     // 1. Parse file tree
     const fileTree = await parseFileTree(sharedMemory.repoPath);
 
+    // Emit per-file events to show real-time progress
+    for (const file of fileTree.slice(0, 30)) { // Show first 30 files
+        await onEvent({
+            agent_id: agentId,
+            agent_name: agentName,
+            event_type: 'processing',
+            message: `Reading: ${file.path}`,
+            data: { file: file.path }
+        });
+    }
+
     await onEvent({
         agent_id: agentId,
         agent_name: agentName,
