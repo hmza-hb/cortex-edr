@@ -43,19 +43,21 @@ async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
 
     try {
         await emit(scanId, 0, 'Git Connect', 'started', 'Initializing git connection...');
-        await sleep(200);
 
-        await emit(scanId, 0, 'Git Connect', 'processing', `Connecting to ${repoUrl}`, { url: repoUrl });
-        await sleep(200);
+        await emit(scanId, 0, 'Git Connect', 'processing', `Cloning ${repoUrl}...`);
 
         const git = simpleGit();
-        await emit(scanId, 0, 'Git Connect', 'processing', 'Cloning repository...');
 
-        await git.clone(repoUrl, repoPath, ['--depth', '1']);
+        // Fast clone with minimal history and no checkout of large files
+        await git.clone(repoUrl, repoPath, [
+            '--depth', '1',
+            '--single-branch',
+            '--no-tags'
+        ]);
 
         const files = getAllFiles(repoPath);
 
-        await emit(scanId, 0, 'Git Connect', 'completed', `Repository ready. Found ${files.length} files.`, {
+        await emit(scanId, 0, 'Git Connect', 'completed', `Repository ready. ${files.length} files found.`, {
             fileCount: files.length
         });
 
@@ -72,7 +74,6 @@ async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
 async function runReconnaissance(scanId: string, repoPath: string) {
     try {
         await emit(scanId, 1, 'Reconnaissance', 'started', 'Beginning codebase reconnaissance...');
-        await sleep(300);
 
         const allFiles = getAllFiles(repoPath);
         const importantFiles = allFiles.filter(f =>
@@ -83,13 +84,12 @@ async function runReconnaissance(scanId: string, repoPath: string) {
         );
 
         await emit(scanId, 1, 'Reconnaissance', 'processing', `Scanning ${importantFiles.length} files...`);
-        await sleep(200);
 
-        // Show first 20 files being read
-        for (let i = 0; i < Math.min(importantFiles.length, 20); i++) {
+        // Show first 15 files being read (faster)
+        for (let i = 0; i < Math.min(importantFiles.length, 15); i++) {
             const file = importantFiles[i].replace(repoPath, '');
             await emit(scanId, 1, 'Reconnaissance', 'processing', `Reading: ${file}`, { file });
-            await sleep(80);
+            await sleep(50);
         }
 
         // Detect tech stack
@@ -108,13 +108,11 @@ async function runReconnaissance(scanId: string, repoPath: string) {
             if (deps['typescript']) techStack.language = 'TypeScript';
             else techStack.language = 'JavaScript';
 
-            await sleep(200);
             await emit(scanId, 1, 'Reconnaissance', 'processing',
                 `Detected: ${techStack.framework}, ${techStack.language}`
             );
         }
 
-        await sleep(300);
         await emit(scanId, 1, 'Reconnaissance', 'completed',
             `Reconnaissance complete. ${importantFiles.length} files mapped.`
         );
@@ -132,7 +130,6 @@ async function runReconnaissance(scanId: string, repoPath: string) {
 async function runSecurityScanner(scanId: string, repoPath: string, fileTree: string[]) {
     try {
         await emit(scanId, 2, 'Security Scanner', 'started', 'Initializing security scanner...');
-        await sleep(300);
 
         const criticalFiles = fileTree.filter(f =>
             f.includes('api') || f.includes('auth') ||
@@ -142,7 +139,6 @@ async function runSecurityScanner(scanId: string, repoPath: string, fileTree: st
         await emit(scanId, 2, 'Security Scanner', 'processing',
             `Scanning ${criticalFiles.length} critical files...`
         );
-        await sleep(200);
 
         let issueCount = 0;
 
@@ -191,7 +187,7 @@ async function runSecurityScanner(scanId: string, repoPath: string, fileTree: st
                 // Skip unreadable files
             }
 
-            await sleep(120);
+            await sleep(80);
         }
 
         await emit(scanId, 2, 'Security Scanner', 'completed',

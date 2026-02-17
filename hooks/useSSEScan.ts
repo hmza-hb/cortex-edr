@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { AgentStatus } from '@/types/agent';
 
@@ -21,11 +21,14 @@ export function useSSEScan(scanId: string) {
     const [score, setScore] = useState<number | null>(null);
     const [issuesCount, setIssuesCount] = useState(0);
     const [repoName, setRepoName] = useState<string>('');
+    const processedEventIds = useRef<Set<string>>(new Set());
+    const lastEventCount = useRef(0);
 
     useEffect(() => {
         if (!scanId) return;
 
-        // Fetch initial scan status
+        let isSubscribed = true;
+
         const fetchInitialStatus = async () => {
             const { data: scan } = await supabase
                 .from('scans')
@@ -33,12 +36,11 @@ export function useSSEScan(scanId: string) {
                 .eq('id', scanId)
                 .single();
 
-            if (scan) {
+            if (scan && isSubscribed) {
                 setStatus(scan.status);
                 setScore(scan.score);
                 setRepoName(scan.repo_name || scan.repo_url || '');
 
-                // Set initial agent states based on current_agent
                 const newStates: Record<number, AgentStatus> = {};
                 for (let i = 0; i <= 7; i++) {
                     if (scan.current_agent > i) newStates[i] = 'completed';
@@ -48,23 +50,58 @@ export function useSSEScan(scanId: string) {
                 setAgentStates(newStates);
             }
 
-            // Fetch existing events
             const { data: events } = await supabase
                 .from('agent_events')
                 .select('*')
                 .eq('scan_id', scanId)
                 .order('created_at', { ascending: true });
 
-            if (events) {
-                for (const event of events) {
-                    handleEvent(event);
-                }
+            if (events && isSubscribed) {
+                events.forEach(event => handleEvent(event));
+                lastEventCount.current = events.length;
             }
         };
 
         fetchInitialStatus();
 
-        // Subscribe to real-time changes on agent_events table
+        // POLLING FALLBACK - Poll every 500ms for new events
+        const pollInterval = setInterval(async () => {
+            if (!isSubscribed) return;
+
+            const { data: events } = await supabase
+                .from('agent_events')
+                .select('*')
+                .eq('scan_id', scanId)
+                .order('created_at', { ascending: true });
+
+            if (events && events.length > lastEventCount.current) {
+                console.log('[POLL] Found', events.length - lastEventCount.current, 'new events');
+                events.slice(lastEventCount.current).forEach(event => handleEvent(event));
+                lastEventCount.current = events.length;
+            }
+
+            // Also check scan status
+            const { data: scan } = await supabase
+                .from('scans')
+                .select('status, score, current_agent')
+                .eq('id', scanId)
+                .single();
+
+            if (scan && isSubscribed) {
+                setStatus(scan.status);
+                if (scan.score) setScore(scan.score);
+
+                if (scan.status === 'completed') {
+                    setAgentStates({
+                        0: 'completed', 1: 'completed', 2: 'completed', 3: 'completed',
+                        4: 'completed', 5: 'completed', 6: 'completed', 7: 'completed'
+                    });
+                    clearInterval(pollInterval);
+                }
+            }
+        }, 500);
+
+        // Try Realtime subscription as well
         const eventsChannel = supabase
             .channel(`agent-events-${scanId}`)
             .on(
@@ -76,58 +113,32 @@ export function useSSEScan(scanId: string) {
                     filter: `scan_id=eq.${scanId}`,
                 },
                 (payload) => {
-                    console.log('📡 Received event:', payload.new);
+                    console.log('[REALTIME] Event:', payload.new);
                     handleEvent(payload.new);
                 }
             )
-            .subscribe((status) => {
-                console.log('📡 Subscription status:', status);
+            .subscribe((subStatus) => {
+                console.log('[REALTIME] Subscription:', subStatus);
             });
 
-        // Subscribe to scans table for status updates
-        const scansChannel = supabase
-            .channel(`scan-status-${scanId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'scans',
-                    filter: `id=eq.${scanId}`,
-                },
-                (payload) => {
-                    console.log('📡 Scan updated:', payload.new);
-                    const scan = payload.new as any;
-                    setStatus(scan.status);
-                    if (scan.score) setScore(scan.score);
-                    if (scan.status === 'completed') {
-                        // Mark all agents as completed
-                        setAgentStates({
-                            0: 'completed', 1: 'completed', 2: 'completed', 3: 'completed',
-                            4: 'completed', 5: 'completed', 6: 'completed', 7: 'completed'
-                        });
-                    }
-                }
-            )
-            .subscribe();
-
         return () => {
+            isSubscribed = false;
+            clearInterval(pollInterval);
             supabase.removeChannel(eventsChannel);
-            supabase.removeChannel(scansChannel);
         };
     }, [scanId]);
 
     const handleEvent = (event: any) => {
+        if (processedEventIds.current.has(event.id)) return;
+        processedEventIds.current.add(event.id);
+
         const agentId = event.agent_id;
         const eventType = event.event_type;
         const message = event.message;
 
-        // Deduplicate events to prevent React key errors
         setActivityFeed(prev => {
-            if (prev.some(e => e.id === event.id)) return prev;
-
             const newEvent: UIEvent = {
-                id: event.id || `evt-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                id: event.id,
                 agentId,
                 agentName: event.agent_name,
                 type: eventType,
@@ -137,13 +148,11 @@ export function useSSEScan(scanId: string) {
             return [...prev, newEvent].slice(-100);
         });
 
-        // Update agent state
         setAgentStates(prev => {
             const next = { ...prev };
 
             if (eventType === 'started') {
                 next[agentId] = 'active';
-                // Mark previous agents as completed
                 for (let i = 0; i < agentId; i++) {
                     next[i] = 'completed';
                 }
@@ -154,7 +163,6 @@ export function useSSEScan(scanId: string) {
             return next;
         });
 
-        // Count issues
         if (eventType === 'found_issue') {
             setIssuesCount(prev => prev + 1);
         }
