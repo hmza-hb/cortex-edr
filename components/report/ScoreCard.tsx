@@ -1,7 +1,8 @@
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
-import { ShieldCheck, AlertTriangle, Bug, Zap } from 'lucide-react';
+import { ShieldCheck, Bug, Zap } from 'lucide-react';
+import { motion, useSpring, useTransform } from 'framer-motion';
 
 interface ScoreCardProps {
     score: number;
@@ -25,26 +26,55 @@ interface ScoreCardProps {
     };
 }
 
+const AnimatedNumber = ({ value }: { value: number }) => {
+    const spring = useSpring(0, { damping: 40, stiffness: 100 });
+    const displayValue = useTransform(spring, (current) => Math.round(current));
+
+    React.useEffect(() => {
+        spring.set(value);
+    }, [value, spring]);
+
+    return <motion.span>{displayValue}</motion.span>;
+};
+
 export const ScoreCard: React.FC<ScoreCardProps> = ({ score, severityCounts, summary, technicalAnalysis }) => {
     const data = [
         { name: 'Score', value: score },
         { name: 'Remaining', value: 100 - score },
     ];
 
-    const COLORS = ['#3b82f6', '#111'];
-
+    const COLORS = ['#3b82f6', '#1a1a1a'];
     const summaryText = typeof summary === 'string' ? summary : summary?.overview;
 
     return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Score Donut */}
-                <div className="p-8 rounded-[32px] bg-[#0A0A0A] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-blue-500/[0.02] group-hover:bg-blue-500/[0.05] transition-colors duration-700" />
-                    <div className="w-48 h-48 relative">
+        <div className="space-y-8">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="grid grid-cols-1 lg:grid-cols-4 gap-6"
+            >
+                {/* Audit Score Card */}
+                <div className="lg:col-span-1 p-8 rounded-[40px] bg-[#0A0A0A] border border-white/10 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl">
+                    <div className="absolute inset-0 bg-blue-500/[0.03] group-hover:bg-blue-500/[0.06] transition-all duration-700" />
+
+                    <div className="w-44 h-44 relative mb-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                                <Pie data={data} cx="50%" cy="50%" innerRadius={65} outerRadius={80} paddingAngle={0} dataKey="value" stroke="none" startAngle={90} endAngle={-270}>
+                                <Pie
+                                    data={data}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={70}
+                                    outerRadius={85}
+                                    paddingAngle={0}
+                                    dataKey="value"
+                                    stroke="none"
+                                    startAngle={90}
+                                    endAngle={-270}
+                                    animationBegin={0}
+                                    animationDuration={1500}
+                                >
                                     {data.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
@@ -52,71 +82,90 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({ score, severityCounts, sum
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-5xl font-black text-white">{score}</span>
-                            <span className="text-[10px] font-black text-white/30 tracking-widest uppercase mt-1">Audit Score</span>
+                            <h2 className="text-6xl font-black text-white tracking-tighter">
+                                <AnimatedNumber value={score} />
+                            </h2>
+                            <p className="text-[10px] font-black text-white/30 tracking-[0.3em] uppercase mt-2">Audit Rank</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Severity Breakdown */}
-                <div className="p-8 rounded-[32px] bg-[#0A0A0A] border border-white/5 space-y-6 flex flex-col justify-center">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 flex flex-col">
-                            <span className="text-red-400 font-black text-xl">{severityCounts.critical}</span>
-                            <span className="text-[8px] font-black text-red-500/40 tracking-[0.2em] uppercase mt-1">Critical</span>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10 flex flex-col">
-                            <span className="text-orange-400 font-black text-xl">{severityCounts.high}</span>
-                            <span className="text-[8px] font-black text-orange-500/40 tracking-[0.2em] uppercase mt-1">High Risk</span>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/10 flex flex-col">
-                            <span className="text-yellow-400 font-black text-xl">{severityCounts.medium}</span>
-                            <span className="text-[8px] font-black text-yellow-500/40 tracking-[0.2em] uppercase mt-1">Medium</span>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex flex-col">
-                            <span className="text-blue-400 font-black text-xl">{severityCounts.low}</span>
-                            <span className="text-[8px] font-black text-blue-500/40 tracking-[0.2em] uppercase mt-1">Low Severity</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Summary */}
-                <div className="p-8 rounded-[32px] bg-blue-500/[0.02] border border-blue-500/10 flex flex-col justify-center">
-                    <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em] mb-4">Executive Synthesis</h3>
-                    <p className="text-sm text-white/60 leading-relaxed italic font-medium">
-                        "{summaryText || "Analyzing architectural integrity and security posture..."}"
-                    </p>
-                    <div className="mt-6 flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                            {[...Array(3)].map((_, i) => (
-                                <div key={i} className="w-6 h-6 rounded-full border border-[#0A0A0A] bg-blue-500/20 flex items-center justify-center">
-                                    <ShieldCheck className="w-3 h-3 text-blue-400" />
+                {/* Risk Distribution Card */}
+                <div className="lg:col-span-1 p-8 rounded-[40px] bg-[#0A0A0A] border border-white/10 flex flex-col shadow-2xl">
+                    <h3 className="text-[10px] font-black text-white/20 tracking-[0.3em] uppercase mb-8">Risk Distribution</h3>
+                    <div className="space-y-4">
+                        {[
+                            { label: 'Critical', count: severityCounts.critical, color: 'bg-red-500', text: 'text-red-400' },
+                            { label: 'High', count: severityCounts.high, color: 'bg-orange-500', text: 'text-orange-400' },
+                            { label: 'Medium', count: severityCounts.medium, color: 'bg-yellow-500', text: 'text-yellow-400' },
+                            { label: 'Low', count: severityCounts.low, color: 'bg-blue-500', text: 'text-blue-400' },
+                        ].map((sev, i) => (
+                            <motion.div
+                                key={sev.label}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 * i + 0.5 }}
+                                className="flex items-center justify-between group cursor-default"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("w-2 h-2 rounded-full", sev.color)} />
+                                    <span className="text-[11px] font-bold text-white/40 group-hover:text-white/60 transition-colors uppercase tracking-widest">{sev.label}</span>
                                 </div>
-                            ))}
-                        </div>
-                        <span className="text-[10px] font-black text-white/30 tracking-widest uppercase ml-2">Verified Audit</span>
+                                <span className={cn("text-sm font-black tracking-tight", sev.text)}>{sev.count}</span>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
-            </div>
 
-            {/* Technical Analysis Section */}
+                {/* Executive Summary Card */}
+                <div className="lg:col-span-2 p-10 rounded-[40px] bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-white/10 flex flex-col justify-between shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8">
+                        <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+                            <ShieldCheck className="w-4 h-4 text-blue-400" />
+                            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Enterprise Verified</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-[10px] font-black text-blue-400/50 uppercase tracking-[0.4em] mb-8">Executive Synthesis</h3>
+                        <p className="text-lg text-white/80 leading-relaxed font-semibold italic tracking-tight max-w-xl">
+                            "{summaryText || "Executing architectural deep-scan and security posture assessment..."}"
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-4 pt-10">
+                        <div className="h-[2px] w-12 bg-blue-500/20" />
+                        <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em]">Secure Audit Manifest v4.0</span>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Technical Analysis Strip */}
             {technicalAnalysis && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                        { label: 'Architecture', value: technicalAnalysis.architecture, icon: Zap, color: 'text-blue-400' },
-                        { label: 'Security Posture', value: technicalAnalysis.securityPosture, icon: ShieldCheck, color: 'text-red-400' },
-                        { label: 'Code Quality', value: technicalAnalysis.codeQuality, icon: Bug, color: 'text-orange-400' },
-                        { label: 'Maintainability', value: technicalAnalysis.maintainability, icon: Zap, color: 'text-green-400' },
+                        { label: 'Architecture', value: technicalAnalysis.architecture, icon: Zap, color: 'text-blue-400', bg: 'bg-blue-500/5' },
+                        { label: 'Security Posture', value: technicalAnalysis.securityPosture, icon: ShieldCheck, color: 'text-red-400', bg: 'bg-red-500/5' },
+                        { label: 'Code Quality', value: technicalAnalysis.codeQuality, icon: Bug, color: 'text-orange-400', bg: 'bg-orange-500/5' },
+                        { label: 'Maintainability', value: technicalAnalysis.maintainability, icon: Zap, color: 'text-green-400', bg: 'bg-green-500/5' },
                     ].map((item, i) => (
-                        <div key={i} className="p-6 rounded-[24px] bg-[#0A0A0A] border border-white/5 flex flex-col gap-3">
-                            <div className="flex items-center gap-3">
-                                <item.icon className={cn("w-4 h-4", item.color)} />
-                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{item.label}</span>
+                        <motion.div
+                            key={item.label}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.8 + (i * 0.1) }}
+                            className="p-6 rounded-3xl bg-[#0A0A0A] border border-white/5 hover:border-white/20 transition-all duration-500 shadow-xl group"
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className={cn("p-2 rounded-xl border border-white/5", item.bg)}>
+                                    <item.icon className={cn("w-4 h-4", item.color)} />
+                                </div>
+                                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">{item.label}</span>
                             </div>
-                            <p className="text-[12px] text-white/60 leading-relaxed line-clamp-3 hover:line-clamp-none transition-all cursor-default">
+                            <p className="text-[13px] text-white/60 leading-relaxed font-medium line-clamp-3 group-hover:line-clamp-none transition-all duration-500">
                                 {item.value}
                             </p>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             )}

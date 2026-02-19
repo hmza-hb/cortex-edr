@@ -32,7 +32,7 @@ export const IssueList: React.FC<IssueListProps> = ({ issues }) => {
     return (
         <div className="space-y-8">
             {/* Category Tabs */}
-            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#0A0A0A] border border-white/5 w-fit overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#0A0A0A] border border-white/5 w-fit overflow-x-auto no-scrollbar shadow-xl">
                 {TABS.map((tab) => {
                     const Icon = tab.icon;
                     const count = tab.id === 'all'
@@ -44,16 +44,16 @@ export const IssueList: React.FC<IssueListProps> = ({ issues }) => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as Tab)}
                             className={cn(
-                                "flex items-center gap-3 px-5 py-2.5 rounded-xl transition-all duration-300 whitespace-nowrap",
+                                "flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 whitespace-nowrap",
                                 activeTab === tab.id
-                                    ? "bg-white text-black font-black text-[10px] tracking-widest uppercase shadow-lg shadow-white/5"
-                                    : "text-white/40 hover:text-white/60 font-bold text-[10px] tracking-widest uppercase"
+                                    ? "bg-white text-black font-bold text-[11px] shadow-lg shadow-white/5"
+                                    : "text-white/40 hover:text-white/60 font-medium text-[11px]"
                             )}
                         >
                             <Icon className="w-3.5 h-3.5" />
-                            {tab.label}
+                            <span className="tracking-tight">{tab.label}</span>
                             <span className={cn(
-                                "w-5 h-5 flex items-center justify-center rounded-full text-[9px] font-black",
+                                "min-w-[18px] h-4.5 px-1 flex items-center justify-center rounded-md text-[9px] font-bold",
                                 activeTab === tab.id ? "bg-black/10" : "bg-white/5"
                             )}>
                                 {count}
