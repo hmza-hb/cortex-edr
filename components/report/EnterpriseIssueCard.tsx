@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Copy, AlertTriangle, AlertCircle, Terminal, Info, Zap, ShieldCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, AlertTriangle, AlertCircle, Terminal, Info, Zap, ShieldCheck, FileText, Clock, CheckCircle2, BarChart3, HelpCircle, Lightbulb, Sparkles } from 'lucide-react'
 import { EnterpriseIssue } from '@/types/report'
 
 interface EnterpriseIssueCardProps {
@@ -59,9 +59,17 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
                     </h3>
 
                     <div className="flex flex-wrap items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-white/30">
-                        <span className="flex items-center gap-2 border-r border-white/10 pr-6">📁 {issue.file}</span>
-                        {issue.line && <span className="flex items-center gap-2 border-r border-white/10 pr-6">Line {issue.line}</span>}
-                        <span className="flex items-center gap-2 text-blue-400">⏱️ {issue.estimatedTimeToFix}</span>
+                        <span className="flex items-center gap-2 border-r border-white/10 pr-6">
+                            <FileText className="w-3 h-3 text-blue-400/50" /> {issue.file}
+                        </span>
+                        {issue.line && (
+                            <span className="flex items-center gap-2 border-r border-white/10 pr-6">
+                                Line {issue.line}
+                            </span>
+                        )}
+                        <span className="flex items-center gap-2 text-blue-400">
+                            <Clock className="w-3 h-3 text-blue-400/50" /> {issue.estimatedTimeToFix}
+                        </span>
                     </div>
                 </div>
 
@@ -110,9 +118,12 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {issue.impact?.definite && issue.impact.definite.length > 0 && (
                                 <div className="p-6 rounded-2xl bg-red-500/[0.03] border border-red-500/10">
-                                    <p className="text-[10px] font-black text-red-400/50 uppercase tracking-widest mb-4">
-                                        ✓ Immediate Impact
-                                    </p>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <CheckCircle2 className="w-3 h-3 text-red-400/50" />
+                                        <p className="text-[10px] font-black text-red-400/50 uppercase tracking-widest">
+                                            Immediate Impact
+                                        </p>
+                                    </div>
                                     <ul className="space-y-3">
                                         {issue.impact.definite.map((item: string, i: number) => (
                                             <li key={i} className="text-sm text-gray-300 flex items-start gap-3">
@@ -126,9 +137,12 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
 
                             {issue.impact?.likely && issue.impact.likely.length > 0 && (
                                 <div className="p-6 rounded-2xl bg-orange-500/[0.03] border border-orange-500/10">
-                                    <p className="text-[10px] font-black text-orange-400/50 uppercase tracking-widest mb-4">
-                                        ⚡ High Probability
-                                    </p>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Zap className="w-3 h-3 text-orange-400/50" />
+                                        <p className="text-[10px] font-black text-orange-400/50 uppercase tracking-widest">
+                                            High Probability
+                                        </p>
+                                    </div>
                                     <ul className="space-y-3">
                                         {issue.impact.likely.map((item: string, i: number) => (
                                             <li key={i} className="text-sm text-gray-300 flex items-start gap-3">
@@ -142,9 +156,12 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
 
                             {issue.impact?.reported && issue.impact.reported.length > 0 && (
                                 <div className="p-6 rounded-2xl bg-yellow-500/[0.03] border border-yellow-500/10">
-                                    <p className="text-[10px] font-black text-yellow-400/50 uppercase tracking-widest mb-4">
-                                        📊 Industry Reports
-                                    </p>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <BarChart3 className="w-3 h-3 text-yellow-400/50" />
+                                        <p className="text-[10px] font-black text-yellow-400/50 uppercase tracking-widest">
+                                            Industry Reports
+                                        </p>
+                                    </div>
                                     <ul className="space-y-3">
                                         {issue.impact.reported.map((item: string, i: number) => (
                                             <li key={i} className="text-sm text-gray-300 flex items-start gap-3">
@@ -158,9 +175,12 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
 
                             {issue.impact?.possible && issue.impact.possible.length > 0 && (
                                 <div className="p-6 rounded-2xl bg-blue-500/[0.03] border border-blue-500/10">
-                                    <p className="text-[10px] font-black text-blue-400/50 uppercase tracking-widest mb-4">
-                                        🤔 Long-term Risk
-                                    </p>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <HelpCircle className="w-3 h-3 text-blue-400/50" />
+                                        <p className="text-[10px] font-black text-blue-400/50 uppercase tracking-widest">
+                                            Long-term Risk
+                                        </p>
+                                    </div>
                                     <ul className="space-y-3">
                                         {issue.impact.possible.map((item: string, i: number) => (
                                             <li key={i} className="text-sm text-gray-300 flex items-start gap-3">
@@ -188,7 +208,10 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
                         <div className="space-y-4">
                             {issue.solution?.must && issue.solution.must.length > 0 && (
                                 <div className="p-6 rounded-2xl bg-red-950/20 border border-red-500/20">
-                                    <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-4">🚨 Mandatory Action</p>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <AlertCircle className="w-3 h-3 text-red-400" />
+                                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Mandatory Action</p>
+                                    </div>
                                     <div className="space-y-4">
                                         {issue.solution.must.map((item: any, i: number) => (
                                             <div key={i} className="flex gap-4">
@@ -205,7 +228,10 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
 
                             {issue.solution?.should && issue.solution.should.length > 0 && (
                                 <div className="p-6 rounded-2xl bg-orange-950/10 border border-orange-500/10">
-                                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-4">⚡ Tactical Recommendation</p>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Zap className="w-3 h-3 text-orange-400" />
+                                        <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Tactical Recommendation</p>
+                                    </div>
                                     <div className="space-y-4">
                                         {issue.solution.should.map((item: any, i: number) => (
                                             <div key={i} className="flex gap-4">

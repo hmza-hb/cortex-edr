@@ -102,7 +102,7 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "free" }
                                     {user.email?.split("@")[0]}
                                 </span>
                                 <span className={cn("text-[10px] font-mono font-bold uppercase tracking-widest leading-none", currentPlan.color)}>
-                                    {currentPlan.name}
+                                    {currentPlan.name} Tier
                                 </span>
                             </div>
                             <ChevronDown className={cn(

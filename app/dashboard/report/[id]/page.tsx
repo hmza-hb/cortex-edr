@@ -12,6 +12,8 @@ import { Issue } from "@/types/agent";
 import { EnterpriseIssueCard } from "@/components/report/EnterpriseIssueCard";
 import { ExecutiveReport } from "@/types/report";
 import { motion } from "framer-motion";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { PDFReport } from "@/components/report/PDFReport";
 
 export default function ReportPage() {
     const params = useParams();
@@ -21,6 +23,11 @@ export default function ReportPage() {
     const [scan, setScan] = useState<any>(null);
     const [issues, setIssues] = useState<Issue[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -93,10 +100,26 @@ export default function ReportPage() {
                         <FileJson className="h-4 w-4 mr-3 text-white/20 group-hover:text-blue-400 transition-colors" />
                         Export Manifest
                     </Button>
-                    <Button className="h-14 px-10 bg-purple-600 hover:bg-blue-700 text-white text-[11px] font-black tracking-[0.2em] uppercase rounded-2xl shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3">
-                        <Share2 className="h-4 w-4" />
-                        Share PDF
-                    </Button>
+                    {isMounted && (
+                        <PDFDownloadLink
+                            document={<PDFReport scan={scan} issues={issues} enterpriseReport={enterpriseReport} />}
+                            fileName={`Cortex_Audit_${scan?.id || 'Report'}.pdf`}
+                        >
+                            {({ loading }) => (
+                                <Button
+                                    disabled={loading}
+                                    className="h-14 px-10 bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-black tracking-[0.2em] uppercase rounded-2xl shadow-[0_20px_50px_rgba(168,85,247,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                                >
+                                    {loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Share2 className="h-4 w-4" />
+                                    )}
+                                    {loading ? "Marshalling PDF..." : "Share PDF"}
+                                </Button>
+                            )}
+                        </PDFDownloadLink>
+                    )}
                 </div>
             </motion.div>
 
@@ -119,7 +142,7 @@ export default function ReportPage() {
                                     {enterpriseReport?.executiveSummary?.keyFindings?.map((finding, i) => (
                                         <li key={i} className="flex gap-4 text-white/70">
                                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
-                                            <p className="text-sm leading-relaxed font-medium">{finding}</p>
+                                            <p className="text-sm leading-relaxed font-medium">{typeof finding === 'string' ? finding : JSON.stringify(finding)}</p>
                                         </li>
                                     ))}
                                 </ul>
@@ -131,7 +154,7 @@ export default function ReportPage() {
                                     {enterpriseReport?.executiveSummary?.recommendedActions?.map((action, i) => (
                                         <div key={i} className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10 flex gap-4 mt-2">
                                             <span className="text-red-500 font-black text-xs">0{i + 1}</span>
-                                            <p className="text-xs font-bold text-white/60 leading-relaxed uppercase tracking-wider">{action}</p>
+                                            <p className="text-xs font-bold text-white/60 leading-relaxed uppercase tracking-wider">{typeof action === 'string' ? action : JSON.stringify(action)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -145,7 +168,7 @@ export default function ReportPage() {
                         </div>
                         <h3 className="text-[12px] font-black text-white tracking-[0.3em] uppercase mb-4">Business Impact Analysis</h3>
                         <p className="text-sm text-white/50 leading-relaxed font-medium italic">
-                            {enterpriseReport?.executiveSummary?.businessImpact}
+                            {typeof enterpriseReport?.executiveSummary?.businessImpact === 'string' ? enterpriseReport.executiveSummary.businessImpact : JSON.stringify(enterpriseReport?.executiveSummary?.businessImpact)}
                         </p>
                     </div>
                 </div>

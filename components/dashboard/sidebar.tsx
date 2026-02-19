@@ -141,7 +141,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                     <>
                         <span className="text-sm font-semibold truncate group-hover:text-white transition-colors">{item.label}</span>
                         {item.locked && (
-                            <span className="ml-auto text-[10px] font-mono text-white/40 uppercase font-bold">Pro</span>
+                            <span className="ml-auto text-[10px] font-mono text-white/20 font-bold">Pro</span>
                         )}
                         {item.badge && !item.locked && (
                             <span className="ml-auto px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs font-mono rounded-full font-black">
@@ -204,7 +204,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                 {/* Account Section */}
                 <div className="pt-8">
                     {!isCollapsed && (
-                        <h3 className="px-4 text-[10px] font-mono uppercase tracking-widest text-white/40 font-bold mb-3">
+                        <h3 className="px-4 text-[11px] font-bold text-white/30 tracking-widest mb-3 uppercase">
                             Account Control
                         </h3>
                     )}
@@ -221,8 +221,8 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                 {/* Resources Section */}
                 <div className="pt-8">
                     {!isCollapsed && (
-                        <h3 className="px-4 text-[10px] font-mono uppercase tracking-widest text-white/40 font-bold mb-3">
-                            Telemetry & Knowledge
+                        <h3 className="px-4 text-[11px] font-bold text-white/30 tracking-widest mb-3 uppercase">
+                            Resources & Knowledge
                         </h3>
                     )}
                     {isCollapsed && (
