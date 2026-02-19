@@ -11,6 +11,7 @@ import { Issue } from "@/types/agent";
 
 import { EnterpriseIssueCard } from "@/components/report/EnterpriseIssueCard";
 import { ExecutiveReport } from "@/types/report";
+import { motion } from "framer-motion";
 
 export default function ReportPage() {
     const params = useParams();
@@ -60,36 +61,44 @@ export default function ReportPage() {
     return (
         <div className="max-w-7xl mx-auto space-y-16 py-12 animate-in fade-in duration-1000">
             {/* Nav Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-white/5 pb-10">
-                <div className="flex items-center gap-6">
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="flex flex-col md:flex-row md:items-center justify-between gap-10 border-b border-white/[0.05] pb-12"
+            >
+                <div className="flex items-center gap-8">
                     <Link href="/dashboard/scan-history">
-                        <Button variant="ghost" size="icon" className="h-14 w-14 border border-white/5 hover:bg-white/5 rounded-2xl transition-all hover:scale-105 active:scale-95">
-                            <ArrowLeft className="h-6 w-6 text-white/40" />
+                        <Button variant="ghost" size="icon" className="h-16 w-16 border border-white/10 hover:bg-white/5 rounded-3xl transition-all hover:scale-105 active:scale-95 shadow-xl">
+                            <ArrowLeft className="h-6 w-6 text-white/50" />
                         </Button>
                     </Link>
                     <div>
-                        <div className="flex items-center gap-4 mb-2">
-                            <h1 className="text-4xl font-black text-white tracking-widest uppercase">Audit Report</h1>
-                            <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">SYSTEM_VERIFIED</span>
+                        <div className="flex items-center gap-5 mb-3">
+                            <h1 className="text-3xl font-black text-white tracking-widest uppercase">Audit Manifest</h1>
+                            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/5 backdrop-blur-sm">
+                                <ShieldCheck className="w-4 h-4 text-blue-400" />
+                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">System.Verified</span>
                             </div>
                         </div>
-                        <p className="text-[11px] font-bold text-white/20 tracking-[0.4em] uppercase">Target Endpoint: {scan?.repo_url}</p>
+                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/5 w-fit">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <p className="text-[11px] font-bold text-white/30 tracking-[0.1em] uppercase">Endpoint: <span className="text-blue-400/80 lowercase">{scan?.repo_url}</span></p>
+                        </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" className="h-14 px-8 text-[11px] font-black tracking-widest uppercase text-white/40 border border-white/5 hover:text-white rounded-2xl hover:bg-white/5 transition-all">
-                        <FileJson className="h-4 w-4 mr-3" />
-                        Export JSON
+                    <Button variant="ghost" className="h-14 px-8 text-[11px] font-black tracking-[0.2em] uppercase text-white/40 border border-white/10 hover:text-white rounded-2xl hover:bg-white/5 transition-all group">
+                        <FileJson className="h-4 w-4 mr-3 text-white/20 group-hover:text-blue-400 transition-colors" />
+                        Export Manifest
                     </Button>
-                    <Button className="h-14 px-10 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black tracking-widest uppercase rounded-2xl shadow-2xl shadow-blue-500/20 transition-all hover:scale-105 active:scale-95">
-                        <Share2 className="h-4 w-4 mr-3" />
-                        Publish Report
+                    <Button className="h-14 px-10 bg-purple-600 hover:bg-blue-700 text-white text-[11px] font-black tracking-[0.2em] uppercase rounded-2xl shadow-[0_20px_50px_rgba(59,130,246,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3">
+                        <Share2 className="h-4 w-4" />
+                        Share PDF
                     </Button>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Score Section */}
             <ScoreCard

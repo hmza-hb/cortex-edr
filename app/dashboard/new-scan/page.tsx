@@ -113,7 +113,7 @@ export default function NewScanPage() {
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="flex-1 h-16 bg-blue-500 hover:bg-blue-600 text-black font-black text-[10px] tracking-[0.3em] uppercase rounded-2xl transition-all shadow-xl shadow-blue-500/10 active:scale-[0.98] disabled:opacity-50"
+                            className="flex-1 h-16 bg-purple-500 hover:bg-blue-600 text-black font-black text-[10px] tracking-[0.3em] uppercase rounded-2xl transition-all shadow-xl shadow-blue-500/10 active:scale-[0.98] disabled:opacity-50"
                         >
                             {isLoading ? (
                                 <>

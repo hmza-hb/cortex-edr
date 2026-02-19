@@ -37,13 +37,67 @@ const AnimatedNumber = ({ value }: { value: number }) => {
     return <motion.span>{displayValue}</motion.span>;
 };
 
+const getScoreColor = (score: number) => {
+    // 0-10: Deep Critical
+    if (score <= 10) return {
+        primary: '#991b1b', bg: 'bg-red-900/[0.03]', hoverBg: 'group-hover:bg-red-900/[0.06]',
+        text: 'text-red-800', border: 'border-red-900/30'
+    };
+    // 11-20: Critical
+    if (score <= 20) return {
+        primary: '#b91c1c', bg: 'bg-red-700/[0.03]', hoverBg: 'group-hover:bg-red-700/[0.06]',
+        text: 'text-red-700', border: 'border-red-700/30'
+    };
+    // 21-30: High Risk
+    if (score <= 30) return {
+        primary: '#dc2626', bg: 'bg-red-600/[0.03]', hoverBg: 'group-hover:bg-red-600/[0.06]',
+        text: 'text-red-600', border: 'border-red-600/30'
+    };
+    // 31-40: Elevated Risk
+    if (score <= 40) return {
+        primary: '#f87171', bg: 'bg-red-400/[0.03]', hoverBg: 'group-hover:bg-red-400/[0.06]',
+        text: 'text-red-400', border: 'border-red-400/30'
+    };
+    // 41-50: Moderate Risk
+    if (score <= 50) return {
+        primary: '#f97316', bg: 'bg-orange-500/[0.03]', hoverBg: 'group-hover:bg-orange-500/[0.06]',
+        text: 'text-orange-500', border: 'border-orange-500/30'
+    };
+    // 51-60: Cautionary
+    if (score <= 60) return {
+        primary: '#f59e0b', bg: 'bg-amber-500/[0.03]', hoverBg: 'group-hover:bg-amber-500/[0.06]',
+        text: 'text-amber-500', border: 'border-amber-500/30'
+    };
+    // 61-70: Sub-Optimal
+    if (score <= 70) return {
+        primary: '#eab308', bg: 'bg-yellow-500/[0.03]', hoverBg: 'group-hover:bg-yellow-500/[0.06]',
+        text: 'text-yellow-500', border: 'border-yellow-500/30'
+    };
+    // 71-80: Stable
+    if (score <= 80) return {
+        primary: '#84cc16', bg: 'bg-lime-500/[0.03]', hoverBg: 'group-hover:bg-lime-500/[0.06]',
+        text: 'text-lime-500', border: 'border-lime-500/30'
+    };
+    // 81-90: Optimal
+    if (score <= 90) return {
+        primary: '#22c55e', bg: 'bg-green-500/[0.03]', hoverBg: 'group-hover:bg-green-500/[0.06]',
+        text: 'text-green-500', border: 'border-green-500/30'
+    };
+    // 91-100: Premium/Verified
+    return {
+        primary: '#bb3bf6', bg: 'bg-purple-500/[0.03]', hoverBg: 'group-hover:bg-purple-500/[0.06]',
+        text: 'text-purple-400', border: 'border-purple-500/30'
+    };
+};
+
 export const ScoreCard: React.FC<ScoreCardProps> = ({ score, severityCounts, summary, technicalAnalysis }) => {
     const data = [
         { name: 'Score', value: score },
         { name: 'Remaining', value: 100 - score },
     ];
 
-    const COLORS = ['#3b82f6', '#1a1a1a'];
+    const scoreTheme = getScoreColor(score);
+    const COLORS = [scoreTheme.primary, '#1a1a1a'];
     const summaryText = typeof summary === 'string' ? summary : summary?.overview;
 
     return (
@@ -56,7 +110,11 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({ score, severityCounts, sum
             >
                 {/* Audit Score Card */}
                 <div className="lg:col-span-1 p-8 rounded-[40px] bg-[#0A0A0A] border border-white/10 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl">
-                    <div className="absolute inset-0 bg-blue-500/[0.03] group-hover:bg-blue-500/[0.06] transition-all duration-700" />
+                    <div className={cn(
+                        "absolute inset-0 transition-all duration-700",
+                        scoreTheme.bg,
+                        scoreTheme.hoverBg
+                    )} />
 
                     <div className="w-44 h-44 relative mb-4">
                         <ResponsiveContainer width="100%" height="100%">
@@ -81,11 +139,14 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({ score, severityCounts, sum
                                 </Pie>
                             </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                             <h2 className="text-6xl font-black text-white tracking-tighter">
                                 <AnimatedNumber value={score} />
                             </h2>
-                            <p className="text-[10px] font-black text-white/30 tracking-[0.3em] uppercase mt-2">Audit Rank</p>
+                            <p className={cn(
+                                "text-[10px] font-black tracking-[0.3em] uppercase mt-2",
+                                scoreTheme.text
+                            )}>Audit Rank</p>
                         </div>
                     </div>
                 </div>
@@ -118,23 +179,29 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({ score, severityCounts, sum
                 </div>
 
                 {/* Executive Summary Card */}
-                <div className="lg:col-span-2 p-10 rounded-[40px] bg-gradient-to-br from-blue-500/10 via-transparent to-transparent border border-white/10 flex flex-col justify-between shadow-2xl relative overflow-hidden group">
+                <div className="lg:col-span-2 p-10 rounded-[40px] bg-gradient-to-br from-white/[0.01] via-transparent to-transparent border border-white/10 flex flex-col justify-between shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8">
-                        <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-                            <ShieldCheck className="w-4 h-4 text-blue-400" />
-                            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Enterprise Verified</span>
+                        <div className={cn(
+                            "px-4 py-2 rounded-xl backdrop-blur-sm bg-white/5 border flex items-center gap-3",
+                            scoreTheme.border
+                        )}>
+                            <ShieldCheck className={cn("w-4 h-4", scoreTheme.text)} />
+                            <span className={cn("text-[10px] font-black uppercase tracking-widest", scoreTheme.text)}>Enterprise Verified</span>
                         </div>
                     </div>
 
                     <div>
-                        <h3 className="text-[10px] font-black text-blue-400/50 uppercase tracking-[0.4em] mb-8">Executive Synthesis</h3>
+                        <h3 className={cn(
+                            "text-[10px] font-black uppercase tracking-[0.4em] mb-8 opacity-50",
+                            scoreTheme.text
+                        )}>Executive Synthesis</h3>
                         <p className="text-lg text-white/80 leading-relaxed font-semibold italic tracking-tight max-w-xl">
                             "{summaryText || "Executing architectural deep-scan and security posture assessment..."}"
                         </p>
                     </div>
 
                     <div className="flex items-center gap-4 pt-10">
-                        <div className="h-[2px] w-12 bg-blue-500/20" />
+                        <div className={cn("h-[2px] w-12", scoreTheme.bg.replace('/[0.03]', '/20'))} />
                         <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em]">Secure Audit Manifest v4.0</span>
                     </div>
                 </div>
