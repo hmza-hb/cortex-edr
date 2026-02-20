@@ -25,7 +25,7 @@ const AGENTS = [
 ];
 
 export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
-    const { agentStates, activityFeed, issuesCount, status, repoName } = useSSEScan(scanId);
+    const { agentStates, activityFeed, issuesCount, status, repoName, cloningProgress } = useSSEScan(scanId);
     const pathname = usePathname();
     const isImmersive = pathname?.includes("/dashboard/scan/");
 
@@ -278,8 +278,8 @@ export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
                                     repoName={repoName}
                                     message={latestMessage}
                                     issueCount={agentIssueCount}
-                                    filesProcessed={filesProcessed}
-                                    totalFiles={totalFiles}
+                                    filesProcessed={agent.id === 0 ? cloningProgress : filesProcessed}
+                                    totalFiles={agent.id === 0 ? 100 : totalFiles}
                                 />
                             </motion.div>
                         );

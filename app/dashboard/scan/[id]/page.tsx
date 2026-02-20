@@ -6,7 +6,8 @@ import { AgentCanvas } from "@/components/scan/AgentCanvas";
 import { useSSEScan } from "@/hooks/useSSEScan";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, AlertTriangle, X, Bug } from "lucide-react";
+import { ArrowLeft, AlertTriangle, X, Bug, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export default function LiveScanPage() {
@@ -21,16 +22,6 @@ export default function LiveScanPage() {
     const [showDebug, setShowDebug] = useState(false);
     const [aiLogs, setAiLogs] = useState<any>(null);
     const [loadingLogs, setLoadingLogs] = useState(false);
-
-    // Auto-redirect to report when completed
-    useEffect(() => {
-        if (status === 'completed') {
-            const timer = setTimeout(() => {
-                router.push(`/dashboard/report/${scanId}`);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [status, scanId, router]);
 
     // Load AI logs from Supabase
     const loadAILogs = useCallback(async () => {
@@ -66,9 +57,57 @@ export default function LiveScanPage() {
     }, [loadAILogs]);
 
     return (
-        <div className="h-screen w-full relative overflow-hidden animate-in fade-in duration-1000">
+        <div className="h-screen w-full relative overflow-hidden animate-in fade-in duration-1000 flex flex-col bg-[#010101]">
+            {/* Slim Header Control Bar */}
+            <div className="h-16 px-8 border-b border-white/5 bg-black/40 backdrop-blur-xl flex items-center justify-between z-50 shrink-0">
+                <div className="flex items-center gap-6">
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="p-2 mr-2 rounded-xl hover:bg-white/5 transition-colors group"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-white/20 group-hover:text-white transition-colors" />
+                    </button>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">Live Audit Session</span>
+                        <h1 className="text-sm font-bold text-white tracking-tight">Active Intelligence Pipeline</h1>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:flex flex-col items-end mr-4">
+                        <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Session ID</span>
+                        <span className="text-[10px] font-mono text-white/40">{scanId?.substring(0, 16).toUpperCase()}</span>
+                    </div>
+
+                    <Button
+                        onClick={() => status === 'completed' && router.push(`/dashboard/report/${scanId}`)}
+                        disabled={status !== 'completed'}
+                        className={cn(
+                            "h-10 px-6 font-black uppercase text-[10px] tracking-[0.15em] rounded-xl transition-all duration-500",
+                            status === 'completed'
+                                ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                                : "bg-white/5 text-white/20 border border-white/10 cursor-not-allowed"
+                        )}
+                    >
+                        {status === 'completed' ? (
+                            <div className="flex items-center gap-2">
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Get Strategy Report</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Bug className="w-3.5 h-3.5 animate-pulse" />
+                                <span>Auditing Intelligence...</span>
+                            </div>
+                        )}
+                    </Button>
+                </div>
+            </div>
+
             {/* Canvas */}
-            <AgentCanvas scanId={scanId} />
+            <div className="flex-1 relative">
+                <AgentCanvas scanId={scanId} />
+            </div>
 
             {/* Debug hint - bottom left */}
             <div className="absolute bottom-4 left-4 z-40">

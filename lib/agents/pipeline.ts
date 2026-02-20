@@ -97,13 +97,15 @@ function parseAIResponse(raw: string, fallback: any = []): any {
         if (Array.isArray(parsed)) return parsed;
         // If it's an object, find the first key that holds an array
         if (typeof parsed === 'object' && parsed !== null) {
+            // Keep specialized objects intact (don't unwrap arrays from Recon or Orchestrator)
+            if (parsed.executiveSummary || parsed.techStack || parsed.topPriorities) return parsed;
+
             for (const key of Object.keys(parsed)) {
                 if (Array.isArray(parsed[key])) {
                     console.log(`[PARSE] Unwrapped array from key: "${key}" (${parsed[key].length} items)`);
                     return parsed[key];
                 }
             }
-            // No array found — return the object itself (for orchestrator)
             return parsed;
         }
         return fallback;
@@ -115,30 +117,53 @@ function parseAIResponse(raw: string, fallback: any = []): any {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AGENT 0: GIT CONNECT
+// AGENT 0: GIT CONNECT (Optimized)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
     const repoPath = `/tmp/cortexedr-${scanId}`;
 
     try {
-        await emit(scanId, 0, 'Git Connect', 'started', 'Initializing git connection...');
-        await emit(scanId, 0, 'Git Connect', 'processing', `Cloning ${repoUrl}...`);
+        await emit(scanId, 0, 'Git Connect', 'started', 'Initializing ultra-fast git connection...');
 
-        const git = simpleGit();
-        await git.clone(repoUrl, repoPath, [
-            '--depth', '1',
-            '--single-branch',
-            '--no-tags'
+        // Ensure path is clean
+        if (fs.existsSync(repoPath)) {
+            fs.rmSync(repoPath, { recursive: true, force: true });
+        }
+
+        const git = simpleGit({
+            progress({ method, stage, progress }) {
+                // Emit live progress to the dashboard
+                emit(scanId, 0, 'Git Connect', 'processing',
+                    `Cloning: ${stage} (${progress}%)`,
+                    { stage, progress, method }
+                );
+            }
+        });
+
+        // Speed optimization: treeless clone (+ depth 1 already there)
+        // filter=blob:none downloads only text files, no git blobs until needed
+        await Promise.race([
+            git.clone(repoUrl, repoPath, [
+                '--depth', '1',
+                '--single-branch',
+                '--no-tags',
+                '--filter=blob:none',
+                '--progress'
+            ]),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Clone operation timed out after 5 minutes')), 300000)
+            )
         ]);
 
         const files = getAllFiles(repoPath);
-        await emit(scanId, 0, 'Git Connect', 'completed', `Repository ready. ${files.length} files found.`, {
-            fileCount: files.length
+        await emit(scanId, 0, 'Git Connect', 'completed', `Repository synchronized successfully. ${files.length} unique assets indexed.`, {
+            fileCount: files.length,
+            instantMatch: true
         });
 
         return repoPath;
     } catch (error: any) {
-        await emit(scanId, 0, 'Git Connect', 'error', `Clone failed: ${error.message}`);
+        await emit(scanId, 0, 'Git Connect', 'error', `Git connection failed: ${error.message}`);
         throw error;
     }
 }
@@ -512,7 +537,7 @@ async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: stri
                     const { error } = await supabase.from('issues').insert({
                         scan_id: scanId,
                         agent_id: 5,
-                        category: 'technical_debt',
+                        category: 'tech_debt',
                         severity: debt.severity || 'low',
                         title: debt.title || 'Technical Debt',
                         description: `${debt.debt || debt.description || ''}\n\nRISK: ${debt.risk || 'N/A'}`,
@@ -633,7 +658,7 @@ async function runOrchestrator(scanId: string, logger: AILogger) {
             security: (allIssues || []).filter((i: any) => i.category === 'security'),
             architecture: (allIssues || []).filter((i: any) => i.category === 'architecture'),
             quality: (allIssues || []).filter((i: any) => i.category === 'quality'),
-            debt: (allIssues || []).filter((i: any) => i.category === 'technical_debt'),
+            debt: (allIssues || []).filter((i: any) => i.category === 'tech_debt'),
             aiSpecific: (allIssues || []).filter((i: any) => i.category === 'ai_specific')
         };
 

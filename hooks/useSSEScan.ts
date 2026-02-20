@@ -21,6 +21,7 @@ export function useSSEScan(scanId: string) {
     const [score, setScore] = useState<number | null>(null);
     const [issuesCount, setIssuesCount] = useState(0);
     const [repoName, setRepoName] = useState<string>('');
+    const [cloningProgress, setCloningProgress] = useState<number>(0);
     const processedEventIds = useRef<Set<string>>(new Set());
     const lastEventCount = useRef(0);
 
@@ -166,6 +167,10 @@ export function useSSEScan(scanId: string) {
         if (eventType === 'found_issue') {
             setIssuesCount(prev => prev + 1);
         }
+
+        if (agentId === 0 && eventType === 'processing' && event.data?.progress) {
+            setCloningProgress(event.data.progress);
+        }
     };
 
     return {
@@ -174,6 +179,7 @@ export function useSSEScan(scanId: string) {
         activityFeed,
         score,
         issuesCount,
-        repoName
+        repoName,
+        cloningProgress
     };
 }

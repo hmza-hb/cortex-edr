@@ -218,7 +218,7 @@ export const AgentNode = React.forwardRef<HTMLDivElement, AgentNodeProps>(
                                                 />
                                             ))}
                                         </div>
-                                        <span>{filesProcessed}/{totalFiles} FILES</span>
+                                        <span>{isGit ? `${filesProcessed}%` : `${filesProcessed}/${totalFiles}`} {isGit ? "SYNC" : "FILES"}</span>
                                     </div>
                                 </div>
                             </div>
