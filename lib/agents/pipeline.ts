@@ -55,14 +55,16 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const AI_ROUTING: Record<number, { primary: 'gemini' | 'groq'; fallback: 'gemini' | 'groq' }> = {
-    1: { primary: 'groq', fallback: 'gemini' },   // Recon: Llama 3.3 (Quality)
-    2: { primary: 'gemini', fallback: 'groq' }, // Security: Gemini (Speed/Volume)
-    3: { primary: 'gemini', fallback: 'groq' }, // Architecture: Gemini
-    4: { primary: 'gemini', fallback: 'groq' }, // Code Quality: Gemini
-    5: { primary: 'gemini', fallback: 'groq' }, // Tech Debt: Gemini
-    6: { primary: 'gemini', fallback: 'groq' }, // AI Review: Gemini
-    7: { primary: 'groq', fallback: 'gemini' },   // Orchestrator: Llama 3.3 (Reasoning)
+// STRATEGIC AI ROUTER (Quality + Scale)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const AGENT_ROUTING: Record<number, { primary: string; fallback: string }> = {
+    1: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' }, // Recon
+    2: { primary: 'gemini-1.5-pro', fallback: 'gemini-2.0-flash' },   // Security (Quality!)
+    3: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro' },        // Arch (Reasoning)
+    4: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' }, // Quality
+    5: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' }, // Tech Debt
+    6: { primary: 'groq-llama-3.3-70b', fallback: 'gemini-2.0-flash' }, // AI Specific
+    7: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro' },        // Orchestrator
 };
 
 async function callAI(
@@ -72,25 +74,26 @@ async function callAI(
     agentName: string,
     logger: AILogger
 ): Promise<string> {
-    const strategy = AI_ROUTING[agentId] || { primary: 'gemini', fallback: 'groq' };
+    const routing = AGENT_ROUTING[agentId] || { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' };
 
     // Attempt Primary
     try {
-        return await executeAICall(strategy.primary, systemPrompt, userPrompt, agentId, agentName, logger);
+        return await executeAICall(routing.primary, systemPrompt, userPrompt, agentId, agentName, logger);
     } catch (error: any) {
-        console.warn(`[AI ROUTER] ${strategy.primary.toUpperCase()} failed for Agent ${agentId} (${error.message}). Falling back to ${strategy.fallback.toUpperCase()}...`);
+        console.warn(`[AI ROUTER] Primary (${routing.primary}) failed for ${agentName}: ${error.message}. Trying fallback ${routing.fallback}...`);
+
         // Attempt Fallback
         try {
-            return await executeAICall(strategy.fallback, systemPrompt, userPrompt, agentId, agentName, logger);
+            return await executeAICall(routing.fallback, systemPrompt, userPrompt, agentId, agentName, logger);
         } catch (finalError: any) {
-            console.error(`[AI ROUTER] All providers failed for Agent ${agentId}:`, finalError.message);
-            return '[]';
+            console.error(`[AI ROUTER] Critical Failure: All providers failed for ${agentName}.`);
+            throw new Error(`AI_PIPELINE_STALL: ${agentName} failed after fallback. Error: ${finalError.message}`);
         }
     }
 }
 
 async function executeAICall(
-    provider: 'gemini' | 'groq',
+    modelId: string,
     systemPrompt: string,
     userPrompt: string,
     agentId: number,
@@ -98,41 +101,73 @@ async function executeAICall(
     logger: AILogger
 ): Promise<string> {
     const start = Date.now();
-    const modelName = provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.0-flash';
 
     try {
         let response = '';
-        if (provider === 'groq') {
+
+        if (modelId.startsWith('groq-')) {
             const groq = getGroqClient();
             const completion = await groq.chat.completions.create({
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ],
-                model: modelName,
+                model: modelId.replace('groq-', ''),
                 temperature: 0.1,
                 response_format: { type: 'json_object' }
             });
             response = completion.choices[0]?.message?.content || '[]';
-        } else {
+        }
+        else if (modelId.startsWith('gemini-')) {
             const gemini = getGeminiClient();
             const model = gemini.getGenerativeModel({
-                model: modelName,
+                model: modelId,
+                systemInstruction: systemPrompt,
                 generationConfig: { responseMimeType: "application/json" }
             });
-            const result = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
+            const result = await model.generateContent(userPrompt);
             response = result.response.text();
+        }
+        else if (modelId === 'deepseek-r1') {
+            // Priority: DeepSeek via OpenRouter. Fallback to Gemini 1.5 Pro if no key.
+            const openRouterKey = process.env.OPENROUTER_API_KEY;
+            if (!openRouterKey) {
+                console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Gemini 1.5 Pro.');
+                return await executeAICall('gemini-1.5-pro', systemPrompt, userPrompt, agentId, agentName, logger);
+            }
+
+            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${openRouterKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://cortex-edr.com',
+                    'X-Title': 'Cortex EDR'
+                },
+                body: JSON.stringify({
+                    model: 'deepseek/deepseek-r1',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    response_format: { type: 'json_object' }
+                })
+            });
+
+            if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText}`);
+            const data = await res.json();
+            response = data.choices[0]?.message?.content || '[]';
         }
 
         const durationMs = Date.now() - start;
-        console.log(`[AI SUCCESS] ${agentName} used ${modelName} (${durationMs}ms)`);
+        console.log(`[AI SUCCESS] ${agentName} used ${modelId} (${durationMs}ms)`);
         await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs);
         return response;
 
     } catch (error: any) {
         const durationMs = Date.now() - start;
-        await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${provider}): ${error.message}`, durationMs);
-        throw error; // Re-throw for fallback logic
+        await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${modelId}): ${error.message}`, durationMs);
+        throw error;
     }
 }
 
@@ -475,6 +510,11 @@ export async function runSecurityScanner(
                 } catch { return []; }
             }));
             allVulnerabilities.push(...batchResults.flat());
+
+            // ANTI-RATE-LIMIT: Wait 1.5s between batches to cool down Groq/Gemini tokens
+            if (i + BATCH_SIZE < criticalFiles.length) {
+                await new Promise(r => setTimeout(r, 1500));
+            }
         }
 
         for (const vuln of allVulnerabilities) {
