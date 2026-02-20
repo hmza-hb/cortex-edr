@@ -59,12 +59,12 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const AGENT_ROUTING: Record<number, { primary: string; fallback: string }> = {
     1: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Recon
-    2: { primary: 'gemini-1.5-pro', fallback: 'gemini-2.0-flash' },   // Security (Quality!)
-    3: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro' },        // Arch (Reasoning)
+    2: { primary: 'gemini-1.5-pro-latest', fallback: 'gemini-2.0-flash' },   // Security (Quality!)
+    3: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro-latest' },        // Arch (Reasoning)
     4: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Quality
     5: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Tech Debt
     6: { primary: 'groq-llama-3.3-70b-versatile', fallback: 'gemini-2.0-flash' }, // AI Specific
-    7: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro' },        // Orchestrator
+    7: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro-latest' },        // Orchestrator
 };
 
 async function callAI(
@@ -133,7 +133,7 @@ async function executeAICall(
             const openRouterKey = process.env.OPENROUTER_API_KEY;
             if (!openRouterKey) {
                 console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Gemini 1.5 Pro.');
-                return await executeAICall('gemini-1.5-pro', systemPrompt, userPrompt, agentId, agentName, logger);
+                return await executeAICall('gemini-1.5-pro-latest', systemPrompt, userPrompt, agentId, agentName, logger);
             }
 
             const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
