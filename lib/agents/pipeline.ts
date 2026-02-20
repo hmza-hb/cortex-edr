@@ -121,10 +121,20 @@ function parseAIResponse(raw: string, fallback: any = []): any {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
     const repoPath = `/tmp/cortexedr-${scanId}`;
+    let lastEmitTime = 0;
+    let lastProgress = -1;
 
     try {
         await emit(scanId, 0, 'Git Connect', 'started', 'Initializing ultra-fast git connection...');
 
+        // 1. Verify Git Environment
+        try {
+            await simpleGit().version();
+        } catch (e: any) {
+            throw new Error(`Git binary not found or inaccessible: ${e.message}`);
+        }
+
+        await emit(scanId, 0, 'Git Connect', 'processing', 'Sanitizing temporary telemetry workspace...');
         // Ensure path is clean
         if (fs.existsSync(repoPath)) {
             fs.rmSync(repoPath, { recursive: true, force: true });
@@ -132,16 +142,23 @@ async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
 
         const git = simpleGit({
             progress({ method, stage, progress }) {
-                // Emit live progress to the dashboard
-                emit(scanId, 0, 'Git Connect', 'processing',
-                    `Cloning: ${stage} (${progress}%)`,
-                    { stage, progress, method }
-                );
+                const now = Date.now();
+                // Throttle: Max once per 1.5 seconds OR if progress jumped significantly (>= 5%)
+                // This prevents DB backpressure from stalling the clone in production
+                if (now - lastEmitTime > 1500 || Math.abs(progress - lastProgress) >= 5 || progress === 100) {
+                    lastEmitTime = now;
+                    lastProgress = progress;
+                    emit(scanId, 0, 'Git Connect', 'processing',
+                        `Cloning: ${stage} (${progress}%)`,
+                        { stage, progress, method }
+                    );
+                }
             }
         });
 
+        await emit(scanId, 0, 'Git Connect', 'processing', 'establishing handshake with remote peer...');
+
         // Speed optimization: treeless clone (+ depth 1 already there)
-        // filter=blob:none downloads only text files, no git blobs until needed
         await Promise.race([
             git.clone(repoUrl, repoPath, [
                 '--depth', '1',
