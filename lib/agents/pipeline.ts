@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import Groq from 'groq-sdk';
 import fs from 'fs';
 import path from 'path';
@@ -13,11 +14,17 @@ const supabase = createClient(
 let groqClient: Groq | null = null;
 function getGroqClient() {
     if (!groqClient) {
-        groqClient = new Groq({
-            apiKey: process.env.GROQ_API_KEY || 'MISSING_KEY'
-        });
+        groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY || 'MISSING_KEY' });
     }
     return groqClient;
+}
+
+let geminiClient: GoogleGenerativeAI | null = null;
+function getGeminiClient() {
+    if (!geminiClient) {
+        geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'MISSING_KEY');
+    }
+    return geminiClient;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -48,8 +55,16 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AI HELPER: Call Groq with structured prompt
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const AI_ROUTING: Record<number, { primary: 'gemini' | 'groq'; fallback: 'gemini' | 'groq' }> = {
+    1: { primary: 'groq', fallback: 'gemini' },   // Recon: Llama 3.3 (Quality)
+    2: { primary: 'gemini', fallback: 'groq' }, // Security: Gemini (Speed/Volume)
+    3: { primary: 'gemini', fallback: 'groq' }, // Architecture: Gemini
+    4: { primary: 'gemini', fallback: 'groq' }, // Code Quality: Gemini
+    5: { primary: 'gemini', fallback: 'groq' }, // Tech Debt: Gemini
+    6: { primary: 'gemini', fallback: 'groq' }, // AI Review: Gemini
+    7: { primary: 'groq', fallback: 'gemini' },   // Orchestrator: Llama 3.3 (Reasoning)
+};
+
 async function callAI(
     systemPrompt: string,
     userPrompt: string,
@@ -57,33 +72,67 @@ async function callAI(
     agentName: string,
     logger: AILogger
 ): Promise<string> {
-    const start = Date.now();
+    const strategy = AI_ROUTING[agentId] || { primary: 'gemini', fallback: 'groq' };
+
+    // Attempt Primary
     try {
-        const groq = getGroqClient();
-        const completion = await groq.chat.completions.create({
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.1,
-            response_format: { type: 'json_object' }
-        });
+        return await executeAICall(strategy.primary, systemPrompt, userPrompt, agentId, agentName, logger);
+    } catch (error: any) {
+        console.warn(`[AI ROUTER] ${strategy.primary.toUpperCase()} failed for Agent ${agentId} (${error.message}). Falling back to ${strategy.fallback.toUpperCase()}...`);
+        // Attempt Fallback
+        try {
+            return await executeAICall(strategy.fallback, systemPrompt, userPrompt, agentId, agentName, logger);
+        } catch (finalError: any) {
+            console.error(`[AI ROUTER] All providers failed for Agent ${agentId}:`, finalError.message);
+            return '[]';
+        }
+    }
+}
 
-        const response = completion.choices[0]?.message?.content || '[]';
+async function executeAICall(
+    provider: 'gemini' | 'groq',
+    systemPrompt: string,
+    userPrompt: string,
+    agentId: number,
+    agentName: string,
+    logger: AILogger
+): Promise<string> {
+    const start = Date.now();
+    const modelName = provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.0-flash';
+
+    try {
+        let response = '';
+        if (provider === 'groq') {
+            const groq = getGroqClient();
+            const completion = await groq.chat.completions.create({
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                model: modelName,
+                temperature: 0.1,
+                response_format: { type: 'json_object' }
+            });
+            response = completion.choices[0]?.message?.content || '[]';
+        } else {
+            const gemini = getGeminiClient();
+            const model = gemini.getGenerativeModel({
+                model: modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+            const result = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
+            response = result.response.text();
+        }
+
         const durationMs = Date.now() - start;
-
-        // Note: Groq tokens usage is in completion.usage
-        const promptTokens = completion.usage?.prompt_tokens || 0;
-        const completionTokens = completion.usage?.completion_tokens || 0;
-
+        console.log(`[AI SUCCESS] ${agentName} used ${modelName} (${durationMs}ms)`);
         await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs);
         return response;
+
     } catch (error: any) {
         const durationMs = Date.now() - start;
-        await logger.logInteraction(agentId, agentName, userPrompt, `ERROR: ${error.message}`, durationMs);
-        console.error(`[AI ERROR] ${agentName}:`, error.message);
-        return '[]';
+        await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${provider}): ${error.message}`, durationMs);
+        throw error; // Re-throw for fallback logic
     }
 }
 
@@ -403,26 +452,30 @@ export async function runSecurityScanner(
         ).slice(0, 12);
 
         await emit(scanId, 2, 'Security Scanner', 'processing',
-            `Deep scanning ${criticalFiles.length} security-critical files in parallel...`
+            `Deep auditing ${criticalFiles.length} critical files in batches...`
         );
 
-        // Parallel Groq calls — fits within 10s Vercel budget
-        const results = await Promise.all(criticalFiles.map(async (filePath) => {
-            const fileName = filePath.replace(repoPath, '');
-            try {
-                const code = fs.readFileSync(filePath, 'utf-8');
-                if (code.length > 50000 || code.length < 20) return [];
-                const aiResponse = await callAI(
-                    AGENT_PROMPTS.security.systemPrompt,
-                    AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
-                    2, 'Security Scanner', logger
-                );
-                const vulns = parseAIResponse(aiResponse, []);
-                return Array.isArray(vulns) ? vulns.map(v => ({ ...v, fileName })) : [];
-            } catch { return []; }
-        }));
+        let allVulnerabilities: any[] = [];
+        const BATCH_SIZE = 3;
 
-        const allVulnerabilities = results.flat();
+        for (let i = 0; i < criticalFiles.length; i += BATCH_SIZE) {
+            const batch = criticalFiles.slice(i, i + BATCH_SIZE);
+            const batchResults = await Promise.all(batch.map(async (filePath) => {
+                const fileName = filePath.replace(repoPath, '');
+                try {
+                    const code = fs.readFileSync(filePath, 'utf-8');
+                    if (code.length > 50000 || code.length < 20) return [];
+                    const aiResponse = await callAI(
+                        AGENT_PROMPTS.security.systemPrompt,
+                        AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
+                        2, 'Security Scanner', logger
+                    );
+                    const vulns = parseAIResponse(aiResponse, []);
+                    return Array.isArray(vulns) ? vulns.map(v => ({ ...v, fileName })) : [];
+                } catch { return []; }
+            }));
+            allVulnerabilities.push(...batchResults.flat());
+        }
 
         for (const vuln of allVulnerabilities) {
             await supabase.from('issues').insert({
