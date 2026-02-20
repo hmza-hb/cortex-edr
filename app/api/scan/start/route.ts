@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { runPipeline } from '@/lib/agents/pipeline';
+import { inngest } from '@/lib/inngest/client';
 
-// Tell Vercel: give this function up to 5 minutes.
-// Without this, the default 10s limit kills after() before git clone even connects.
+// maxDuration kept for when you upgrade to Vercel Pro (pipeline needs long runtime)
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
@@ -53,12 +52,10 @@ export async function POST(req: NextRequest) {
             .update({ scans_remaining: profile.scans_remaining - 1 })
             .eq('id', user.id);
 
-        // 4. Run pipeline in background reliably on Vercel
-        after(() => {
-            console.log(`[AFTER] Starting background pipeline for scan ${scan.id}`);
-            runPipeline(scan.id, repo_url).catch(error => {
-                console.error(`[AFTER ERROR] Pipeline failed:`, error);
-            });
+        // 4. Trigger pipeline via Inngest (not after() — Inngest bypasses Vercel's 10s limit)
+        await inngest.send({
+            name: 'scan/start',
+            data: { scanId: scan.id, repoUrl: repo_url }
         });
 
         return NextResponse.json({ scan_id: scan.id });
