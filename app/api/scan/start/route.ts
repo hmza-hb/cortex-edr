@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { runPipeline } from '@/lib/agents/pipeline';
 
+// Tell Vercel: give this function up to 5 minutes.
+// Without this, the default 10s limit kills after() before git clone even connects.
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
