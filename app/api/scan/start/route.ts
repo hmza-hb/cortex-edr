@@ -51,18 +51,12 @@ export async function POST(req: NextRequest) {
         // then chains to the next — every step gets its own fresh Vercel invocation.
         const scanId = scan.id;
         after(async () => {
-            try {
-                await Promise.race([
-                    fetch(`${APP_URL}/api/scan/run`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ scanId, step: 0 }),
-                    }),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('timeout')), 3000)
-                    ),
-                ]);
-            } catch { /* timeout expected — Vercel already received the request */ }
+            fetch(`${APP_URL}/api/scan/run`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scanId, step: 0 }),
+            }).catch(() => { });
+            await new Promise(r => setTimeout(r, 1000));
         });
 
         return NextResponse.json({ scan_id: scan.id });

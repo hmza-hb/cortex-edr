@@ -80,21 +80,20 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 🔗 Chain: fire next step via after() — gets its own fresh Vercel invocation
+        // 🔗 Chain: fire next step as a brand-new Vercel invocation via after()
         const nextStep = step + 1;
         if (nextStep < TOTAL_STEPS) {
             after(async () => {
-                try {
-                    await Promise.race([
-                        fetch(`${APP_URL}/api/scan/run`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ scanId, step: nextStep }),
-                        }),
-                        // Don't wait more than 2s — the next invocation is already queued
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
-                    ]);
-                } catch { /* timeout is fine — Vercel already received the request */ }
+                // Fire without awaiting — this keeps the fetch alive independent of this function
+                fetch(`${APP_URL}/api/scan/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scanId, step: nextStep }),
+                }).catch(() => { }); // suppress unhandled rejection
+
+                // Sleep 1s so Node.js event loop stays alive while the request is sent
+                // (TCP handshake + HTTP send happens in <100ms; 1s is more than enough)
+                await new Promise(r => setTimeout(r, 1000));
             });
         }
 
