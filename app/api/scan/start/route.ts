@@ -47,16 +47,23 @@ export async function POST(req: NextRequest) {
             .update({ scans_remaining: profile.scans_remaining - 1 })
             .eq('id', user.id);
 
-        // Kick off the self-chaining pipeline: step 0 fires via after(), each step
-        // then chains to the next — every step gets its own fresh Vercel invocation.
         const scanId = scan.id;
+
+        // 🚀 Chain Trigger: AWAIT the fetch to step 0.
+        // This ensures the current function doesn't finish until the next one has objectively started.
+        // We use after() to run this without blocking the response to the user.
         after(async () => {
-            fetch(`${APP_URL}/api/scan/run`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scanId, step: 0 }),
-            }).catch(() => { });
-            await new Promise(r => setTimeout(r, 1000));
+            console.log(`[START] Triggering Step 0 for Scan ${scanId}`);
+            try {
+                const resp = await fetch(`${APP_URL}/api/scan/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scanId, step: 0 }),
+                });
+                console.log(`[START] Step 0 Trigger Response: ${resp.status}`);
+            } catch (err) {
+                console.error(`[START] Failed to trigger step 0:`, err);
+            }
         });
 
         return NextResponse.json({ scan_id: scan.id });
