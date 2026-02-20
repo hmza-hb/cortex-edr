@@ -58,12 +58,12 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 // STRATEGIC AI ROUTER (Quality + Scale)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const AGENT_ROUTING: Record<number, { primary: string; fallback: string }> = {
-    1: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' }, // Recon
+    1: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Recon
     2: { primary: 'gemini-1.5-pro', fallback: 'gemini-2.0-flash' },   // Security (Quality!)
     3: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro' },        // Arch (Reasoning)
-    4: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' }, // Quality
-    5: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' }, // Tech Debt
-    6: { primary: 'groq-llama-3.3-70b', fallback: 'gemini-2.0-flash' }, // AI Specific
+    4: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Quality
+    5: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Tech Debt
+    6: { primary: 'groq-llama-3.3-70b-versatile', fallback: 'gemini-2.0-flash' }, // AI Specific
     7: { primary: 'deepseek-r1', fallback: 'gemini-1.5-pro' },        // Orchestrator
 };
 
