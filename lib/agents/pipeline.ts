@@ -118,16 +118,73 @@ function parseAIResponse(raw: string, fallback: any = []): any {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // HELPER: Parse GitHub URL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function parseGitHubUrl(url: string): { owner: string; repo: string } {
+export function parseGitHubUrl(url: string): { owner: string; repo: string } {
     const match = url.match(/github\.com[/:]+([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:\/.*)?$/);
     if (!match) throw new Error(`Invalid GitHub URL: "${url}". Must be a github.com repository URL.`);
     return { owner: match[1], repo: match[2] };
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// HELPER: Setup /tmp for a pipeline step
+// Downloads only the files this step needs from GitHub — no /tmp sharing required.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const STEP_PATTERNS: Record<number, RegExp[]> = {
+    1: [/package\.json$/, /tsconfig/, /next\.config/, /layout\./, /app\./, /main\./, /index\./, /server\./, /README/i],
+    2: [/api/, /auth/, /login/, /route\./, /middleware\./, /config\./, /server\./, /handler\./],
+    3: [/layout/, /app\./, /middleware/, /server/, /config/, /index\./],
+    4: [/\.(ts|tsx|js|jsx)$/],
+    5: [/\.(ts|tsx|js|jsx|json)$/],
+    6: [/\.(tsx|ts|jsx|js)$/],
+};
+
+export async function setupForStep(
+    scanId: string,
+    owner: string,
+    repo: string,
+    fileTree: string[],
+    step: number
+): Promise<string> {
+    const repoPath = `/tmp/cortexedr-${scanId}`;
+    if (fs.existsSync(repoPath)) fs.rmSync(repoPath, { recursive: true, force: true });
+    fs.mkdirSync(repoPath, { recursive: true });
+
+    // Normalize paths (step 1 output has leading slash, step 0 output does not)
+    const normalized = fileTree.map(f => f.startsWith('/') ? f.slice(1) : f);
+    fs.writeFileSync(path.join(repoPath, '.cortex-tree'), normalized.join('\n'));
+
+    const patterns = STEP_PATTERNS[step] || [];
+    const filesToDownload = normalized
+        .filter(f => !f.includes('node_modules') && !f.includes('.next') && patterns.some(p => p.test(f)))
+        .slice(0, 25);
+
+    // Get default branch
+    let branch = 'main';
+    try {
+        const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+            headers: { 'User-Agent': 'CortexEDR/1.0' }
+        });
+        if (r.ok) branch = (await r.json()).default_branch || 'main';
+    } catch { /* use main */ }
+
+    const rawBase = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
+    await Promise.all(filesToDownload.map(async (filePath) => {
+        try {
+            const resp = await fetch(`${rawBase}/${filePath}`);
+            if (!resp.ok) return;
+            const content = await resp.text();
+            const fullPath = path.join(repoPath, filePath);
+            fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+            fs.writeFileSync(fullPath, content);
+        } catch { /* skip */ }
+    }));
+
+    return repoPath;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 0: GIT CONNECT (GitHub API — no git binary, works on Vercel Hobby)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
+export async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
     const repoPath = `/tmp/cortexedr-${scanId}`;
 
     try {
@@ -231,7 +288,7 @@ async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 1: RECONNAISSANCE - The Architect
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger) {
+export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger) {
     try {
         await emit(scanId, 1, 'Reconnaissance', 'started', 'Beginning deep codebase reconnaissance...');
 
@@ -328,7 +385,7 @@ async function runReconnaissance(scanId: string, repoPath: string, logger: AILog
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 2: SECURITY SCANNER - The Defender
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runSecurityScanner(
+export async function runSecurityScanner(
     scanId: string,
     repoPath: string,
     fileTree: string[],
@@ -338,7 +395,6 @@ async function runSecurityScanner(
     try {
         await emit(scanId, 2, 'Security Scanner', 'started', 'Initializing deep security audit...');
 
-        // Focus on security-critical files
         const criticalFiles = fileTree.filter(f =>
             f.includes('api') || f.includes('auth') ||
             f.includes('login') || f.includes('route') ||
@@ -347,59 +403,45 @@ async function runSecurityScanner(
         ).slice(0, 12);
 
         await emit(scanId, 2, 'Security Scanner', 'processing',
-            `Deep scanning ${criticalFiles.length} security-critical files...`
+            `Deep scanning ${criticalFiles.length} security-critical files in parallel...`
         );
 
-        let allVulnerabilities: any[] = [];
-
-        for (let i = 0; i < criticalFiles.length; i++) {
-            const filePath = criticalFiles[i];
+        // Parallel Groq calls — fits within 10s Vercel budget
+        const results = await Promise.all(criticalFiles.map(async (filePath) => {
             const fileName = filePath.replace(repoPath, '');
-
-            await emit(scanId, 2, 'Security Scanner', 'processing',
-                `Auditing: ${fileName} (${i + 1}/${criticalFiles.length})`
-            );
-
             try {
                 const code = fs.readFileSync(filePath, 'utf-8');
-                if (code.length > 50000 || code.length < 20) continue;
-
+                if (code.length > 50000 || code.length < 20) return [];
                 const aiResponse = await callAI(
                     AGENT_PROMPTS.security.systemPrompt,
                     AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
                     2, 'Security Scanner', logger
                 );
+                const vulns = parseAIResponse(aiResponse, []);
+                return Array.isArray(vulns) ? vulns.map(v => ({ ...v, fileName })) : [];
+            } catch { return []; }
+        }));
 
-                const vulnerabilities = parseAIResponse(aiResponse, []);
-                if (!Array.isArray(vulnerabilities)) continue;
+        const allVulnerabilities = results.flat();
 
-                for (const vuln of vulnerabilities) {
-                    allVulnerabilities.push(vuln);
-
-                    await supabase.from('issues').insert({
-                        scan_id: scanId,
-                        agent_id: 2,
-                        category: 'security',
-                        severity: vuln.severity || 'medium',
-                        title: vuln.title,
-                        description: `${vuln.vulnerability}\n\nEXPLOIT: ${vuln.exploitScenario || 'N/A'}\n\nIMPACT: ${vuln.impact || 'N/A'}`,
-                        file_path: fileName,
-                        line_number: vuln.line || 0,
-                        code_snippet: vuln.codeSnippet,
-                        fix_suggestion: `${vuln.fixExplanation || ''}\n\nFIX CODE:\n${vuln.fixCode || ''}`,
-                        ai_prompt: vuln.aiPrompt,
-                        metadata: { cwe: vuln.cwe, owasp: vuln.owasp }
-                    });
-
-                    await emit(scanId, 2, 'Security Scanner', 'found_issue',
-                        `${(vuln.severity || 'medium').toUpperCase()}: ${vuln.title} (${fileName}:${vuln.line || '?'})`
-                    );
-                }
-            } catch (e) {
-                console.error(`[Security] Error on ${fileName}:`, e);
-            }
-
-            await sleep(500); // Rate limiting
+        for (const vuln of allVulnerabilities) {
+            await supabase.from('issues').insert({
+                scan_id: scanId,
+                agent_id: 2,
+                category: 'security',
+                severity: vuln.severity || 'medium',
+                title: vuln.title,
+                description: `${vuln.vulnerability}\n\nEXPLOIT: ${vuln.exploitScenario || 'N/A'}\n\nIMPACT: ${vuln.impact || 'N/A'}`,
+                file_path: vuln.fileName || '',
+                line_number: vuln.line || 0,
+                code_snippet: vuln.codeSnippet,
+                fix_suggestion: `${vuln.fixExplanation || ''}\n\nFIX CODE:\n${vuln.fixCode || ''}`,
+                ai_prompt: vuln.aiPrompt,
+                metadata: { cwe: vuln.cwe, owasp: vuln.owasp }
+            });
+            await emit(scanId, 2, 'Security Scanner', 'found_issue',
+                `${(vuln.severity || 'medium').toUpperCase()}: ${vuln.title} (${vuln.fileName}:${vuln.line || '?'})`
+            );
         }
 
         await emit(scanId, 2, 'Security Scanner', 'completed',
@@ -414,9 +456,10 @@ async function runSecurityScanner(
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 // AGENT 3: ARCHITECTURE REVIEWER - The Designer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
+export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
     try {
         await emit(scanId, 3, 'Architecture', 'started', 'Analyzing system architecture...');
 
@@ -492,7 +535,7 @@ async function runArchitecture(scanId: string, repoPath: string, fileTree: strin
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 4: CODE QUALITY ANALYST - The Critic
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
+export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
     try {
         await emit(scanId, 4, 'Code Quality', 'started', 'Analyzing code quality...');
 
@@ -559,7 +602,7 @@ async function runCodeQuality(scanId: string, repoPath: string, fileTree: string
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 5: TECHNICAL DEBT HUNTER - The Auditor
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger) {
+export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger) {
     try {
         await emit(scanId, 5, 'Technical Debt', 'started', 'Scanning for technical debt...');
 
@@ -627,7 +670,7 @@ async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: stri
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 6: AI CODE DETECTOR - The Investigator
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
+export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
     try {
         await emit(scanId, 6, 'AI-Engine Review', 'started', 'Analyzing AI code patterns...');
 
@@ -692,7 +735,7 @@ async function runAIEngineReview(scanId: string, repoPath: string, fileTree: str
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 7: ORCHESTRATOR - The Synthesizer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runOrchestrator(scanId: string, logger: AILogger) {
+export async function runOrchestrator(scanId: string, logger: AILogger) {
     try {
         await emit(scanId, 7, 'Synthesis & Report', 'started', 'Initializing executive synthesis...');
 

@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { inngest } from '@/lib/inngest/client';
 
-// maxDuration kept for when you upgrade to Vercel Pro (pipeline needs long runtime)
-export const maxDuration = 300;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.cortex-edr.com';
 
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
@@ -20,7 +18,6 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        // 1. Check user plan and limits
         const { data: profile } = await supabase
             .from('profiles')
             .select('scans_remaining')
@@ -31,7 +28,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Monthly scan limit reached. Please upgrade.' }, { status: 403 });
         }
 
-        // 2. Create scan record
         const { data: scan, error: scanError } = await supabaseService
             .from('scans')
             .insert({
@@ -46,16 +42,27 @@ export async function POST(req: NextRequest) {
 
         if (scanError) throw scanError;
 
-        // 3. Decrement scans remaining
         await supabaseService
             .from('profiles')
             .update({ scans_remaining: profile.scans_remaining - 1 })
             .eq('id', user.id);
 
-        // 4. Trigger pipeline via Inngest (not after() — Inngest bypasses Vercel's 10s limit)
-        await inngest.send({
-            name: 'scan/start',
-            data: { scanId: scan.id, repoUrl: repo_url }
+        // Kick off the self-chaining pipeline: step 0 fires via after(), each step
+        // then chains to the next — every step gets its own fresh Vercel invocation.
+        const scanId = scan.id;
+        after(async () => {
+            try {
+                await Promise.race([
+                    fetch(`${APP_URL}/api/scan/run`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scanId, step: 0 }),
+                    }),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('timeout')), 3000)
+                    ),
+                ]);
+            } catch { /* timeout expected — Vercel already received the request */ }
         });
 
         return NextResponse.json({ scan_id: scan.id });
