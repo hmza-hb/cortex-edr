@@ -244,8 +244,13 @@ export async function setupForStep(
     // Get default branch
     let branch = 'main';
     try {
+        const headers: Record<string, string> = { 'User-Agent': 'CortexEDR/1.0' };
+        if (process.env.GITHUB_TOKEN) {
+            headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
+        }
+
         const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-            headers: { 'User-Agent': 'CortexEDR/1.0' }
+            headers
         });
         if (r.ok) branch = (await r.json()).default_branch || 'main';
     } catch { /* use main */ }
