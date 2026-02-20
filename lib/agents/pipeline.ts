@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import Groq from 'groq-sdk';
-import simpleGit from 'simple-git';
 import fs from 'fs';
 import path from 'path';
 import { AGENT_PROMPTS } from './prompts';
@@ -117,66 +116,110 @@ function parseAIResponse(raw: string, fallback: any = []): any {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AGENT 0: GIT CONNECT (Optimized)
+// HELPER: Parse GitHub URL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function parseGitHubUrl(url: string): { owner: string; repo: string } {
+    const match = url.match(/github\.com[/:]+([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:\/.*)?$/);
+    if (!match) throw new Error(`Invalid GitHub URL: "${url}". Must be a github.com repository URL.`);
+    return { owner: match[1], repo: match[2] };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AGENT 0: GIT CONNECT (GitHub API — no git binary, works on Vercel Hobby)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
     const repoPath = `/tmp/cortexedr-${scanId}`;
-    let lastEmitTime = 0;
-    let lastProgress = -1;
 
     try {
-        await emit(scanId, 0, 'Git Connect', 'started', 'Initializing ultra-fast git connection...');
+        await emit(scanId, 0, 'Git Connect', 'started', 'Initializing repository connection via GitHub API...');
 
-        // 1. Verify Git Environment
-        try {
-            await simpleGit().version();
-        } catch (e: any) {
-            throw new Error(`Git binary not found or inaccessible: ${e.message}`);
+        // Clean workspace
+        if (fs.existsSync(repoPath)) fs.rmSync(repoPath, { recursive: true, force: true });
+        fs.mkdirSync(repoPath, { recursive: true });
+
+        const { owner, repo } = parseGitHubUrl(repoUrl);
+        await emit(scanId, 0, 'Git Connect', 'processing', `Connecting to ${owner}/${repo}...`);
+
+        // Build GitHub API headers (use token if available to avoid rate limits)
+        const token = process.env.GITHUB_TOKEN;
+        const headers: Record<string, string> = {
+            'User-Agent': 'CortexEDR/1.0',
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // 1. Fetch default branch
+        const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        if (!repoResp.ok) throw new Error(`GitHub API error ${repoResp.status}: ${repoResp.statusText}. Is the repository public?`);
+        const repoMeta = await repoResp.json();
+        const branch = repoMeta.default_branch || 'main';
+
+        // 2. Fetch recursive file tree (single API call)
+        await emit(scanId, 0, 'Git Connect', 'processing', 'Fetching repository file tree...');
+        const treeResp = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+            { headers }
+        );
+        if (!treeResp.ok) throw new Error(`Could not fetch tree: ${treeResp.status}`);
+        const treeData = await treeResp.json();
+
+        const allFiles: string[] = (treeData.tree || [])
+            .filter((item: any) => item.type === 'blob')
+            .map((item: any) => item.path as string);
+
+        const importantFiles = allFiles.filter(f =>
+            !f.includes('node_modules') && !f.includes('.git') &&
+            !f.includes('dist/') && !f.includes('.next/')
+        );
+
+        await emit(scanId, 0, 'Git Connect', 'processing',
+            `Tree indexed. ${allFiles.length} files found. Fetching key files for analysis...`,
+            { fileCount: allFiles.length }
+        );
+
+        // 3. Write virtual tree manifest (so getAllFiles returns the full list)
+        fs.writeFileSync(path.join(repoPath, '.cortex-tree'), importantFiles.join('\n'));
+
+        // 4. Identify key files agents will actually read
+        const KEY_PATTERNS = [
+            /package(?:-lock)?\.json$/, /tsconfig/, /next\.config/, /\.env\.example/,
+            /layout\.(ts|tsx|js|jsx)$/, /app\.(ts|tsx|js|jsx)$/, /main\.(ts|tsx|js|jsx)$/,
+            /index\.(ts|tsx|js|jsx)$/, /server\.(ts|js)$/, /middleware\.(ts|js)$/,
+            /route\.(ts|tsx|js|jsx)$/, /handler\.(ts|js)$/, /config\.(ts|tsx|js|jsx|json)$/,
+            /auth/, /login/, /README/i, /\.env\.example/
+        ];
+
+        const filesToDownload = importantFiles
+            .filter(f => KEY_PATTERNS.some(p => p.test(f)))
+            .slice(0, 60);
+
+        // 5. Download key files in parallel batches to /tmp
+        const BATCH_SIZE = 10;
+        let downloaded = 0;
+        const rawBase = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
+
+        for (let i = 0; i < filesToDownload.length; i += BATCH_SIZE) {
+            const batch = filesToDownload.slice(i, i + BATCH_SIZE);
+            await Promise.all(batch.map(async (filePath) => {
+                try {
+                    const resp = await fetch(`${rawBase}/${filePath}`);
+                    if (!resp.ok) return;
+                    const content = await resp.text();
+                    const fullPath = path.join(repoPath, filePath);
+                    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+                    fs.writeFileSync(fullPath, content);
+                    downloaded++;
+                } catch { /* skip unreadable files */ }
+            }));
+            await emit(scanId, 0, 'Git Connect', 'processing',
+                `Fetched ${Math.min(i + BATCH_SIZE, filesToDownload.length)}/${filesToDownload.length} key files...`
+            );
         }
 
-        await emit(scanId, 0, 'Git Connect', 'processing', 'Sanitizing temporary telemetry workspace...');
-        // Ensure path is clean
-        if (fs.existsSync(repoPath)) {
-            fs.rmSync(repoPath, { recursive: true, force: true });
-        }
-
-        const git = simpleGit({
-            progress({ method, stage, progress }) {
-                const now = Date.now();
-                // Throttle: Max once per 1.5 seconds OR if progress jumped significantly (>= 5%)
-                // This prevents DB backpressure from stalling the clone in production
-                if (now - lastEmitTime > 1500 || Math.abs(progress - lastProgress) >= 5 || progress === 100) {
-                    lastEmitTime = now;
-                    lastProgress = progress;
-                    emit(scanId, 0, 'Git Connect', 'processing',
-                        `Cloning: ${stage} (${progress}%)`,
-                        { stage, progress, method }
-                    );
-                }
-            }
-        });
-
-        await emit(scanId, 0, 'Git Connect', 'processing', 'establishing handshake with remote peer...');
-
-        // Speed optimization: treeless clone (+ depth 1 already there)
-        await Promise.race([
-            git.clone(repoUrl, repoPath, [
-                '--depth', '1',
-                '--single-branch',
-                '--no-tags',
-                '--filter=blob:none',
-                '--progress'
-            ]),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Clone operation timed out after 5 minutes')), 300000)
-            )
-        ]);
-
-        const files = getAllFiles(repoPath);
-        await emit(scanId, 0, 'Git Connect', 'completed', `Repository synchronized successfully. ${files.length} unique assets indexed.`, {
-            fileCount: files.length,
-            instantMatch: true
-        });
+        await emit(scanId, 0, 'Git Connect', 'completed',
+            `Repository indexed. ${importantFiles.length} files mapped, ${downloaded} key files fetched for deep analysis.`,
+            { fileCount: importantFiles.length, downloaded }
+        );
 
         return repoPath;
     } catch (error: any) {
@@ -828,6 +871,17 @@ export async function runPipeline(scanId: string, repoUrl: string) {
 // HELPERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getAllFiles(dirPath: string, files: string[] = []): string[] {
+    // If a .cortex-tree manifest exists (written by GitHub API mode), use it.
+    // This gives agents the full virtual file list even though only key files
+    // were physically downloaded to /tmp.
+    if (files.length === 0) {
+        const manifest = path.join(dirPath, '.cortex-tree');
+        if (fs.existsSync(manifest)) {
+            const lines = fs.readFileSync(manifest, 'utf-8').split('\n').filter(Boolean);
+            return lines.map(f => path.join(dirPath, f));
+        }
+    }
+    // Fallback: walk the filesystem (local dev / non-API mode)
     try {
         const items = fs.readdirSync(dirPath);
         for (const item of items) {
