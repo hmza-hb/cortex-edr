@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { runPipeline } from '@/lib/agents/pipeline';
@@ -49,8 +49,13 @@ export async function POST(req: NextRequest) {
             .update({ scans_remaining: profile.scans_remaining - 1 })
             .eq('id', user.id);
 
-        // 4. Run pipeline in background WITHOUT await
-        runPipeline(scan.id, repo_url).catch(console.error);
+        // 4. Run pipeline in background reliably on Vercel
+        after(() => {
+            console.log(`[AFTER] Starting background pipeline for scan ${scan.id}`);
+            runPipeline(scan.id, repo_url).catch(error => {
+                console.error(`[AFTER ERROR] Pipeline failed:`, error);
+            });
+        });
 
         return NextResponse.json({ scan_id: scan.id });
     } catch (error) {
