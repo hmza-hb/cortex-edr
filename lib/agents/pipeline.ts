@@ -60,11 +60,11 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 const AGENT_ROUTING: Record<number, { primary: string; fallback: string }> = {
     1: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Recon
     2: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' },   // Security (Quality!)
-    3: { primary: 'deepseek-r1', fallback: 'gemini-2.0-flash' },        // Arch (Reasoning)
+    3: { primary: 'deepseek-r1', fallback: 'groq-llama-3.3-70b-versatile' },        // Arch (Reasoning)
     4: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Quality
     5: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Tech Debt
     6: { primary: 'groq-llama-3.3-70b-versatile', fallback: 'gemini-2.0-flash' }, // AI Specific
-    7: { primary: 'deepseek-r1', fallback: 'gemini-2.0-flash' },        // Orchestrator
+    7: { primary: 'deepseek-r1', fallback: 'groq-llama-3.3-70b-versatile' },        // Orchestrator
 };
 
 async function callAI(
@@ -101,7 +101,7 @@ async function executeAICall(
     logger: AILogger
 ): Promise<string> {
     const start = Date.now();
-    const MAX_RETRIES = 4;
+    const MAX_RETRIES = 2; // Fail fast so Vercel doesn't hit 60s timeout before fallback connects
     let attempt = 0;
 
     while (attempt < MAX_RETRIES) {
@@ -132,11 +132,11 @@ async function executeAICall(
                 response = result.response.text();
             }
             else if (modelId === 'deepseek-r1') {
-                // Priority: DeepSeek via OpenRouter. Fallback to Gemini 1.5 Pro if no key.
+                // Priority: DeepSeek via OpenRouter. Fallback to Groq Llama if no key.
                 const openRouterKey = process.env.OPENROUTER_API_KEY;
                 if (!openRouterKey) {
-                    console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Gemini 2.0 Flash.');
-                    return await executeAICall('gemini-2.0-flash', systemPrompt, userPrompt, agentId, agentName, logger);
+                    console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Groq Llama.');
+                    return await executeAICall('groq-llama-3.3-70b-versatile', systemPrompt, userPrompt, agentId, agentName, logger);
                 }
 
                 const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -172,7 +172,7 @@ async function executeAICall(
 
             if (isRateLimit && attempt < MAX_RETRIES - 1) {
                 attempt++;
-                const backoffMs = Math.pow(2, attempt) * 2000; // 4s, 8s, 16s...
+                const backoffMs = Math.pow(2, attempt) * 1500; // max wait 3s
                 console.warn(`[AI RETRY] ${agentName} hit rate limit on ${modelId}. Waiting ${backoffMs}ms (Attempt ${attempt}/${MAX_RETRIES})...`);
                 await new Promise(r => setTimeout(r, backoffMs));
                 continue;
