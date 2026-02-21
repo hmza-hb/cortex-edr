@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseService } from '@/lib/supabase/service';
 
@@ -50,20 +50,18 @@ export async function POST(req: NextRequest) {
         const scanId = scan.id;
 
         // 🚀 Trigger the durable Inngest background job
-        // This instantly returns success to the UI while Inngest takes over execution in the background
-        after(async () => {
-            console.log(`[START] Triggering Inngest Pipeline for Scan ${scanId}`);
-            try {
-                const { inngest } = await import('@/lib/inngest/client');
-                await inngest.send({
-                    name: 'scan/start',
-                    data: { scanId, repoUrl: repo_url },
-                });
-                console.log(`[START] Inngest Event Fired successfully`);
-            } catch (err) {
-                console.error(`[START] Failed to trigger Inngest pipeline:`, err);
-            }
-        });
+        console.log(`[START] Triggering Inngest Pipeline for Scan ${scanId}`);
+        try {
+            const { inngest } = await import('@/lib/inngest/client');
+            await inngest.send({
+                name: 'scan/start',
+                data: { scanId, repoUrl: repo_url },
+            });
+            console.log(`[START] Inngest Event Fired successfully`);
+        } catch (err) {
+            console.error(`[START] Failed to trigger Inngest pipeline:`, err);
+            // We can still proceed, but the background job won't start
+        }
 
         return NextResponse.json({ scan_id: scan.id });
     } catch (error) {
