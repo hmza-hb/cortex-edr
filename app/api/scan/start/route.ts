@@ -49,24 +49,20 @@ export async function POST(req: NextRequest) {
 
         const scanId = scan.id;
 
-        // 🚀 Trigger the durable Inngest background job
-        console.log(`[START] Triggering Inngest Pipeline for Scan ${scanId}`);
+        // 🚀 Trigger the direct background pipeline 
+        console.log(`[START] Triggering Direct Pipeline for Scan ${scanId}`);
         try {
-            const { inngest } = await import('@/lib/inngest/client');
+            // Import dynamically so it doesn't block the initial route load
+            const { runPipeline } = await import('@/lib/agents/pipeline');
 
-            // Explicitly force the event to target the production environment.
-            // This prevents Vercel preview deployments from routing events into non-existent branch environments.
-            const env = process.env.INNGEST_ENV || 'production';
+            // Execute in background (do not await so we can return the response instantly)
+            runPipeline(scanId, repo_url).catch(err => {
+                console.error(`[BACKGROUND PIPELINE ERROR] scanId=${scanId}:`, err);
+            });
 
-            await inngest.send({
-                name: 'scan/start',
-                data: { scanId, repoUrl: repo_url },
-            }, { env });
-
-            console.log(`[START] Inngest Event Fired successfully to env: ${env}`);
+            console.log(`[START] Pipeline triggered successfully in the background`);
         } catch (err) {
-            console.error(`[START] Failed to trigger Inngest pipeline:`, err);
-            // We can still proceed, but the background job won't start
+            console.error(`[START] Failed to import/trigger pipeline:`, err);
         }
         return NextResponse.json({ scan_id: scan.id });
     } catch (error) {
