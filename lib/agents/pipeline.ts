@@ -101,74 +101,89 @@ async function executeAICall(
     logger: AILogger
 ): Promise<string> {
     const start = Date.now();
+    const MAX_RETRIES = 4;
+    let attempt = 0;
 
-    try {
-        let response = '';
+    while (attempt < MAX_RETRIES) {
+        try {
+            let response = '';
 
-        if (modelId.startsWith('groq-')) {
-            const groq = getGroqClient();
-            const completion = await groq.chat.completions.create({
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                ],
-                model: modelId.replace('groq-', ''),
-                temperature: 0.1,
-                response_format: { type: 'json_object' }
-            });
-            response = completion.choices[0]?.message?.content || '[]';
-        }
-        else if (modelId.startsWith('gemini-')) {
-            const gemini = getGeminiClient();
-            const model = gemini.getGenerativeModel({
-                model: modelId,
-                systemInstruction: systemPrompt,
-                generationConfig: { responseMimeType: "application/json" }
-            });
-            const result = await model.generateContent(userPrompt);
-            response = result.response.text();
-        }
-        else if (modelId === 'deepseek-r1') {
-            // Priority: DeepSeek via OpenRouter. Fallback to Gemini 1.5 Pro if no key.
-            const openRouterKey = process.env.OPENROUTER_API_KEY;
-            if (!openRouterKey) {
-                console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Gemini 2.0 Flash.');
-                return await executeAICall('gemini-2.0-flash', systemPrompt, userPrompt, agentId, agentName, logger);
-            }
-
-            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${openRouterKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://cortex-edr.com',
-                    'X-Title': 'Cortex EDR'
-                },
-                body: JSON.stringify({
-                    model: 'deepseek/deepseek-r1',
+            if (modelId.startsWith('groq-')) {
+                const groq = getGroqClient();
+                const completion = await groq.chat.completions.create({
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userPrompt }
                     ],
+                    model: modelId.replace('groq-', ''),
+                    temperature: 0.1,
                     response_format: { type: 'json_object' }
-                })
-            });
+                });
+                response = completion.choices[0]?.message?.content || '[]';
+            }
+            else if (modelId.startsWith('gemini-')) {
+                const gemini = getGeminiClient();
+                const model = gemini.getGenerativeModel({
+                    model: modelId,
+                    systemInstruction: systemPrompt,
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+                const result = await model.generateContent(userPrompt);
+                response = result.response.text();
+            }
+            else if (modelId === 'deepseek-r1') {
+                // Priority: DeepSeek via OpenRouter. Fallback to Gemini 1.5 Pro if no key.
+                const openRouterKey = process.env.OPENROUTER_API_KEY;
+                if (!openRouterKey) {
+                    console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Gemini 2.0 Flash.');
+                    return await executeAICall('gemini-2.0-flash', systemPrompt, userPrompt, agentId, agentName, logger);
+                }
 
-            if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText}`);
-            const data = await res.json();
-            response = data.choices[0]?.message?.content || '[]';
+                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openRouterKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://cortex-edr.com',
+                        'X-Title': 'Cortex EDR'
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek/deepseek-r1',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText}`);
+                const data = await res.json();
+                response = data.choices[0]?.message?.content || '[]';
+            }
+
+            const durationMs = Date.now() - start;
+            console.log(`[AI SUCCESS] ${agentName} used ${modelId} (${durationMs}ms)`);
+            await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs);
+            return response;
+
+        } catch (error: any) {
+            const isRateLimit = error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests');
+
+            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+                attempt++;
+                const backoffMs = Math.pow(2, attempt) * 2000; // 4s, 8s, 16s...
+                console.warn(`[AI RETRY] ${agentName} hit rate limit on ${modelId}. Waiting ${backoffMs}ms (Attempt ${attempt}/${MAX_RETRIES})...`);
+                await new Promise(r => setTimeout(r, backoffMs));
+                continue;
+            }
+
+            const durationMs = Date.now() - start;
+            await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${modelId}): ${error.message}`, durationMs);
+            throw error;
         }
-
-        const durationMs = Date.now() - start;
-        console.log(`[AI SUCCESS] ${agentName} used ${modelId} (${durationMs}ms)`);
-        await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs);
-        return response;
-
-    } catch (error: any) {
-        const durationMs = Date.now() - start;
-        await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${modelId}): ${error.message}`, durationMs);
-        throw error;
     }
+    throw new Error('Max retries exceeded');
 }
 
 // Parse AI JSON response safely — handles bare arrays AND wrapped objects
