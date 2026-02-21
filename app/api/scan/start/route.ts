@@ -49,20 +49,19 @@ export async function POST(req: NextRequest) {
 
         const scanId = scan.id;
 
-        // 🚀 Chain Trigger: AWAIT the fetch to step 0.
-        // This ensures the current function doesn't finish until the next one has objectively started.
-        // We use after() to run this without blocking the response to the user.
+        // 🚀 Trigger the durable Inngest background job
+        // This instantly returns success to the UI while Inngest takes over execution in the background
         after(async () => {
-            console.log(`[START] Triggering Step 0 for Scan ${scanId}`);
+            console.log(`[START] Triggering Inngest Pipeline for Scan ${scanId}`);
             try {
-                const resp = await fetch(`${APP_URL}/api/scan/run`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ scanId, step: 0 }),
+                const { inngest } = await import('@/lib/inngest/client');
+                await inngest.send({
+                    name: 'scan/start',
+                    data: { scanId, repoUrl: repo_url },
                 });
-                console.log(`[START] Step 0 Trigger Response: ${resp.status}`);
+                console.log(`[START] Inngest Event Fired successfully`);
             } catch (err) {
-                console.error(`[START] Failed to trigger step 0:`, err);
+                console.error(`[START] Failed to trigger Inngest pipeline:`, err);
             }
         });
 
