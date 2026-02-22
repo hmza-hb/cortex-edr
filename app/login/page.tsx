@@ -25,7 +25,8 @@ export default async function Login(props: {
         })
 
         if (error) {
-            return redirect('/login?message=Could not authenticate user')
+            console.error('Sign in error:', error.message)
+            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
         }
 
         return redirect('/dashboard')
@@ -48,22 +49,28 @@ export default async function Login(props: {
         })
 
         if (error) {
-            return redirect('/login?message=Could not authenticate user')
+            console.error('Sign up error:', error.message)
+            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
         }
 
-        return redirect('/login?message=Check email to continue sign in process')
+        return redirect('/login?message=Verification email sent. Please check your inbox.')
     }
 
     const signInWithGithub = async () => {
         'use server'
         const supabase = await createClient()
         const origin = (await headers()).get('origin')
-        const { data } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
                 redirectTo: `${origin}/auth/callback?next=/dashboard`,
             },
         })
+
+        if (error) {
+            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
+        }
+
         if (data.url) redirect(data.url)
     }
 
@@ -71,7 +78,7 @@ export default async function Login(props: {
         'use server'
         const supabase = await createClient()
         const origin = (await headers()).get('origin')
-        const { data } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${origin}/auth/callback?next=/dashboard`,
@@ -81,6 +88,11 @@ export default async function Login(props: {
                 },
             },
         })
+
+        if (error) {
+            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
+        }
+
         if (data.url) redirect(data.url)
     }
 
