@@ -37,23 +37,30 @@ export default function CompliancePage() {
             </div>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">Data Sovereignty</h2>
+                <h2 className="text-xl font-bold text-white">System Sovereignty and Resurrection</h2>
                 <p className="text-white/70 leading-relaxed">
-                    CortexEDR allows for regional data residency configuration within the **Cluster** tier, ensuring compliance with local laws and organizational internal policies regarding data storage.
+                    CortexEDR allows for granular regional data residency configuration within the **Cluster** and **Fortress** tiers. This ensures compliance with local sovereignty laws (e.g., EU data residency) and organizational internal governance models.
                 </p>
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">Encryption Standards</h2>
+                <h2 className="text-xl font-bold text-white">Encryption and Vault Protocols</h2>
                 <p className="text-white/70 leading-relaxed">
-                    We utilize FIPS 140-2 validated cryptographic modules. All communications are secured via TLS 1.3, and data at rest is protected using AES-256 with rotation-based key management.
+                    Our platform architecture utilizes FIPS 140-2 validated cryptographic modules for all sensitive operations. Telemetry streams are secured via TLS 1.3 with Perfect Forward Secrecy (PFS), and data at rest is protected using AES-256-GCM with automated, hardware-backed key rotation.
                 </p>
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">Continuous Monitoring</h2>
+                <h2 className="text-xl font-bold text-white">Continuous Posture Monitoring</h2>
                 <p className="text-white/70 leading-relaxed">
-                    Compliance is not a static state. CortexEDR employs real-time auditing of our own infrastructure, with automated alerts for any deviation from established security baselines.
+                    Compliance is maintained through real-time heuristic monitoring of our internal infrastructure. We conduct regular penetration tests (internal and third-party) and provide "Compliance-as-Code" artifacts for Enterprise clients to facilitate their own internal audit cycles.
+                </p>
+            </section>
+
+            <section className="space-y-6">
+                <h2 className="text-xl font-bold text-white">Audit Support and Documentation</h2>
+                <p className="text-white/70 leading-relaxed">
+                    CortexEDR provides dedicated compliance support for organizations undergoing external audits. We provide comprehensive documentation regarding our control environment and operational efficacy upon request for eligible subscription tiers.
                 </p>
             </section>
         </div>

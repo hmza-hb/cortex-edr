@@ -16,42 +16,57 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">1. Acceptable Use Policy</h2>
+                <h2 className="text-xl font-bold text-white">1. Scope of License</h2>
                 <p className="text-white/70 leading-relaxed">
-                    Users are granted a limited license to utilize CortexEDR for legitimate security auditing and codebase analysis. Prohibited activities include:
+                    Subject to compliance with these Terms, CortexEDR grants you a limited, non-exclusive, non-transferable license to access the platform for the sole purpose of security auditing and internal codebase analysis.
+                </p>
+            </section>
+
+            <section className="space-y-6">
+                <h2 className="text-xl font-bold text-white">2. Acceptable Use and Prohibitions</h2>
+                <p className="text-white/70 leading-relaxed">
+                    You agree not to utilize the platform for any illicit activities. Prohibited behavior includes:
                 </p>
                 <ul className="list-disc pl-6 space-y-3 text-white/70">
-                    <li>Interfering with the operational integrity of the platform architecture.</li>
-                    <li>Reverse engineering proprietary detection heuristic modules.</li>
-                    <li>Using the platform to facilitate unauthorized access to third-party systems.</li>
+                    <li>Circumventing technical measures designed to protect the platform.</li>
+                    <li>Using automated systems (excluding official APIs) to scrape or query the platform.</li>
+                    <li>Reverse engineering, decompiling, or attempting to derive the source code of the Cortex Neural Engine.</li>
+                    <li>Attempting to access unauthorized organizational nodes.</li>
                 </ul>
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">2. Intellectual Property</h2>
+                <h2 className="text-xl font-bold text-white">3. Intellectual Property Rights</h2>
                 <p className="text-white/70 leading-relaxed">
-                    All platform components, including but not limited to neural mapping algorithms, HUD interfaces, and telemetry protocols, are the exclusive property of CortexEDR. Software analysis reports generated for users are owned by the respective user, subject to our underlying IP rights.
+                    CortexEDR and its original content, features, and functionality remain the exclusive property of the Company. Analysis reports and metadata generated through your use of the platform belong to you, provided you maintain a valid subscription.
                 </p>
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">3. Liability and Warranty</h2>
+                <h2 className="text-xl font-bold text-white">4. Limitation of Liability</h2>
                 <p className="text-white/70 leading-relaxed">
-                    CortexEDR provides advanced security intelligence on an "as-is" basis. While we strive for absolute precision in threat detection, we do not guarantee that the platform will identify 100% of all vulnerabilities. The Company is not liable for indirect or consequential damages resulting from system intrusions.
+                    To the maximum extent permitted by law, CortexEDR shall not be liable for any indirect, incidental, special, or consequential damages, including loss of profits, data, or system integrity, resulting from your use of the platform. The platform is provided "as-is" without warranty of any kind.
                 </p>
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">4. Subscription and Termination</h2>
+                <h2 className="text-xl font-bold text-white">5. Indemnification</h2>
                 <p className="text-white/70 leading-relaxed">
-                    Standard operational tiers (Core, Executor, Cluster) are billed according to the configured cycle. CortexEDR reserves the right to terminate access for nodes found in breach of the Acceptable Use Policy without notice.
+                    You agree to indemnify and hold harmless CortexEDR and its affiliates from any claims, damages, or expenses (including legal fees) arising from your breach of these Terms or your use of the platform in violation of any law.
                 </p>
             </section>
 
             <section className="space-y-6">
-                <h2 className="text-xl font-bold text-white">5. Governing Law</h2>
+                <h2 className="text-xl font-bold text-white">6. Termination and Severability</h2>
                 <p className="text-white/70 leading-relaxed">
-                    These terms are governed by the laws of the jurisdiction in which the Company is incorporated, without regard to conflict of law principles.
+                    We reserve the right to suspend or terminate access for any account found in violation of These Terms. If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in full force and effect.
+                </p>
+            </section>
+
+            <section className="space-y-6">
+                <h2 className="text-xl font-bold text-white">7. Governing Law and Jurisdiction</h2>
+                <p className="text-white/70 leading-relaxed">
+                    These Terms are governed by the laws of the jurisdiction of the Company's incorporation. Any disputes arising from these Terms shall be resolved exclusively through binding arbitration in said jurisdiction.
                 </p>
             </section>
         </div>
