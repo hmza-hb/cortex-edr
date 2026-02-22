@@ -115,9 +115,12 @@ Built with a performance-first approach using the latest cutting-edge technologi
    # ... refer to .env.example
    ```
 
-   **OAuth (GitHub / Google):** In Supabase Dashboard → Authentication → URL Configuration, add these **Redirect URLs**:
-   - `http://localhost:3000/auth/callback` (development)
-   - `https://yourdomain.com/auth/callback` (production)
+   **OAuth (GitHub / Google):** In Supabase Dashboard → Authentication → URL Configuration:
+   - **Site URL**: Set to your production URL (e.g. `https://cortex-edr.com`). If this is wrong (e.g. `localhost:8080`), OAuth will redirect to the wrong place!
+   - **Redirect URLs**: Add (wildcard `**` covers query params):
+     - `https://cortex-edr.com/auth/callback/**`
+     - `http://localhost:3000/auth/callback/**`
+   - For production, set `NEXT_PUBLIC_APP_URL=https://cortex-edr.com` in your env.
 
 4. **Run the development server**
    ```bash

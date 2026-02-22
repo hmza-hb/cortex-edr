@@ -27,11 +27,11 @@ export default function AuthCodeErrorPage() {
 
                 <div className="space-y-3">
                     <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/40">
-                        Ensure your Supabase project has:
+                        Supabase Dashboard → Authentication → URL Configuration
                     </p>
-                    <ul className="text-xs text-white/60 font-mono space-y-1 list-disc list-inside">
-                        <li>GitHub & Google providers enabled</li>
-                        <li>Redirect URL: <code className="text-purple-400">{"{origin}/auth/callback"}</code></li>
+                    <ul className="text-xs text-white/60 font-mono space-y-2 list-disc list-inside">
+                        <li><strong className="text-white">Site URL</strong>: Your production URL (e.g. <code className="text-purple-400">https://cortex-edr.com</code>). Wrong value = redirects to localhost!</li>
+                        <li><strong className="text-white">Redirect URLs</strong>: Add <code className="text-purple-400">https://cortex-edr.com/auth/callback/**</code> and <code className="text-purple-400">http://localhost:3000/auth/callback/**</code> (wildcards cover query params)</li>
                     </ul>
                 </div>
 

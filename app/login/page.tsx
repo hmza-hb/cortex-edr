@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { getAppUrl } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LoginForm } from '@/components/auth/login-form'
@@ -36,6 +37,7 @@ export default async function Login(props: {
         'use server'
 
         const origin = (await headers()).get('origin')
+        const appUrl = getAppUrl(origin)
         const email = formData.get('email') as string
         const password = formData.get('password') as string
         const supabase = await createClient()
@@ -44,7 +46,7 @@ export default async function Login(props: {
             email,
             password,
             options: {
-                emailRedirectTo: `${origin}/auth/callback`,
+                emailRedirectTo: `${appUrl}/auth/callback`,
             },
         })
 
@@ -60,10 +62,11 @@ export default async function Login(props: {
         'use server'
         const supabase = await createClient()
         const origin = (await headers()).get('origin')
+        const appUrl = getAppUrl(origin)
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
-                redirectTo: `${origin}/auth/callback?next=/dashboard`,
+                redirectTo: `${appUrl}/auth/callback?next=/dashboard`,
             },
         })
 
@@ -78,10 +81,11 @@ export default async function Login(props: {
         'use server'
         const supabase = await createClient()
         const origin = (await headers()).get('origin')
+        const appUrl = getAppUrl(origin)
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${origin}/auth/callback?next=/dashboard`,
+                redirectTo: `${appUrl}/auth/callback?next=/dashboard`,
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',
