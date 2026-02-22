@@ -115,6 +115,10 @@ Built with a performance-first approach using the latest cutting-edge technologi
    # ... refer to .env.example
    ```
 
+   **OAuth (GitHub / Google):** In Supabase Dashboard → Authentication → URL Configuration, add these **Redirect URLs**:
+   - `http://localhost:3000/auth/callback` (development)
+   - `https://yourdomain.com/auth/callback` (production)
+
 4. **Run the development server**
    ```bash
    npm run dev
