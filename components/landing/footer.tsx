@@ -59,6 +59,7 @@ export const Footer = () => {
             links: [
                 { label: "Privacy Policy", href: "/legal/privacy" },
                 { label: "Terms of Service", href: "/legal/terms" },
+                { label: "Refund Policy", href: "/legal/refund" },
                 { label: "Cookie Policy", href: "/legal/cookies" },
                 { label: "Compliance", href: "/legal/compliance" },
                 { label: "Security Disclosure", href: "/legal/security" },
