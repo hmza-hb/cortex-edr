@@ -63,6 +63,24 @@ const styles = StyleSheet.create({
         padding: 50,
         backgroundColor: '#FFFFFF',
         fontFamily: 'Helvetica',
+        position: 'relative'
+    },
+    watermarkContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: -1,
+        opacity: 0.05,
+    },
+    watermarkText: {
+        fontSize: 100,
+        color: '#0f172a',
+        fontWeight: 'bold',
+        transform: 'rotate(-45deg)',
     },
     // Header & Brand
     header: {
@@ -416,19 +434,28 @@ interface PDFReportProps {
     scan: any;
     issues: Issue[];
     enterpriseReport?: ExecutiveReport;
+    tierKey?: string;
 }
 
-export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseReport }) => {
+export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseReport, tierKey = 'VIBE_CODER' }) => {
     const date = new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
     });
 
     const summaryText = getSummaryText(enterpriseReport, scan);
 
+    // Only VIBE_CODER has watermarks, depending on config
+    const showWatermark = tierKey === 'VIBE_CODER';
+
     return (
         <Document title={`Cortex Audit - ${scan?.id}`}>
             {/* PAGE 1: EXECUTIVE STRATEGY */}
             <Page size="A4" style={styles.page}>
+                {showWatermark && (
+                    <View style={styles.watermarkContainer} fixed>
+                        <Text style={styles.watermarkText}>CORTEX FREE TIER</Text>
+                    </View>
+                )}
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.brand}>CORTEX EDR</Text>
@@ -505,6 +532,11 @@ export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseRe
             {/* MANIFEST PAGES */}
             {issues.map((issue, idx) => (
                 <Page key={idx} size="A4" style={styles.page}>
+                    {showWatermark && (
+                        <View style={styles.watermarkContainer} fixed>
+                            <Text style={styles.watermarkText}>CORTEX FREE TIER</Text>
+                        </View>
+                    )}
                     <View style={styles.header}>
                         <View>
                             <Text style={styles.brand}>CORTEX EDR</Text>

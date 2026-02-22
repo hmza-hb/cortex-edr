@@ -142,7 +142,7 @@ export default async function ScanHistoryPage() {
                                                 </div>
 
                                                 <div className="flex items-center gap-3">
-                                                    <Link href={`/dashboard/scans/${scan.id}`}>
+                                                    <Link href={`/dashboard/report/${scan.id}`}>
                                                         <Button size="sm" className="h-9 px-6 bg-white text-black hover:bg-neutral-200 font-bold text-xs rounded-lg transition-all shadow-lg shadow-white/5">
                                                             View Report
                                                         </Button>

@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { AGENT_PROMPTS } from './prompts';
 import { AILogger } from './ai-logger';
+import { SYSTEM_CONFIG, TierId } from '../config/system';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,26 +56,42 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STRATEGIC AI ROUTER (Quality + Scale)
+// STRATEGIC AI ROUTER (Tier-Based)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const AGENT_ROUTING: Record<number, { primary: string; fallback: string }> = {
-    1: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Recon
-    2: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Security
-    3: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Arch
-    4: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Quality
-    5: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Tech Debt
-    6: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // AI Specific
-    7: { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b-versatile' }, // Orchestrator
-};
+function getRoutingForAgent(agentId: number, tierKey: TierId): { primary: string; fallback: string } {
+    const defaultFallback = 'groq-llama-3.3-70b-versatile';
+
+    if (tierKey === TierId.VIBE_CODER) {
+        return { primary: SYSTEM_CONFIG.ai.vibe_coder.primary, fallback: SYSTEM_CONFIG.ai.vibe_coder.fallback };
+    }
+    if (tierKey === TierId.DEVELOPER) {
+        if (agentId === 2) return { primary: SYSTEM_CONFIG.ai.developer.security, fallback: defaultFallback };
+        if (agentId === 7) return { primary: SYSTEM_CONFIG.ai.developer.orchestrator, fallback: defaultFallback };
+        return { primary: SYSTEM_CONFIG.ai.developer.standard, fallback: defaultFallback };
+    }
+    if (tierKey === TierId.TEAMS) {
+        if (agentId === 2) return { primary: SYSTEM_CONFIG.ai.teams.security, fallback: defaultFallback };
+        if (agentId === 3) return { primary: SYSTEM_CONFIG.ai.teams.architecture, fallback: defaultFallback };
+        if (agentId === 7) return { primary: SYSTEM_CONFIG.ai.teams.orchestrator, fallback: defaultFallback };
+        return { primary: SYSTEM_CONFIG.ai.teams.standard, fallback: defaultFallback };
+    }
+    if (tierKey === TierId.ENTERPRISE) {
+        if (agentId === 7) return { primary: SYSTEM_CONFIG.ai.enterprise.orchestrator, fallback: defaultFallback };
+        return { primary: SYSTEM_CONFIG.ai.enterprise.critical, fallback: defaultFallback };
+    }
+
+    return { primary: 'gemini-2.0-flash', fallback: defaultFallback };
+}
 
 async function callAI(
     systemPrompt: string,
     userPrompt: string,
     agentId: number,
     agentName: string,
-    logger: AILogger
+    logger: AILogger,
+    tierKey: TierId = TierId.VIBE_CODER
 ): Promise<string> {
-    const routing = AGENT_ROUTING[agentId] || { primary: 'gemini-2.0-flash', fallback: 'groq-llama-3.3-70b' };
+    const routing = getRoutingForAgent(agentId, tierKey);
 
     // Attempt Primary
     try {
@@ -288,7 +305,7 @@ export async function setupForStep(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 0: GIT CONNECT (GitHub API — no git binary, works on Vercel Hobby)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runGitConnect(scanId: string, repoUrl: string): Promise<string> {
+export async function runGitConnect(scanId: string, repoUrl: string, tierKey: TierId = TierId.VIBE_CODER): Promise<string> {
     const repoPath = `/tmp/cortexedr-${scanId}`;
 
     try {
@@ -332,6 +349,13 @@ export async function runGitConnect(scanId: string, repoUrl: string): Promise<st
             !f.includes('node_modules') && !f.includes('.git') &&
             !f.includes('dist/') && !f.includes('.next/')
         );
+
+        // 🔒 TIER GATEKEEPER: Check File Limits
+        const limitConfig = SYSTEM_CONFIG.tiers[tierKey].limits;
+        const maxFiles = limitConfig.maxFilesPerScan;
+        if (maxFiles !== "Unlimited" && importantFiles.length > (maxFiles as number)) {
+            throw new Error(`Repository exceeds the max file limit for the ${SYSTEM_CONFIG.tiers[tierKey].name} tier (${maxFiles} files). Found ${importantFiles.length} files. Please upgrade your tier or run on a smaller repository.`);
+        }
 
         await emit(scanId, 0, 'Git Connect', 'processing',
             `Tree indexed. ${allFiles.length} files found. Fetching key files for analysis...`,
@@ -392,7 +416,7 @@ export async function runGitConnect(scanId: string, repoUrl: string): Promise<st
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 1: RECONNAISSANCE - The Architect
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger) {
+export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
     try {
         await emit(scanId, 1, 'Reconnaissance', 'started', 'Beginning deep codebase reconnaissance...');
 
@@ -441,7 +465,7 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
                 pkg,
                 sampleCode
             ),
-            1, 'Reconnaissance', logger
+            1, 'Reconnaissance', logger, tierKey
         );
 
         const analysis = parseAIResponse(aiResponse, {
@@ -494,7 +518,8 @@ export async function runSecurityScanner(
     repoPath: string,
     fileTree: string[],
     techStack: any,
-    logger: AILogger
+    logger: AILogger,
+    tierKey: TierId = TierId.VIBE_CODER
 ) {
     try {
         await emit(scanId, 2, 'Security Scanner', 'started', 'Initializing deep security audit...');
@@ -523,7 +548,7 @@ export async function runSecurityScanner(
                     const aiResponse = await callAI(
                         AGENT_PROMPTS.security.systemPrompt,
                         AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
-                        2, 'Security Scanner', logger
+                        2, 'Security Scanner', logger, tierKey
                     );
                     const vulns = parseAIResponse(aiResponse, []);
                     return Array.isArray(vulns) ? vulns.map(v => ({ ...v, fileName })) : [];
@@ -572,7 +597,7 @@ export async function runSecurityScanner(
 
 // AGENT 3: ARCHITECTURE REVIEWER - The Designer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
+export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
     try {
         await emit(scanId, 3, 'Architecture', 'started', 'Analyzing system architecture...');
 
@@ -604,7 +629,7 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
         const aiResponse = await callAI(
             AGENT_PROMPTS.architecture.systemPrompt,
             AGENT_PROMPTS.architecture.analysisPrompt(structure, keyFilesContent),
-            3, 'Architecture', logger
+            3, 'Architecture', logger, tierKey
         );
 
         console.log('[Architecture] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -648,7 +673,7 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 4: CODE QUALITY ANALYST - The Critic
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
+export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
     try {
         await emit(scanId, 4, 'Code Quality', 'started', 'Analyzing code quality...');
 
@@ -672,7 +697,7 @@ export async function runCodeQuality(scanId: string, repoPath: string, fileTree:
         const aiResponse = await callAI(
             AGENT_PROMPTS.codeQuality.systemPrompt,
             AGENT_PROMPTS.codeQuality.analysisPrompt(filesContent),
-            4, 'Code Quality', logger
+            4, 'Code Quality', logger, tierKey
         );
 
         console.log('[Code Quality] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -715,7 +740,7 @@ export async function runCodeQuality(scanId: string, repoPath: string, fileTree:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 5: TECHNICAL DEBT HUNTER - The Auditor
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger) {
+export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
     try {
         await emit(scanId, 5, 'Technical Debt', 'started', 'Scanning for technical debt...');
 
@@ -740,7 +765,7 @@ export async function runTechnicalDebt(scanId: string, repoPath: string, fileTre
         const aiResponse = await callAI(
             AGENT_PROMPTS.technicalDebt.systemPrompt,
             AGENT_PROMPTS.technicalDebt.analysisPrompt(codebase, pkg),
-            5, 'Technical Debt', logger
+            5, 'Technical Debt', logger, tierKey
         );
 
         console.log('[Technical Debt] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -783,7 +808,7 @@ export async function runTechnicalDebt(scanId: string, repoPath: string, fileTre
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 6: AI CODE DETECTOR - The Investigator
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger) {
+export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
     try {
         await emit(scanId, 6, 'AI-Engine Review', 'started', 'Analyzing AI code patterns...');
 
@@ -807,7 +832,7 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
         const aiResponse = await callAI(
             AGENT_PROMPTS.aiSpecific.systemPrompt,
             AGENT_PROMPTS.aiSpecific.analysisPrompt(code),
-            6, 'AI-Engine Review', logger
+            6, 'AI-Engine Review', logger, tierKey
         );
 
         console.log('[AI-Engine] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -848,7 +873,7 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 7: ORCHESTRATOR - The Synthesizer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runOrchestrator(scanId: string, logger: AILogger) {
+export async function runOrchestrator(scanId: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
     try {
         await emit(scanId, 7, 'Synthesis & Report', 'started', 'Initializing executive synthesis...');
 
@@ -892,7 +917,7 @@ export async function runOrchestrator(scanId: string, logger: AILogger) {
         const aiResponse = await callAI(
             AGENT_PROMPTS.orchestrator.systemPrompt,
             AGENT_PROMPTS.orchestrator.synthesisPrompt(findings, metadata),
-            7, 'Orchestrator', logger
+            7, 'Orchestrator', logger, tierKey
         );
 
         const enterpriseReport = parseAIResponse(aiResponse, {
@@ -962,43 +987,43 @@ export async function runOrchestrator(scanId: string, logger: AILogger) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MASTER PIPELINE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runPipeline(scanId: string, repoUrl: string) {
-    console.log(`[PIPELINE START] Scan: ${scanId}, Repo: ${repoUrl}`);
+export async function runPipeline(scanId: string, repoUrl: string, tierKey: TierId = TierId.VIBE_CODER) {
+    console.log(`[PIPELINE START] Scan: ${scanId}, Repo: ${repoUrl}, Tier: ${tierKey}`);
     const logger = new AILogger(scanId);
 
     try {
         // Agent 0: Git Connect (no AI needed)
-        const repoPath = await runGitConnect(scanId, repoUrl);
+        const repoPath = await runGitConnect(scanId, repoUrl, tierKey);
         console.log(`[PIPELINE] Agent 0 complete`);
 
         // Agent 1: Reconnaissance (AI: architectural blueprint)
-        const { fileTree, analysis, pkg } = await runReconnaissance(scanId, repoPath, logger);
+        const { fileTree, analysis, pkg } = await runReconnaissance(scanId, repoPath, logger, tierKey);
         console.log(`[PIPELINE] Agent 1 complete (${fileTree.length} files)`);
 
         const techStack = analysis?.techStack || {};
 
         // Agent 2: Security Scanner (AI: per-file vulnerability hunting)
-        await runSecurityScanner(scanId, repoPath, fileTree, techStack, logger);
+        await runSecurityScanner(scanId, repoPath, fileTree, techStack, logger, tierKey);
         console.log(`[PIPELINE] Agent 2 complete`);
 
         // Agent 3: Architecture Reviewer (AI: design pattern analysis)
-        await runArchitecture(scanId, repoPath, fileTree, logger);
+        await runArchitecture(scanId, repoPath, fileTree, logger, tierKey);
         console.log(`[PIPELINE] Agent 3 complete`);
 
         // Agent 4: Code Quality (AI: clean code analysis)
-        await runCodeQuality(scanId, repoPath, fileTree, logger);
+        await runCodeQuality(scanId, repoPath, fileTree, logger, tierKey);
         console.log(`[PIPELINE] Agent 4 complete`);
 
         // Agent 5: Technical Debt (AI: debt hunting)
-        await runTechnicalDebt(scanId, repoPath, fileTree, pkg, logger);
+        await runTechnicalDebt(scanId, repoPath, fileTree, pkg, logger, tierKey);
         console.log(`[PIPELINE] Agent 5 complete`);
 
         // Agent 6: AI-Engine Review (AI: generated code detection)
-        await runAIEngineReview(scanId, repoPath, fileTree, logger);
+        await runAIEngineReview(scanId, repoPath, fileTree, logger, tierKey);
         console.log(`[PIPELINE] Agent 6 complete`);
 
         // Agent 7: Orchestrator (AI: executive synthesis)
-        await runOrchestrator(scanId, logger);
+        await runOrchestrator(scanId, logger, tierKey);
         console.log(`[PIPELINE] Agent 7 complete`);
 
         // Save AI interaction log

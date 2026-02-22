@@ -20,7 +20,29 @@ export async function GET(
             .single();
 
         if (scanError || !scan) {
+            console.error(`[RESULTS API] Scan ${scanId} not found or error:`, scanError);
             return NextResponse.json({ error: 'Scan not found' }, { status: 404 });
+        }
+
+        // 2. Fetch user profile for tier info
+        let userTier = 'VIBE_CODER';
+        if (scan.user_id) {
+            const { data: profile } = await supabaseService
+                .from('profiles')
+                .select('tier, plan_tier')
+                .eq('id', scan.user_id)
+                .single();
+
+            if (profile) {
+                if (profile.tier) {
+                    userTier = profile.tier;
+                } else if (profile.plan_tier) {
+                    if (profile.plan_tier === 'free') userTier = 'VIBE_CODER';
+                    else if (profile.plan_tier === 'starter') userTier = 'DEVELOPER';
+                    else if (profile.plan_tier === 'professional') userTier = 'TEAMS';
+                    else userTier = 'ENTERPRISE';
+                }
+            }
         }
 
         // 2. Fetch issues
@@ -41,7 +63,8 @@ export async function GET(
         return NextResponse.json({
             scan: {
                 ...scan,
-                summary
+                summary,
+                tier: userTier
             },
             issues
         });

@@ -14,6 +14,7 @@ import { ExecutiveReport } from "@/types/report";
 import { motion } from "framer-motion";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { PDFReport } from "@/components/report/PDFReport";
+import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 
 export default function ReportPage() {
     const params = useParams();
@@ -33,13 +34,17 @@ export default function ReportPage() {
         const fetchResults = async () => {
             try {
                 const response = await fetch(`/api/scan/results/${scanId}`);
-                if (!response.ok) throw new Error("Failed to fetch results");
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("Fetch failed:", response.status, errorData);
+                    throw new Error(`Failed to fetch results: ${response.status} ${errorData.error || ''}`);
+                }
                 const data = await response.json();
                 setScan(data.scan);
                 setIssues(data.issues);
             } catch (err) {
                 console.error(err);
-                router.push("/dashboard/scan-history");
+                router.push("/dashboard/scans");
             } finally {
                 setIsLoading(false);
             }
@@ -75,7 +80,7 @@ export default function ReportPage() {
                 className="flex flex-col md:flex-row md:items-center justify-between gap-10 border-b border-white/[0.05] pb-12"
             >
                 <div className="flex items-center gap-8">
-                    <Link href="/dashboard/scan-history">
+                    <Link href="/dashboard/scans">
                         <Button variant="ghost" size="icon" className="h-16 w-16 border border-white/10 hover:bg-white/5 rounded-3xl transition-all hover:scale-105 active:scale-95 shadow-xl">
                             <ArrowLeft className="h-6 w-6 text-white/50" />
                         </Button>
@@ -102,7 +107,7 @@ export default function ReportPage() {
                     </Button>
                     {isMounted && (
                         <PDFDownloadLink
-                            document={<PDFReport scan={scan} issues={issues} enterpriseReport={enterpriseReport} />}
+                            document={<PDFReport scan={scan} issues={issues} enterpriseReport={enterpriseReport} tierKey={scan?.tier} />}
                             fileName={`Cortex_Audit_${scan?.id || 'Report'}.pdf`}
                         >
                             {({ loading }) => (
@@ -184,7 +189,7 @@ export default function ReportPage() {
 
                     <div className="grid grid-cols-1 gap-8">
                         {enterpriseReport.topPriorities.map((issue, i) => (
-                            <EnterpriseIssueCard key={issue.id || i} issue={issue} rank={i + 1} />
+                            <EnterpriseIssueCard key={issue.id || i} issue={issue} rank={i + 1} tierKey={scan?.tier as TierId} />
                         ))}
                     </div>
                 </div>
@@ -206,7 +211,7 @@ export default function ReportPage() {
                     </Link>
                 </div>
 
-                <IssueList issues={issues} />
+                <IssueList issues={issues} tierKey={scan?.tier as TierId} />
             </div>
 
             {/* Footer Guidance */}

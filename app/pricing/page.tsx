@@ -17,11 +17,13 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/landing/footer";
 
+import { SYSTEM_CONFIG } from "@/lib/config/system";
+
 const pricingTiers = [
     {
-        name: "Scout",
-        id: "scout",
-        price: "$0",
+        name: SYSTEM_CONFIG.tiers.VIBE_CODER.name,
+        id: SYSTEM_CONFIG.tiers.VIBE_CODER.id,
+        price: `$${SYSTEM_CONFIG.tiers.VIBE_CODER.priceMonthly}`,
         period: "per month",
         desc: "Essential reconnaissance node for public repo auditing.",
         icon: Binary,
@@ -29,9 +31,9 @@ const pricingTiers = [
         color: "neutral"
     },
     {
-        name: "Sentinel",
-        id: "sentinel",
-        price: "$9",
+        name: SYSTEM_CONFIG.tiers.DEVELOPER.name,
+        id: SYSTEM_CONFIG.tiers.DEVELOPER.id,
+        price: `$${SYSTEM_CONFIG.tiers.DEVELOPER.priceMonthly}`,
         period: "per month",
         desc: "Advanced security unit for professional auditors.",
         icon: Zap,
@@ -40,9 +42,9 @@ const pricingTiers = [
         popular: true
     },
     {
-        name: "Guardian",
-        id: "guardian",
-        price: "$29",
+        name: SYSTEM_CONFIG.tiers.TEAMS.name,
+        id: SYSTEM_CONFIG.tiers.TEAMS.id,
+        price: `$${SYSTEM_CONFIG.tiers.TEAMS.priceMonthly}`,
         period: "per month",
         desc: "High-capacity cluster for serious engineering operations.",
         icon: Server,
@@ -50,10 +52,10 @@ const pricingTiers = [
         color: "blue"
     },
     {
-        name: "Fortress",
-        id: "fortress",
-        price: "Custom",
-        period: "Contact sales",
+        name: SYSTEM_CONFIG.tiers.ENTERPRISE.name,
+        id: SYSTEM_CONFIG.tiers.ENTERPRISE.id,
+        price: `$${SYSTEM_CONFIG.tiers.ENTERPRISE.priceMonthly}`,
+        period: "per month",
         desc: "Enterprise-grade isolation and custom scaling protocols.",
         icon: Shield,
         cta: "Inquire access",
@@ -65,36 +67,38 @@ const comparisonData = [
     {
         category: "Intelligence & Analysis",
         features: [
-            { name: "Repo URL scan protocol", scout: true, sentinel: true, guardian: true },
-            { name: "Overall security score (1-100)", scout: true, sentinel: true, guardian: true },
-            { name: "Issue categorization", scout: true, sentinel: true, guardian: true },
-            { name: "File + line number detection", scout: true, sentinel: true, guardian: true },
-            { name: "Detailed issue explanations", scout: false, sentinel: true, guardian: true },
-            { name: "Fix suggestions with code", scout: false, sentinel: true, guardian: true },
-            { name: "Execution-ready AI prompts", scout: false, sentinel: true, guardian: true },
-            { name: "Severity prioritization", scout: false, sentinel: true, guardian: true },
-            { name: "AI hallucination logic", scout: false, sentinel: "Basic", guardian: "Full" },
+            { name: "Repo URL scan protocol", scout: true, sentinel: true, guardian: true, fortress: true },
+            { name: "Overall security score (1-100)", scout: true, sentinel: true, guardian: true, fortress: true },
+            { name: "Issue categorization", scout: true, sentinel: true, guardian: true, fortress: true },
+            { name: "File + line number detection", scout: true, sentinel: true, guardian: true, fortress: true },
+            { name: "Detailed issue explanations", scout: false, sentinel: true, guardian: true, fortress: true },
+            { name: "Fix suggestions with code", scout: false, sentinel: true, guardian: true, fortress: true },
+            { name: "Execution-ready AI prompts", scout: false, sentinel: true, guardian: true, fortress: true },
+            { name: "Severity prioritization", scout: false, sentinel: true, guardian: true, fortress: true },
+            { name: "AI Protocol", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.features.aiPromptType, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.features.aiPromptType, guardian: SYSTEM_CONFIG.tiers.TEAMS.features.aiPromptType, fortress: SYSTEM_CONFIG.tiers.ENTERPRISE.features.aiPromptType },
         ]
     },
     {
         category: "Operational Capacity",
         features: [
-            { name: "Monthly scan limit", scout: "1", sentinel: "10", guardian: "Unlimited" },
-            { name: "Repository limit", scout: "1 (5k lines)", sentinel: "3 (50k lines)", guardian: "10 (200k lines)" },
-            { name: "PDF report manifest", scout: false, sentinel: true, guardian: true },
-            { name: "Scan history retention", scout: "7 Days", sentinel: "30 Days", guardian: "Forever" },
-            { name: "Processing priority", scout: "Standard", sentinel: "High", guardian: "Fast-track" },
+            { name: "Monthly scan limit", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.limits.maxScansPerMonth, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.limits.maxScansPerMonth, guardian: SYSTEM_CONFIG.tiers.TEAMS.limits.maxScansPerMonth, fortress: "Unlimited" },
+            { name: "Repository limit", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.limits.maxRepositories, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.limits.maxRepositories, guardian: SYSTEM_CONFIG.tiers.TEAMS.limits.maxRepositories, fortress: "Unlimited" },
+            { name: "Files analyzed per scan", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.limits.maxFilesPerScan, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.limits.maxFilesPerScan, guardian: SYSTEM_CONFIG.tiers.TEAMS.limits.maxFilesPerScan, fortress: "Unlimited" },
+            { name: "PDF report manifest", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.features.watermarkedPdf ? "Watermarked" : true, sentinel: true, guardian: true, fortress: true },
+            { name: "Scan history retention", scout: `${SYSTEM_CONFIG.tiers.VIBE_CODER.limits.retentionHours} Hours`, sentinel: `${SYSTEM_CONFIG.tiers.DEVELOPER.limits.retentionDays} Days`, guardian: `${SYSTEM_CONFIG.tiers.TEAMS.limits.retentionDays} Days`, fortress: "Forever" },
+            { name: "Processing priority", scout: "Standard", sentinel: "High", guardian: "Fast-track", fortress: "Dedicated" },
         ]
     },
     {
         category: "Ecosystem & Support",
         features: [
-            { name: "Email notifications", scout: false, sentinel: true, guardian: true },
-            { name: "Delta tracking (Scan vs Scan)", scout: false, sentinel: true, guardian: true },
-            { name: "Dependency CVE tracking", scout: false, sentinel: false, guardian: true },
-            { name: "Shareable report links", scout: false, sentinel: false, guardian: true },
-            { name: "Team access", scout: false, sentinel: false, guardian: "3 Seats" },
-            { name: "Support response time", scout: "Best-effort", sentinel: "48h", guardian: "24h Priority" },
+            { name: "API Access", scout: false, sentinel: false, guardian: `${SYSTEM_CONFIG.tiers.TEAMS.features.apiCallsPerMonth} calls/mo`, fortress: "Unlimited" },
+            { name: "Email notifications", scout: false, sentinel: true, guardian: true, fortress: true },
+            { name: "Delta tracking (Scan vs Scan)", scout: false, sentinel: true, guardian: true, fortress: true },
+            { name: "Dependency CVE tracking", scout: false, sentinel: false, guardian: true, fortress: true },
+            { name: "Shareable report links", scout: false, sentinel: false, guardian: true, fortress: true },
+            { name: "Team access", scout: false, sentinel: false, guardian: `${SYSTEM_CONFIG.tiers.TEAMS.limits.teamSeats} Seats`, fortress: "Unlimited" },
+            { name: "Support response time", scout: "Community", sentinel: "48h", guardian: "24h Priority", fortress: "Dedicated Manager" },
         ]
     }
 ];
@@ -209,17 +213,18 @@ export default function PricingPage() {
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="border-b border-white/10">
-                                        <th className="py-10 px-8 text-left text-white font-black text-base tracking-widest w-1/4">Features list</th>
+                                        <th className="py-10 px-8 text-left text-white font-black text-base tracking-widest w-1/5">Features list</th>
                                         <th className="py-10 px-8 text-center text-white/50 font-bold text-sm tracking-widest">Scout</th>
                                         <th className="py-10 px-8 text-center text-purple-400 font-bold text-sm tracking-widest">Sentinel</th>
                                         <th className="py-10 px-8 text-center text-blue-400 font-bold text-sm tracking-widest">Guardian</th>
+                                        <th className="py-10 px-8 text-center text-white font-bold text-sm tracking-widest">Fortress</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {comparisonData.map((section, sIdx) => (
                                         <React.Fragment key={sIdx}>
                                             <tr className="bg-white/5">
-                                                <td colSpan={4} className="py-5 px-8 text-[11px] font-mono text-white/40 tracking-[0.4em] font-black border-b border-white/5">
+                                                <td colSpan={5} className="py-5 px-8 text-[11px] font-mono text-white/40 tracking-[0.4em] font-black border-b border-white/5">
                                                     {section.category}
                                                 </td>
                                             </tr>
@@ -245,6 +250,13 @@ export default function PricingPage() {
                                                             feature.guardian ? <Check className="h-5 w-5 text-blue-500 mx-auto" /> : <X className="h-5 w-5 text-white/10 mx-auto" />
                                                         ) : (
                                                             <span className="text-blue-400 font-mono text-sm">{feature.guardian}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-8 px-8 text-center">
+                                                        {typeof feature.fortress === 'boolean' ? (
+                                                            feature.fortress ? <Check className="h-5 w-5 text-white mx-auto" /> : <X className="h-5 w-5 text-white/10 mx-auto" />
+                                                        ) : (
+                                                            <span className="text-white font-mono text-sm">{feature.fortress}</span>
                                                         )}
                                                     </td>
                                                 </tr>

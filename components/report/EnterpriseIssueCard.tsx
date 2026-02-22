@@ -1,17 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Copy, AlertTriangle, AlertCircle, Terminal, Info, Zap, ShieldCheck, FileText, Clock, CheckCircle2, BarChart3, HelpCircle, Lightbulb, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, AlertTriangle, AlertCircle, Terminal, Info, Zap, ShieldCheck, FileText, Clock, CheckCircle2, BarChart3, HelpCircle, Lightbulb, Sparkles, Lock } from 'lucide-react'
 import { EnterpriseIssue } from '@/types/report'
+import { SYSTEM_CONFIG, TierId } from '@/lib/config/system'
+import Link from 'next/link'
 
 interface EnterpriseIssueCardProps {
     issue: EnterpriseIssue
     rank: number
+    tierKey?: TierId
 }
 
-export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
+export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.VIBE_CODER }: EnterpriseIssueCardProps) {
     const [expanded, setExpanded] = useState(rank <= 3) // Auto-expand top 3
     const [copied, setCopied] = useState<string | null>(null)
+
+    const tierConfig = SYSTEM_CONFIG.tiers[tierKey] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+    const canSeeExplanations = tierConfig.features.detailedExplanations ?? false;
+    const canSeeFixes = tierConfig.features.fixSuggestions ?? false;
+    const canSeePrompts = tierConfig.features.executionReadyPrompts ?? false;
 
     const severityColors = {
         critical: 'border-red-500/50 bg-red-500/[0.02]',
@@ -92,14 +100,27 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
                                 Audit Discovery
                             </h4>
                         </div>
-                        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5">
-                            <p className="text-gray-400 leading-relaxed text-sm">
-                                {issue.whatWeFound}
-                            </p>
-                            <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
-                                <span className="text-blue-500/50">Discovered by:</span> {issue.agentName || 'Security Scanner'}
-                                <span className="mx-2">•</span>
-                                <span className="text-blue-500/50">Pattern:</span> {issue.searchingFor}
+                        <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                            {!canSeeExplanations && (
+                                <div className="absolute inset-0 z-10 backdrop-blur-md bg-black/40 flex flex-col items-center justify-center">
+                                    <Lock className="w-6 h-6 text-white/50 mb-3" />
+                                    <p className="text-sm font-bold text-white mb-2">Detailed Explanations Locked</p>
+                                    <Link href="/pricing">
+                                        <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all">
+                                            Upgrade to Developer Tier
+                                        </button>
+                                    </Link>
+                                </div>
+                            )}
+                            <div className={!canSeeExplanations ? 'blur-sm select-none opacity-50' : ''}>
+                                <p className="text-gray-400 leading-relaxed text-sm">
+                                    {issue.whatWeFound}
+                                </p>
+                                <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+                                    <span className="text-blue-500/50">Discovered by:</span> {issue.agentName || 'Security Scanner'}
+                                    <span className="mx-2">•</span>
+                                    <span className="text-blue-500/50">Pattern:</span> {issue.searchingFor}
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -205,46 +226,59 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
                             </h4>
                         </div>
 
-                        <div className="space-y-4">
-                            {issue.solution?.must && issue.solution.must.length > 0 && (
-                                <div className="p-6 rounded-2xl bg-red-950/20 border border-red-500/20">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <AlertCircle className="w-3 h-3 text-red-400" />
-                                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Mandatory Action</p>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {issue.solution.must.map((item: any, i: number) => (
-                                            <div key={i} className="flex gap-4">
-                                                <span className="text-red-500/50 mt-1 font-black text-xs">M{i + 1}</span>
-                                                <div>
-                                                    <strong className="text-white block mb-1">{item.action}</strong>
-                                                    <p className="text-sm text-gray-400 font-medium italic">Why: {item.reason}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                        <div className="space-y-4 relative overflow-hidden">
+                            {!canSeeFixes && (
+                                <div className="absolute inset-0 z-10 backdrop-blur-md bg-black/40 flex flex-col items-center justify-center rounded-2xl">
+                                    <Lock className="w-6 h-6 text-white/50 mb-3" />
+                                    <p className="text-sm font-bold text-white mb-2">Code Solutions Locked</p>
+                                    <Link href="/pricing">
+                                        <button className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-full transition-all">
+                                            Unlock AI Fixes
+                                        </button>
+                                    </Link>
                                 </div>
                             )}
+                            <div className={!canSeeFixes ? 'blur-sm select-none opacity-50 space-y-4' : 'space-y-4'}>
+                                {issue.solution?.must && issue.solution.must.length > 0 && (
+                                    <div className="p-6 rounded-2xl bg-red-950/20 border border-red-500/20">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <AlertCircle className="w-3 h-3 text-red-400" />
+                                            <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Mandatory Action</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {issue.solution.must.map((item: any, i: number) => (
+                                                <div key={i} className="flex gap-4">
+                                                    <span className="text-red-500/50 mt-1 font-black text-xs">M{i + 1}</span>
+                                                    <div>
+                                                        <strong className="text-white block mb-1">{item.action}</strong>
+                                                        <p className="text-sm text-gray-400 font-medium italic">Why: {item.reason}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                            {issue.solution?.should && issue.solution.should.length > 0 && (
-                                <div className="p-6 rounded-2xl bg-orange-950/10 border border-orange-500/10">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Zap className="w-3 h-3 text-orange-400" />
-                                        <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Tactical Recommendation</p>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {issue.solution.should.map((item: any, i: number) => (
-                                            <div key={i} className="flex gap-4">
-                                                <span className="text-orange-500/50 mt-1 font-black text-xs">T{i + 1}</span>
-                                                <div>
-                                                    <strong className="text-white block mb-1">{item.action}</strong>
-                                                    <p className="text-sm text-gray-400 font-medium italic">Why: {item.reason}</p>
+                                {issue.solution?.should && issue.solution.should.length > 0 && (
+                                    <div className="p-6 rounded-2xl bg-orange-950/10 border border-orange-500/10">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Zap className="w-3 h-3 text-orange-400" />
+                                            <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Tactical Recommendation</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {issue.solution.should.map((item: any, i: number) => (
+                                                <div key={i} className="flex gap-4">
+                                                    <span className="text-orange-500/50 mt-1 font-black text-xs">T{i + 1}</span>
+                                                    <div>
+                                                        <strong className="text-white block mb-1">{item.action}</strong>
+                                                        <p className="text-sm text-gray-400 font-medium italic">Why: {item.reason}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </section>
 
@@ -259,30 +293,43 @@ export function EnterpriseIssueCard({ issue, rank }: EnterpriseIssueCardProps) {
                             </h4>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            {[
-                                { id: 'cursor', label: 'Cursor IDE', prompt: issue.aiPrompts?.cursor },
-                                { id: 'chatgpt', label: 'ChatGPT-4', prompt: issue.aiPrompts?.chatgpt },
-                                { id: 'claude', label: 'Claude 3', prompt: issue.aiPrompts?.claude }
-                            ].filter(p => p.prompt).map((p) => (
-                                <div key={p.id} className="group relative p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all duration-300">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
-                                            {p.label}
-                                        </span>
-                                        <button
-                                            onClick={() => copyToClipboard(p.prompt!, p.id)}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-blue-500 hover:text-white transition-all text-white/40"
-                                        >
-                                            {copied === p.id ? <ShieldCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        <div className="relative overflow-hidden">
+                            {!canSeePrompts && (
+                                <div className="absolute inset-0 z-10 backdrop-blur-md bg-black/40 flex flex-col items-center justify-center rounded-2xl">
+                                    <Lock className="w-6 h-6 text-white/50 mb-3" />
+                                    <p className="text-sm font-bold text-white mb-2">AI Engineer Protocols Locked</p>
+                                    <Link href="/pricing">
+                                        <button className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold rounded-full transition-all">
+                                            Unlock Execution Prompts
                                         </button>
-                                    </div>
-                                    <div className="h-24 overflow-hidden text-[11px] font-mono text-gray-500 line-clamp-4 group-hover:text-gray-300 transition-colors">
-                                        {p.prompt}
-                                    </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent pointer-events-none" />
+                                    </Link>
                                 </div>
-                            ))}
+                            )}
+                            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-4 ${!canSeePrompts ? 'blur-sm select-none opacity-50' : ''}`}>
+                                {[
+                                    { id: 'cursor', label: 'Cursor IDE', prompt: issue.aiPrompts?.cursor },
+                                    { id: 'chatgpt', label: 'ChatGPT-4', prompt: issue.aiPrompts?.chatgpt },
+                                    { id: 'claude', label: 'Claude 3', prompt: issue.aiPrompts?.claude }
+                                ].filter(p => p.prompt).map((p) => (
+                                    <div key={p.id} className="group relative p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                                {p.label}
+                                            </span>
+                                            <button
+                                                onClick={() => copyToClipboard(p.prompt!, p.id)}
+                                                className="p-2 rounded-lg bg-white/5 hover:bg-blue-500 hover:text-white transition-all text-white/40"
+                                            >
+                                                {copied === p.id ? <ShieldCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        <div className="h-24 overflow-hidden text-[11px] font-mono text-gray-500 line-clamp-4 group-hover:text-gray-300 transition-colors">
+                                            {p.prompt}
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent pointer-events-none" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </section>
 

@@ -35,9 +35,11 @@ export const TerminalDemo = () => {
     const [showLogs, setShowLogs] = useState<number[]>([]);
     const [isComplete, setIsComplete] = useState(false);
     const [memoryUsage, setMemoryUsage] = useState(0);
+    const [isMounted, setIsMounted] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        setIsMounted(true);
         let i = 0;
         const typingInterval = setInterval(() => {
             setTypedCommand(COMMAND.slice(0, i));
@@ -114,7 +116,7 @@ export const TerminalDemo = () => {
                                     <div key={stat} className="flex flex-col gap-1">
                                         <div className="flex justify-between text-[7px] font-mono text-neutral-500">
                                             <span>{stat}</span>
-                                            <span>{Math.floor(Math.random() * 30 + 70)}%</span>
+                                            <span>{isMounted ? Math.floor(Math.random() * 30 + 70) : 0}%</span>
                                         </div>
                                         <div className="h-0.5 w-full bg-neutral-900 rounded-full overflow-hidden">
                                             <div className="h-full bg-purple-500/40 w-[80%]" />
@@ -129,7 +131,7 @@ export const TerminalDemo = () => {
                             <div className="space-y-1">
                                 {[...Array(5)].map((_, i) => (
                                     <div key={i} className="text-[7px] font-mono text-purple-500/50 truncate">
-                                        RAW_PKT_{0x4000 + i * 128} {Math.random().toString(16).slice(2, 10)}
+                                        RAW_PKT_{0x4000 + i * 128} {isMounted ? Math.random().toString(16).slice(2, 10) : "89abcdef"}
                                     </div>
                                 ))}
                             </div>
@@ -181,8 +183,8 @@ export const TerminalDemo = () => {
                                                 initial={{ opacity: 0, scale: 0.98 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 className={`p-4 rounded-xl border-l-4 backdrop-blur-md ${log.severity === "critical"
-                                                        ? "bg-red-500/5 border-red-500/40"
-                                                        : "bg-yellow-500/5 border-yellow-500/40"
+                                                    ? "bg-red-500/5 border-red-500/40"
+                                                    : "bg-yellow-500/5 border-yellow-500/40"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3 mb-2">

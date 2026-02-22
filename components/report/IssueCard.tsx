@@ -4,14 +4,22 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Issue } from '@/types/agent';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Copy, Check, Terminal, ExternalLink, Lightbulb, Zap } from 'lucide-react';
+import { SYSTEM_CONFIG, TierId } from '@/lib/config/system';
+import Link from 'next/link';
+import { AlertCircle, Copy, Check, Terminal, ExternalLink, Lightbulb, Zap, Lock } from 'lucide-react';
 
 interface IssueCardProps {
     issue: Issue;
+    tierKey?: TierId;
 }
 
-export const IssueCard: React.FC<IssueCardProps> = ({ issue }) => {
+export const IssueCard: React.FC<IssueCardProps> = ({ issue, tierKey = TierId.VIBE_CODER }) => {
     const [copied, setCopied] = React.useState(false);
+
+    const tierConfig = SYSTEM_CONFIG.tiers[tierKey] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+    const canSeeExplanations = tierConfig.features.detailedExplanations ?? false;
+    const canSeeFixes = tierConfig.features.fixSuggestions ?? false;
+    const canSeePrompts = tierConfig.features.executionReadyPrompts ?? false;
 
     const formatDescription = (text: string) => {
         if (!text) return null;
@@ -114,8 +122,22 @@ RESPOND ONLY WITH THE SOLUTION AND BRIEF EXPLANATION.`;
             </div>
 
             {/* Description */}
-            <div className="px-6 md:px-8 py-6">
-                <p className="text-base text-white/60 leading-relaxed font-medium">
+            <div className="px-6 md:px-8 py-6 relative overflow-hidden">
+                {!canSeeExplanations && (
+                    <div className="absolute inset-0 z-10 backdrop-blur-md bg-black/40 flex flex-col items-center justify-center">
+                        <Lock className="w-4 h-4 text-white/50 mb-2" />
+                        <p className="text-[10px] font-bold text-white mb-2 uppercase tracking-widest">Explanations Locked</p>
+                        <Link href="/pricing">
+                            <button className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full transition-all">
+                                Upgrade Tier
+                            </button>
+                        </Link>
+                    </div>
+                )}
+                <p className={cn(
+                    "text-base text-white/60 leading-relaxed font-medium",
+                    !canSeeExplanations && "blur-sm select-none opacity-40"
+                )}>
                     {formatDescription(issue.description)}
                 </p>
             </div>
@@ -149,8 +171,22 @@ RESPOND ONLY WITH THE SOLUTION AND BRIEF EXPLANATION.`;
             )}
 
             {/* Fix Advice */}
-            <div className="px-6 md:px-8 py-6 border-t border-white/5 bg-white/[0.01]">
-                <div className="flex items-start gap-4">
+            <div className="px-6 md:px-8 py-6 border-t border-white/5 bg-white/[0.01] relative overflow-hidden">
+                {!canSeeFixes && (
+                    <div className="absolute inset-0 z-10 backdrop-blur-md bg-black/40 flex flex-col items-center justify-center">
+                        <Lock className="w-5 h-5 text-white/50 mb-3" />
+                        <p className="text-xs font-bold text-white mb-2 uppercase tracking-widest">Fix Recommendations Locked</p>
+                        <Link href="/pricing">
+                            <button className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full transition-all">
+                                Unlock AI Fixes
+                            </button>
+                        </Link>
+                    </div>
+                )}
+                <div className={cn(
+                    "flex items-start gap-4",
+                    !canSeeFixes && "blur-sm select-none opacity-40"
+                )}>
                     <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/10 text-blue-400 shrink-0">
                         <Lightbulb className="w-5 h-5" />
                     </div>
@@ -160,15 +196,25 @@ RESPOND ONLY WITH THE SOLUTION AND BRIEF EXPLANATION.`;
                             {issue.fix_suggestion}
                         </p>
 
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-3 relative">
+                            {!canSeePrompts && (
+                                <div className="absolute inset-0 z-20 flex items-center justify-center">
+                                    <div className="px-3 py-1 bg-black/60 backdrop-blur-sm border border-white/10 rounded-lg flex items-center gap-2">
+                                        <Lock className="w-3 h-3 text-white/40" />
+                                        <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Prompts Disabled</span>
+                                    </div>
+                                </div>
+                            )}
                             <Button
                                 size="sm"
                                 onClick={handleCopyPrompt}
+                                disabled={!canSeePrompts}
                                 className={cn(
                                     "h-10 px-6 rounded-xl flex items-center gap-3 transition-all duration-300 font-bold uppercase tracking-widest text-[10px]",
                                     copied
                                         ? "bg-green-500/20 text-green-400 border border-green-500/20"
-                                        : "bg-white/[0.03] hover:bg-white/[0.06] text-white/40 hover:text-white border border-white/5"
+                                        : "bg-white/[0.03] hover:bg-white/[0.06] text-white/40 hover:text-white border border-white/5",
+                                    !canSeePrompts && "opacity-50 cursor-not-allowed"
                                 )}
                             >
                                 {copied ? (

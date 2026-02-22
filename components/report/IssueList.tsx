@@ -7,13 +7,16 @@ import {
     Layers, Brain, ListFilter
 } from 'lucide-react';
 
+import { TierId } from '@/lib/config/system';
+
 interface IssueListProps {
     issues: Issue[];
+    tierKey?: TierId;
 }
 
 type Tab = 'all' | 'security' | 'architecture' | 'quality' | 'debt' | 'ai_specific';
 
-export const IssueList: React.FC<IssueListProps> = ({ issues }) => {
+export const IssueList: React.FC<IssueListProps> = ({ issues, tierKey = TierId.VIBE_CODER }) => {
     const [activeTab, setActiveTab] = useState<Tab>('all');
 
     const filteredIssues = activeTab === 'all'
@@ -83,7 +86,7 @@ export const IssueList: React.FC<IssueListProps> = ({ issues }) => {
                             return priority[a.severity] - priority[b.severity];
                         })
                         .map((issue) => (
-                            <IssueCard key={issue.id} issue={issue} />
+                            <IssueCard key={issue.id} issue={issue} tierKey={tierKey} />
                         ))
                 )}
             </div>
