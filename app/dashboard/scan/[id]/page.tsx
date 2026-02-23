@@ -17,7 +17,8 @@ export default function LiveScanPage() {
     const scanId = params.id as string;
     const supabase = createClient();
 
-    const { status } = useSSEScan(scanId);
+    const { status, activityFeed } = useSSEScan(scanId);
+    const latestEvent = activityFeed[activityFeed.length - 1];
 
     // Debug panel state
     const [showDebug, setShowDebug] = useState(false);
@@ -72,6 +73,33 @@ export default function LiveScanPage() {
                         <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em]">Live audit session</span>
                         <h1 className="text-sm font-bold text-zinc-100 tracking-tight">Active intelligence pipeline</h1>
                     </div>
+                </div>
+
+                {/* Floating Intelligence Island */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
+                    <AnimatePresence mode="wait">
+                        {latestEvent && (
+                            <motion.div
+                                key={latestEvent.id}
+                                initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(10px)' }}
+                                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10, filter: 'blur(5px)' }}
+                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                className="h-8 min-w-[320px] max-w-[500px] px-4 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-full flex items-center gap-3 shadow-2xl shadow-indigo-500/10 overflow-hidden"
+                            >
+                                <div className="flex-shrink-0 relative">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                    <div className="absolute inset-0 bg-indigo-500/40 blur-sm rounded-full animate-ping" />
+                                </div>
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className="text-[10px] font-black text-indigo-300 uppercase shrink-0 tracking-widest">{latestEvent.agentName}:</span>
+                                    <p className="text-[11px] font-medium text-zinc-300 whitespace-nowrap overflow-hidden text-ellipsis">
+                                        {latestEvent.message || "Initializing intelligence synchronization..."}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 <div className="flex items-center gap-6">
