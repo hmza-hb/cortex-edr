@@ -85,7 +85,7 @@ export const SYSTEM_CONFIG: {
                 aiPromptType: "basic",
                 prioritySupport: false,
                 apiAccess: false,
-                detailedExplanations: false,
+                detailedExplanations: true,
                 fixSuggestions: false,
                 executionReadyPrompts: false
             }
