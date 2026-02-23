@@ -19,6 +19,7 @@ export default function LiveScanPage() {
 
     const { status, activityFeed } = useSSEScan(scanId);
     const latestEvent = activityFeed[activityFeed.length - 1];
+    const [isIslandHovered, setIsIslandHovered] = useState(false);
 
     // Debug panel state
     const [showDebug, setShowDebug] = useState(false);
@@ -76,27 +77,82 @@ export default function LiveScanPage() {
                 </div>
 
                 {/* Floating Intelligence Island */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
+                <div className="absolute left-1/2 top-4 -translate-x-1/2 z-50 pointer-events-auto">
                     <AnimatePresence mode="wait">
                         {latestEvent && (
                             <motion.div
                                 key={latestEvent.id}
-                                initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(10px)' }}
-                                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                                layout
+                                onMouseEnter={() => setIsIslandHovered(true)}
+                                onMouseLeave={() => setIsIslandHovered(false)}
+                                initial={{ opacity: 0, scale: 0.9, y: -10, filter: 'blur(10px)' }}
+                                animate={{
+                                    opacity: 1,
+                                    scale: 1,
+                                    y: 0,
+                                    filter: 'blur(0px)',
+                                    height: isIslandHovered ? 160 : 32,
+                                    width: isIslandHovered ? 600 : 320,
+                                    borderRadius: isIslandHovered ? 28 : 999,
+                                }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10, filter: 'blur(5px)' }}
-                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                                className="h-8 min-w-[320px] max-w-[500px] px-4 bg-zinc-900/60 backdrop-blur-3xl border border-white/10 rounded-full flex items-center gap-3 shadow-2xl shadow-indigo-500/10 overflow-hidden"
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                className="bg-zinc-900/80 backdrop-blur-3xl border border-white/10 flex flex-col shadow-2xl shadow-indigo-500/20 overflow-hidden cursor-pointer"
                             >
-                                <div className="flex-shrink-0 relative">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                    <div className="absolute inset-0 bg-indigo-500/40 blur-sm rounded-full animate-ping" />
+                                <div className="h-8 px-4 flex items-center gap-3 shrink-0">
+                                    <div className="flex-shrink-0 relative">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                        <div className="absolute inset-0 bg-indigo-500/40 blur-sm rounded-full animate-ping" />
+                                    </div>
+                                    <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                        <span className="text-[10px] font-black text-indigo-300 uppercase shrink-0 tracking-widest">{latestEvent.agentName}:</span>
+                                        {!isIslandHovered && (
+                                            <p className="text-[11px] font-medium text-zinc-300 whitespace-nowrap overflow-hidden text-ellipsis flex-1">
+                                                {latestEvent.message || "Initializing intelligence synchronization..."}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <span className="text-[10px] font-black text-indigo-300 uppercase shrink-0 tracking-widest">{latestEvent.agentName}:</span>
-                                    <p className="text-[11px] font-medium text-zinc-300 whitespace-nowrap overflow-hidden text-ellipsis">
-                                        {latestEvent.message || "Initializing intelligence synchronization..."}
-                                    </p>
-                                </div>
+                                <AnimatePresence>
+                                    {isIslandHovered && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="px-6 pb-6 pt-2 overflow-y-auto premium-scrollbar flex-1 flex flex-col"
+                                        >
+                                            <div className="flex items-center justify-between mb-4 shrink-0">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 rounded bg-indigo-500/10 flex items-center justify-center">
+                                                        <Bug className="w-2.5 h-2.5 text-indigo-400" />
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Detailed intelligence stream</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10">
+                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                                    <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter">Live telemetry</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto premium-scrollbar pr-2">
+                                                <p className="text-[13px] font-medium text-zinc-100 leading-relaxed tracking-tight text-pretty selection:bg-indigo-500/30">
+                                                    {latestEvent.message}
+                                                </p>
+                                                {latestEvent.message.length > 100 && (
+                                                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[8px] font-black text-zinc-600 uppercase">Agent context</span>
+                                                            <span className="text-[9px] font-mono text-indigo-400/60 uppercase">{latestEvent.type} operational</span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[8px] font-black text-zinc-600 uppercase">Timestamp</span>
+                                                            <span className="text-[9px] font-mono text-zinc-500">{new Date(latestEvent.timestamp).toLocaleTimeString()}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </motion.div>
                         )}
                     </AnimatePresence>
