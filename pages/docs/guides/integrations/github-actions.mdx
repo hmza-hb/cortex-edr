@@ -1,0 +1,12 @@
+# GitHub Actions
+
+Run CortexEDR in your CI pipelines directly. Add our action to your workflow to block vulnerabilities before they merge to main.
+
+## Basic Setup
+
+```yaml
+steps:
+- uses: cortex-edr/analyze-action@v1
+  with:
+    token: ${{ secrets.CORTEX_TOKEN }}
+```
