@@ -120,41 +120,41 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
             <Link
                 href={item.locked ? "#" : item.href}
                 className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative",
+                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all group relative",
                     isCollapsed && "justify-center px-2",
                     isActive && !item.locked
-                        ? "bg-purple-500/10 text-white border border-purple-500/20"
+                        ? "bg-indigo-500/10 text-white border border-indigo-500/20 shadow-sm"
                         : item.locked
-                            ? "text-white/20 cursor-not-allowed"
-                            : "text-white/70 hover:text-white hover:bg-white/10",
-                    item.highlight && !isActive && "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 text-white hover:border-purple-500/50"
+                            ? "text-zinc-600 cursor-not-allowed"
+                            : "text-zinc-400 hover:text-white hover:bg-white/[0.03]",
+                    item.highlight && !isActive && "bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border border-indigo-500/20 text-indigo-100 hover:border-indigo-500/40"
                 )}
                 onClick={(e) => item.locked && e.preventDefault()}
                 title={isCollapsed ? item.label : undefined}
             >
                 {isActive && !item.locked && (
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-purple-500 rounded-r-full" />
+                    <div className="absolute left-0 top-2 bottom-2 w-[2px] bg-indigo-500 rounded-r-full" />
                 )}
                 <item.icon className={cn(
-                    "h-5 w-5 shrink-0",
-                    isActive ? "text-purple-400" : item.locked ? "text-white/20" : "text-white/60 group-hover:text-white"
+                    "h-[18px] w-[18px] shrink-0",
+                    isActive ? "text-indigo-400" : item.locked ? "text-zinc-700" : "text-zinc-500 group-hover:text-zinc-300"
                 )} />
                 {!isCollapsed && (
                     <>
-                        <span className="text-sm font-semibold truncate group-hover:text-white transition-colors">{item.label}</span>
+                        <span className="text-sm font-medium truncate transition-colors">{item.label}</span>
                         {item.locked && (
-                            <span className="ml-auto text-[10px] font-mono text-white/20 font-bold">Pro</span>
+                            <span className="ml-auto text-[10px] font-semibold text-zinc-700 uppercase tracking-tight">Pro</span>
                         )}
                         {item.badge && !item.locked && (
-                            <span className="ml-auto px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs font-mono rounded-full font-black">
+                            <span className="ml-auto px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded-full">
                                 {item.badge}
                             </span>
                         )}
                         {item.hasUpdate && (
-                            <span className="ml-auto h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                            <span className="ml-auto h-1.5 w-1.5 bg-blue-500 rounded-full" />
                         )}
                         {item.isPriority && (
-                            <span className="ml-auto text-xs text-green-400 font-mono font-black italic">Priority</span>
+                            <span className="ml-auto text-[10px] text-green-500/80 font-bold tracking-tight">Priority</span>
                         )}
                     </>
                 )}
@@ -176,23 +176,23 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
         <div className="flex flex-col h-full">
             {/* Topbar Placeholder / Collapse Toggle */}
             <div className={cn(
-                "p-4 border-b border-white/5 flex items-center transition-all h-16",
+                "p-4 border-b border-zinc-800/50 flex items-center transition-all h-16",
                 isCollapsed ? "justify-center" : "justify-between"
             )}>
                 {!isCollapsed && (
-                    <div className="text-xs font-mono text-white/40 uppercase tracking-widest font-bold">
-                        Systems Control
+                    <div className="text-xs font-medium text-zinc-500 tracking-tight">
+                        Platform management
                     </div>
                 )}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all group"
+                    className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center transition-all group"
                     title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                     {isCollapsed ? (
-                        <ChevronRight className="h-4 w-4 text-white/30 group-hover:text-white" />
+                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300" />
                     ) : (
-                        <ChevronLeft className="h-4 w-4 text-white/30 group-hover:text-white" />
+                        <ChevronLeft className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300" />
                     )}
                 </button>
             </div>
@@ -206,12 +206,12 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                 {/* Account Section */}
                 <div className="pt-8">
                     {!isCollapsed && (
-                        <h3 className="px-4 text-[11px] font-bold text-white/30 tracking-widest mb-3 uppercase">
-                            Account Control
+                        <h3 className="px-4 text-xs font-medium text-zinc-500 tracking-tight mb-3">
+                            Account and billing
                         </h3>
                     )}
                     {isCollapsed && (
-                        <div className="h-px bg-white/5 my-4 mx-2" />
+                        <div className="h-px bg-zinc-800/50 my-4 mx-2" />
                     )}
                     <div className="space-y-1">
                         {accountItems.map((item) => (
@@ -223,12 +223,12 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                 {/* Resources Section */}
                 <div className="pt-8">
                     {!isCollapsed && (
-                        <h3 className="px-4 text-[11px] font-bold text-white/30 tracking-widest mb-3 uppercase">
-                            Resources & Knowledge
+                        <h3 className="px-4 text-xs font-medium text-zinc-500 tracking-tight mb-3">
+                            Resources and support
                         </h3>
                     )}
                     {isCollapsed && (
-                        <div className="h-px bg-white/5 my-4 mx-2" />
+                        <div className="h-px bg-zinc-800/50 my-4 mx-2" />
                     )}
                     <div className="space-y-1">
                         {resourceItems.map((item) => (
@@ -240,36 +240,36 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
 
             {/* Plan Badge at Bottom */}
             <div className={cn(
-                "p-4 border-t border-white/5 bg-[#080808]/50",
+                "p-4 border-t border-zinc-800/50 bg-zinc-900/30",
                 isCollapsed && "flex justify-center"
             )}>
                 {isCollapsed ? (
-                    <div className="h-10 w-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center" title={`${currentPlan.name} Tier`}>
+                    <div className="h-10 w-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center" title={`${currentPlan.name} Tier`}>
                         {getPlanIcon(currentPlan.icon)}
                     </div>
                 ) : (
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                            <div className="h-10 w-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
                                 {getPlanIcon(currentPlan.icon)}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <div className="text-sm font-bold text-white tracking-tight">{currentPlan.name}</div>
+                                    <div className="text-sm font-semibold text-zinc-100">{currentPlan.name}</div>
                                     {currentPlan.badge && (
-                                        <div className="text-[10px] px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold rounded">
+                                        <div className="text-[10px] px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium rounded">
                                             {currentPlan.badge}
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-xs text-white/50 mt-1 font-mono uppercase tracking-tight font-medium">{currentPlan.description}</p>
+                                <p className="text-xs text-zinc-500 mt-0.5 font-medium">{currentPlan.description}</p>
                             </div>
                         </div>
                         {currentPlan.showUpgrade && currentPlan.upgradeHref && (
                             <Link href={currentPlan.upgradeHref}>
                                 <Button
                                     size="sm"
-                                    className="w-full bg-white text-black hover:bg-neutral-200 font-bold text-sm tracking-tight uppercase h-11 rounded-xl shadow-lg transition-all active:scale-[0.98]"
+                                    className="w-full bg-zinc-100 text-zinc-950 hover:bg-zinc-300 font-semibold text-sm h-10 rounded-xl transition-all active:scale-[0.98]"
                                 >
                                     <Zap className="h-4 w-4 mr-2 fill-current" />
                                     {currentPlan.upgradeText}
@@ -287,7 +287,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 bg-black border border-white/10 rounded-lg flex items-center justify-center text-white hover:bg-white/5 transition-all"
+                className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-center text-zinc-100 hover:bg-zinc-900 transition-all"
             >
                 {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -295,7 +295,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
@@ -305,7 +305,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                 initial={false}
                 animate={{ width: isCollapsed ? 80 : 280 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className="hidden lg:flex flex-col h-screen border-r border-white/5 bg-[#050505]"
+                className="hidden lg:flex flex-col h-screen border-r border-zinc-800 bg-zinc-950"
             >
                 <SidebarContent />
             </motion.aside>
@@ -315,7 +315,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                 initial={{ x: -280 }}
                 animate={{ x: isMobileOpen ? 0 : -280 }}
                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-[#050505] border-r border-white/5 z-50 flex flex-col"
+                className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col"
             >
                 <SidebarContent />
             </motion.aside>

@@ -114,50 +114,85 @@ export default function PricingPage() {
     const supabase = createClient();
 
     React.useEffect(() => {
-        const isLive = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.startsWith("live_");
+        const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+        const isLive = token?.startsWith("live_");
+
+        console.log("[Paddle] Initializing...", { environment: isLive ? "production" : "sandbox", hasToken: !!token });
+
+        if (!token) {
+            console.error("[Paddle] Missing NEXT_PUBLIC_PADDLE_CLIENT_TOKEN in environment variables.");
+            return;
+        }
 
         initializePaddle({
             environment: isLive ? "production" : "sandbox",
-            token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+            token: token,
             eventCallback: (event) => {
+                console.log("[Paddle Event]", event.name, event);
                 if (event.name === "checkout.completed") {
                     toast.success("Deployment successful. Intelligence unit activated.");
                 }
             }
         }).then((paddleInstance) => {
-            if (paddleInstance) setPaddle(paddleInstance);
+            if (paddleInstance) {
+                console.log("[Paddle] Instance successfully created.");
+                setPaddle(paddleInstance);
+            } else {
+                console.error("[Paddle] initializePaddle returned undefined.");
+            }
+        }).catch(err => {
+            console.error("[Paddle] Initialization error:", err);
+            toast.error("Internal connection error. Please verify network access.");
         });
     }, []);
 
     const handlePurchase = async (priceId: string) => {
-        if (!priceId) return;
+        console.log("[Paddle] handlePurchase initiated with priceId:", priceId);
 
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            toast.error("Authentication required. Please sign in to initiate deployment.");
+        if (!priceId) {
+            console.warn("[Paddle] No priceId provided to handlePurchase.");
             return;
         }
 
-        paddle?.Checkout.open({
-            settings: {
-                displayMode: "overlay",
-                theme: "dark",
-                locale: "en",
-            },
-            items: [
-                {
-                    priceId: priceId,
-                    quantity: 1,
+        if (!paddle) {
+            console.error("[Paddle] Paddle instance not ready. Checkout aborted.");
+            toast.error("System connection pending. Please wait a moment.");
+            return;
+        }
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                toast.error("Authentication required. Please sign in to initiate deployment.");
+                return;
+            }
+
+            console.log("[Paddle] Opening checkout for price:", priceId, "user:", user.email);
+
+            paddle.Checkout.open({
+                settings: {
+                    displayMode: "overlay",
+                    theme: "dark",
+                    locale: "en",
                 },
-            ],
-            customData: {
-                userId: user.id,
-            },
-            customer: {
-                email: user.email!,
-            },
-        });
+                items: [
+                    {
+                        priceId: priceId,
+                        quantity: 1,
+                    },
+                ],
+                customData: {
+                    userId: user.id,
+                },
+                customer: {
+                    email: user.email!,
+                },
+            });
+        } catch (error) {
+            console.error("[Paddle] Error during Checkout.open:", error);
+            toast.error("Failed to initiate checkout. Check console for details.");
+        }
     };
 
     return (

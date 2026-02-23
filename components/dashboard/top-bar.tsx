@@ -28,33 +28,33 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
     const isUnlimited = rawTier === "ENTERPRISE";
 
     return (
-        <div className="sticky top-0 z-50 bg-[#020202]/80 backdrop-blur-xl border-b border-white/5 supports-[backdrop-filter]:bg-[#020202]/60">
+        <div className="sticky top-0 z-50 bg-zinc-950/60 backdrop-blur-xl border-b border-zinc-800/50">
             <div className="flex items-center justify-between px-6 h-16">
                 <div className="flex items-center gap-8 flex-1">
                     {/* Left: Logo */}
                     <Link href="/dashboard" className="flex items-center gap-2 group shrink-0">
-                        <div className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-purple-500/50 transition-all duration-300">
-                            <Shield className="h-5 w-5 text-white transition-all group-hover:text-purple-400 group-hover:scale-110" />
+                        <div className="h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-indigo-500/50 transition-all duration-300">
+                            <Shield className="h-5 w-5 text-zinc-100 transition-all group-hover:text-indigo-400 group-hover:scale-110" />
                         </div>
-                        <span className="font-bold text-sm tracking-tight hidden md:block text-white ml-3">
-                            Cortex <span className="text-purple-500 font-black">EDR</span>
+                        <span className="font-semibold text-sm tracking-tight hidden md:block text-zinc-100 ml-3">
+                            project/cortex
                         </span>
                     </Link>
 
                     {/* Left: Professional Search Bar */}
                     <div className="relative max-w-md w-full hidden md:block group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-white/30 group-focus-within:text-purple-400 transition-colors" />
+                            <Search className="h-4 w-4 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-10 pr-12 py-2.5 border border-white/10 rounded-xl leading-5 bg-white/5 text-white placeholder-white/40 focus:outline-none focus:bg-white/10 focus:border-purple-500/50 transition-all duration-200 text-sm font-medium"
-                            placeholder="Operational search..."
+                            className="block w-full pl-10 pr-12 py-2 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:bg-zinc-900 focus:border-indigo-500/50 transition-all duration-200 text-sm"
+                            placeholder="Search findings and protocols..."
                         />
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-white/10 bg-white/5">
-                                <Command className="h-3.5 w-3.5 text-white/40" />
-                                <span className="text-xs font-mono text-white/40 font-bold">K</span>
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-zinc-800 bg-zinc-900">
+                                <Command className="h-3 w-3 text-zinc-500" />
+                                <span className="text-[10px] font-semibold text-zinc-500">K</span>
                             </div>
                         </div>
                     </div>
@@ -63,12 +63,12 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                 {/* Right: Actions & User */}
                 <div className="flex items-center gap-4">
                     {/* Actions Group */}
-                    <div className="flex items-center gap-2 pr-4 border-r border-white/5 mr-1 hidden sm:flex">
-                        <button className="h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+                    <div className="flex items-center gap-2 pr-4 border-r border-zinc-800 mr-1 hidden sm:flex">
+                        <button className="h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors border border-transparent">
                             <Share2 className="h-4 w-4" />
                             Connect
                         </button>
-                        <button className="h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+                        <button className="h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors border border-transparent">
                             <HelpCircle className="h-4 w-4" />
                             Support
                         </button>
@@ -79,10 +79,10 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                         <Link href="/pricing" className="hidden md:block">
                             <Button
                                 size="sm"
-                                className="bg-white text-black hover:bg-neutral-200 font-bold text-sm px-5 h-10 border-0 rounded-xl transition-all shadow-lg shadow-white/5 active:scale-[0.98]"
+                                className="bg-zinc-100 text-zinc-950 hover:bg-zinc-300 font-semibold text-sm px-5 h-9 border-0 rounded-lg transition-all active:scale-[0.98]"
                             >
                                 <Zap className="h-4 w-4 mr-2 fill-current" />
-                                Upgrade Plan
+                                Upgrade plan
                             </Button>
                         </Link>
                     )}
@@ -91,23 +91,23 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                     <div className="relative ml-1">
                         <button
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className="flex items-center gap-3 pl-1 pr-2 py-1.5 rounded-lg hover:bg-white/5 transition-all group border border-transparent hover:border-white/5"
+                            className="flex items-center gap-3 pl-1 pr-2 py-1.5 rounded-lg hover:bg-zinc-900 transition-all group border border-transparent"
                         >
-                            <div className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden shrink-0">
-                                <span className="text-xs font-mono text-purple-400 font-bold relative z-10">
+                            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center relative overflow-hidden shrink-0">
+                                <span className="text-xs font-semibold text-indigo-400 relative z-10">
                                     {user.email?.[0].toUpperCase()}
                                 </span>
                             </div>
                             <div className="hidden lg:flex flex-col items-start gap-0.5">
-                                <span className="text-sm font-bold text-white truncate max-w-[120px]">
+                                <span className="text-sm font-semibold text-zinc-100 truncate max-w-[120px]">
                                     {user.email?.split("@")[0]}
                                 </span>
-                                <span className={cn("text-[10px] font-mono font-bold uppercase tracking-widest leading-none", currentPlan.color)}>
-                                    {currentPlan.name} Tier
+                                <span className={cn("text-[10px] font-bold tracking-tight leading-none", currentPlan.color)}>
+                                    {currentPlan.name} tier
                                 </span>
                             </div>
                             <ChevronDown className={cn(
-                                "h-3 w-3 text-white/40 transition-transform duration-300",
+                                "h-3 w-3 text-zinc-500 transition-transform duration-300",
                                 isUserMenuOpen && "rotate-180"
                             )} />
                         </button>
@@ -116,47 +116,47 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                         {isUserMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
-                                <div className="absolute right-0 top-full mt-2 w-60 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-                                        <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                                <div className="absolute right-0 top-full mt-2 w-60 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="p-4 border-b border-zinc-800/50 bg-zinc-900/10">
+                                        <p className="text-sm font-medium text-zinc-100 truncate">{user.email}</p>
                                         <div className="flex items-center gap-2 mt-1.5">
-                                            <span className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded border border-white/10 bg-white/5 uppercase tracking-wider", currentPlan.color)}>
+                                            <span className={cn("text-[10px] px-1.5 py-0.5 rounded border border-zinc-800 bg-zinc-900 font-bold", currentPlan.color)}>
                                                 {currentPlan.name}
                                             </span>
                                             {isUnlimited ? (
-                                                <span className="text-[10px] text-white/40">Unlimited scans</span>
+                                                <span className="text-[10px] text-zinc-500">Unlimited scans</span>
                                             ) : (
-                                                <span className="text-[10px] text-white/40">{scanCount}/{scanLimit} scans</span>
+                                                <span className="text-[10px] text-zinc-500">{scanCount}/{scanLimit} scans used</span>
                                             )}
                                         </div>
                                     </div>
                                     <div className="p-2 space-y-0.5">
-                                        <Link href="/dashboard/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors rounded-lg group">
-                                            My Account
+                                        <Link href="/dashboard/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
+                                            Account settings
                                         </Link>
-                                        <Link href="/dashboard/billing" className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors rounded-lg group">
-                                            Billing & Plans
+                                        <Link href="/dashboard/billing" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
+                                            Subscription and billing
                                         </Link>
-                                        <Link href="/dashboard/referrals" className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors rounded-lg group">
-                                            Referrals
+                                        <Link href="/dashboard/referrals" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
+                                            Referral program
                                         </Link>
                                     </div>
-                                    <div className="h-px bg-white/5 my-1 mx-2" />
+                                    <div className="h-px bg-zinc-800/50 my-1 mx-2" />
                                     <div className="p-2 space-y-0.5">
-                                        <Link href="/docs" className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors rounded-lg group">
-                                            Documentation
+                                        <Link href="/docs" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
+                                            Developer documentation
                                         </Link>
-                                        <Link href="/support" className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors rounded-lg group">
-                                            Support
+                                        <Link href="/support" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
+                                            Customer support
                                         </Link>
                                     </div>
-                                    <div className="p-2 border-t border-white/5 bg-white/[0.02]">
+                                    <div className="p-2 border-t border-zinc-800/50 bg-zinc-900/10">
                                         <form action="/auth/sign-out" method="post">
                                             <button
                                                 type="submit"
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors rounded-lg"
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500/80 hover:bg-red-500/10 hover:text-red-400 transition-colors rounded-lg"
                                             >
-                                                Sign Out
+                                                Sign out of session
                                             </button>
                                         </form>
                                     </div>
