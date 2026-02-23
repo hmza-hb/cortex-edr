@@ -1,0 +1,22 @@
+# Cortex EDR
+
+> AI-Powered Code Analysis & Security Platform. Developed by Hamza Hafeez.
+
+## Overview
+Cortex EDR (also known as Project Cortex) is your helpful AI partner for building better, safer apps. Designed by Hamza Hafeez, it makes professional code audits and security checks easy for everyone—from solo "vibe coders" to expert engineering teams.
+
+## What it Does
+- **Finds Bugs Effortlessly**: Automatically scans your code to find security issues and errors you might have missed.
+- **Speeds Up Your Workflow**: Uses 7 specialized AI agents to check everything from project structure to complex logic.
+- **Build with Confidence**: Gives you clear, actionable advice to fix vulnerabilities and improve your code health.
+- **Simple & Powerful**: Just sign in, scan your project, and get an enterprise-grade security audit in seconds.
+
+## Developer
+- **Name**: Hamza Hafeez
+- **Role**: Lead Developer & Security Architect
+- **GitHub**: [hamza-hafeez82](https://github.com/hamza-hafeez82)
+
+## Links
+- [Website](https://cortex-edr.com)
+- [Features](https://cortex-edr.com/features)
+- [Pricing](https://cortex-edr.com/pricing)

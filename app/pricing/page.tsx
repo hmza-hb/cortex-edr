@@ -16,8 +16,10 @@ import {
     ChevronRight
 } from "lucide-react";
 import { Footer } from "@/components/landing/footer";
-
 import { SYSTEM_CONFIG } from "@/lib/config/system";
+import { initializePaddle, Paddle } from "@paddle/paddle-js";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 const pricingTiers = [
     {
@@ -28,7 +30,8 @@ const pricingTiers = [
         desc: "Essential reconnaissance node for public repo auditing.",
         icon: Binary,
         cta: "Initiate system",
-        color: "neutral"
+        color: "neutral",
+        paddlePriceId: "" // Free tier
     },
     {
         name: SYSTEM_CONFIG.tiers.DEVELOPER.name,
@@ -39,7 +42,8 @@ const pricingTiers = [
         icon: Zap,
         cta: "Activate node",
         color: "purple",
-        popular: true
+        popular: true,
+        paddlePriceId: "pri_..." // Replace with actual Paddle Price ID
     },
     {
         name: SYSTEM_CONFIG.tiers.TEAMS.name,
@@ -49,7 +53,8 @@ const pricingTiers = [
         desc: "High-capacity cluster for serious engineering operations.",
         icon: Server,
         cta: "Connect cluster",
-        color: "blue"
+        color: "blue",
+        paddlePriceId: "pri_..." // Replace with actual Paddle Price ID
     },
     {
         name: SYSTEM_CONFIG.tiers.ENTERPRISE.name,
@@ -59,7 +64,8 @@ const pricingTiers = [
         desc: "Enterprise-grade isolation and custom scaling protocols.",
         icon: Shield,
         cta: "Inquire access",
-        color: "white"
+        color: "white",
+        paddlePriceId: "pri_..." // Replace with actual Paddle Price ID
     }
 ];
 
@@ -104,6 +110,54 @@ const comparisonData = [
 ];
 
 export default function PricingPage() {
+    const [paddle, setPaddle] = React.useState<Paddle>();
+    const supabase = createClient();
+
+    React.useEffect(() => {
+        initializePaddle({
+            environment: "sandbox", // Use 'production' for live
+            token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+            eventCallback: (event) => {
+                if (event.name === "checkout.completed") {
+                    toast.success("Deployment successful. Intelligence unit activated.");
+                }
+            }
+        }).then((paddleInstance) => {
+            if (paddleInstance) setPaddle(paddleInstance);
+        });
+    }, []);
+
+    const handlePurchase = async (priceId: string) => {
+        if (!priceId) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            toast.error("Authentication required. Please sign in to initiate deployment.");
+            return;
+        }
+
+        paddle?.Checkout.open({
+            settings: {
+                displayMode: "overlay",
+                theme: "dark",
+                locale: "en",
+            },
+            items: [
+                {
+                    priceId: priceId,
+                    quantity: 1,
+                },
+            ],
+            customData: {
+                userId: user.id,
+            },
+            customer: {
+                email: user.email!,
+            },
+        });
+    };
+
     return (
         <main className="min-h-screen bg-black antialiased relative overflow-x-hidden">
             {/* Header / Nav */}
@@ -188,10 +242,12 @@ export default function PricingPage() {
                                 </div>
                             </div>
 
-                            <button className={`w-full py-5 rounded-2xl font-black font-mono text-[10px] tracking-[0.2em] uppercase transition-all duration-300 flex items-center justify-center gap-2 group mt-auto ${tier.popular
-                                ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.3)]'
-                                : 'bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black'
-                                }`}>
+                            <button
+                                onClick={() => tier.id === 'vibe_coder' ? null : handlePurchase(tier.paddlePriceId)}
+                                className={`w-full py-5 rounded-2xl font-black font-mono text-[10px] tracking-[0.2em] uppercase transition-all duration-300 flex items-center justify-center gap-2 group mt-auto ${tier.popular
+                                    ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.3)]'
+                                    : 'bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black'
+                                    }`}>
                                 {tier.cta}
                                 <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                             </button>

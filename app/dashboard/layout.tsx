@@ -24,17 +24,18 @@ export default async function DashboardLayout({
         .eq("id", user.id)
         .single();
 
-    const planTier = (profile?.plan_tier || "free") as "free" | "starter" | "professional" | "enterprise";
+    const rawTier = profile?.plan_tier || "VIBE_CODER";
+    const planTier = rawTier.toUpperCase() as "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE";
 
     // Calculate scan limits based on plan
     const scanLimits = {
-        free: 1,
-        starter: 10,
-        professional: 999999, // Unlimited
-        enterprise: 999999, // Unlimited
+        VIBE_CODER: 5,
+        DEVELOPER: 25,
+        TEAMS: 100,
+        ENTERPRISE: 500,
     };
 
-    const scanLimit = scanLimits[planTier];
+    const scanLimit = scanLimits[planTier] || 5;
     const scansRemaining = profile?.scans_remaining || 0;
     const scanCount = scanLimit - scansRemaining;
 

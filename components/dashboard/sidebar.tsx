@@ -77,39 +77,41 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
     }
 
     const planConfig: Record<string, PlanConfig> = {
-        free: {
-            name: "Scout",
+        vibe_coder: {
+            name: "Vibe Coder",
             icon: "Shield",
             description: `${scanCount}/${scanLimit} audit used`,
             showUpgrade: true,
             upgradeText: "Upgrade Plan",
             upgradeHref: "/pricing"
         },
-        starter: {
-            name: "Sentinel",
+        developer: {
+            name: "Developer",
             icon: "Activity",
             description: `${scanCount}/${scanLimit} audits used`,
             badge: "FOUNDER TIER",
             showUpgrade: true,
-            upgradeText: "Upgrade to Guardian",
+            upgradeText: "Upgrade to Teams",
             upgradeHref: "/pricing"
         },
-        professional: {
-            name: "Guardian",
+        teams: {
+            name: "Teams",
             icon: "HardDrive",
-            description: "Unlimited audit capacity",
+            description: "Collaborative intelligence",
             badge: "FOUNDER TIER",
-            showUpgrade: false
+            showUpgrade: true,
+            upgradeText: "Upgrade to Enterprise",
+            upgradeHref: "/pricing"
         },
         enterprise: {
-            name: "Fortress",
+            name: "Enterprise",
             icon: "Building",
-            description: "Enterprise infrastructure",
+            description: "Unlimited infrastructure",
             showUpgrade: false
         }
     };
 
-    const currentPlan = planConfig[planTier];
+    const currentPlan = planConfig[planTier] || planConfig.vibe_coder;
 
     const NavLink = ({ item }: { item: any }) => {
         const isActive = pathname === item.href;

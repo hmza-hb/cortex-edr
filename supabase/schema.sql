@@ -2,9 +2,11 @@
 create table profiles (
   id uuid references auth.users on delete cascade not null primary key,
   email text,
-  plan_tier text default 'free' check (plan_tier in ('free', 'starter', 'professional', 'enterprise')),
+  plan_tier text default 'vibe_coder' check (plan_tier in ('vibe_coder', 'developer', 'teams', 'enterprise')),
   scans_remaining integer default 1,
-  stripe_customer_id text,
+  paddle_customer_id text,
+  paddle_subscription_id text,
+  subscription_status text default 'inactive',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

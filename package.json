@@ -11,6 +11,8 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
+    "@paddle/paddle-js": "^1.6.2",
+    "@paddle/paddle-node-sdk": "^3.6.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-pdf/renderer": "^4.3.2",
     "@supabase/ssr": "^0.8.0",

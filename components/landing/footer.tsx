@@ -132,10 +132,18 @@ export const Footer = () => {
 
                 {/* Copyright/Legal Bottom Bar */}
                 <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
                         <span className="text-white text-sm tracking-tight font-medium">
                             © {currentYear} CortexEDR All Rights Reserved.
                         </span>
+                        <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
+                        <Link
+                            href="https://github.com/hamza-hafeez82"
+                            target="_blank"
+                            className="text-xs font-mono tracking-widest text-white/40 hover:text-purple-400 transition-colors"
+                        >
+                            Developed By: <span className="text-white/80 font-bold">Hamza Hafeez</span>
+                        </Link>
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
