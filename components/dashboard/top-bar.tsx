@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronDown, Zap, Shield, HelpCircle, Share2, Command, Github, Slack, Figma } from "lucide-react";
+import { Search, ChevronDown, Zap, Shield, HelpCircle, Share2, Command, Github, Slack, Figma, Bot, FileText, Wrench, Activity, Mail, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ interface TopBarProps {
 export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CODER" }: TopBarProps) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isConnectMenuOpen, setIsConnectMenuOpen] = useState(false);
+    const [isSupportMenuOpen, setIsSupportMenuOpen] = useState(false);
 
     const planConfig = {
         VIBE_CODER: { name: "Vibe Coder", color: "text-gray-400", showUpgrade: true },
@@ -133,10 +134,79 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                             </AnimatePresence>
                         </div>
 
-                        <button className="h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors border border-transparent">
-                            <HelpCircle className="h-4 w-4" />
-                            Support
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsSupportMenuOpen(!isSupportMenuOpen)}
+                                className={cn(
+                                    "h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors border border-transparent",
+                                    isSupportMenuOpen ? "text-white bg-zinc-900 border-zinc-800" : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                                )}
+                            >
+                                <HelpCircle className="h-4 w-4" />
+                                Support
+                                <ChevronDown className={cn(
+                                    "h-3 w-3 opacity-50 transition-transform duration-300",
+                                    isSupportMenuOpen && "rotate-180"
+                                )} />
+                            </button>
+
+                            <AnimatePresence>
+                                {isSupportMenuOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsSupportMenuOpen(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            transition={{ duration: 0.2, ease: "easeOut" }}
+                                            className="absolute right-0 top-full mt-2 w-72 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/80 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col"
+                                        >
+                                            <div className="p-4 border-b border-zinc-800/50">
+                                                <h4 className="text-sm font-bold text-white mb-1">Need help with your project?</h4>
+                                                <p className="text-xs text-zinc-400">Start with our Assistant, docs, or community.</p>
+                                            </div>
+
+                                            <div className="p-2 space-y-0.5">
+                                                <Link href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
+                                                    <Bot className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
+                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Cortex Assistant</span>
+                                                </Link>
+                                                <Link href="/docs" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
+                                                    <FileText className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
+                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Documentation</span>
+                                                </Link>
+                                                <Link href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
+                                                    <Wrench className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
+                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Troubleshooting</span>
+                                                </Link>
+                                                <Link href="/status" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
+                                                    <Activity className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
+                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Cortex status</span>
+                                                </Link>
+                                                <div className="h-px bg-zinc-800/50 my-1 mx-2" />
+                                                <Link href="/support" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
+                                                    <Mail className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
+                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Contact support</span>
+                                                </Link>
+                                            </div>
+
+                                            <div className="p-4 bg-zinc-900/40 border-t border-zinc-800/50">
+                                                <h4 className="text-xs font-bold text-white mb-1.5">Community support</h4>
+                                                <p className="text-[11px] text-zinc-500 leading-relaxed mb-4">
+                                                    Our Discord community can help with code-related issues. Many questions are answered in minutes.
+                                                </p>
+                                                <Link href="#">
+                                                    <Button variant="outline" className="w-full bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#5865F2] border-[#5865F2]/20 hover:border-[#5865F2]/40 h-9 text-xs font-bold shadow-none transition-all">
+                                                        <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                                                        Join us on discord
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
                     {/* Upgrade Button (conditional) */}
