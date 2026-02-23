@@ -208,15 +208,15 @@ export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
 
     return (
         <div className={cn(
-            "flex w-full relative bg-[#010101] overflow-hidden transition-all duration-1000",
-            isImmersive ? "h-screen rounded-none" : "h-[calc(100vh-120px)] rounded-[32px] border border-white/5 shadow-2xl"
+            "flex w-full relative bg-zinc-950 overflow-hidden transition-all duration-1000",
+            isImmersive ? "h-screen rounded-none" : "h-[calc(100vh-120px)] rounded-[32px] border border-zinc-800 shadow-2xl"
         )}>
             {/* 3D Infinite Grid Background */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {/* Dotted HUD Overlay */}
-                <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#333 2px, transparent 1px)', backgroundSize: '24px 24px' }} />
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3f3f46 2px, transparent 1px)', backgroundSize: '24px 24px' }} />
                 {/* Vignette */}
-                <div className="absolute inset-0 bg-radial-gradient(circle_at_center,transparent_0%,#010101_85%)" />
+                <div className="absolute inset-0 bg-radial-gradient(circle_at_center,transparent_0%,#09090b_85%)" />
             </div>
 
             <div ref={canvasRef} className="flex-1 relative flex flex-col min-w-0">
@@ -287,7 +287,7 @@ export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
                 </div>
 
                 {/* Status Bar (Pinned Bottom) */}
-                <div className="px-10 py-3 border-t border-white/5 bg-[#020202]/95 backdrop-blur-2xl flex items-center justify-between z-40">
+                <div className="px-10 py-3 border-t border-zinc-900 bg-zinc-900/95 backdrop-blur-2xl flex items-center justify-between z-40">
                     {/* LEFT SECTION */}
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-4">

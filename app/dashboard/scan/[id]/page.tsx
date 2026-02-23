@@ -57,9 +57,9 @@ export default function LiveScanPage() {
     }, [loadAILogs]);
 
     return (
-        <div className="h-screen w-full relative overflow-hidden animate-in fade-in duration-1000 flex flex-col bg-[#010101]">
+        <div className="h-screen w-full relative overflow-hidden animate-in fade-in duration-1000 flex flex-col bg-zinc-950">
             {/* Slim Header Control Bar */}
-            <div className="h-16 px-8 border-b border-white/5 bg-black/40 backdrop-blur-xl flex items-center justify-between z-50 shrink-0">
+            <div className="h-16 px-8 border-b border-zinc-900 bg-zinc-900/40 backdrop-blur-xl flex items-center justify-between z-50 shrink-0">
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => router.push('/dashboard')}

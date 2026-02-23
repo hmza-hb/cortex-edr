@@ -64,38 +64,38 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
     };
 
     return (
-        <div className="w-[380px] border-l border-white/5 bg-[#050505] flex flex-col h-full overflow-hidden z-50">
+        <div className="w-[420px] border-l border-zinc-900 bg-zinc-950 flex flex-col h-full overflow-hidden z-50">
             {/* Section 1: Pipeline Execution */}
             <div className="flex-1 flex flex-col min-h-0">
-                <div className="p-6 border-b border-white/5">
-                    <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-6">Pipeline Execution</h2>
+                <div className="p-6 border-b border-zinc-900 bg-zinc-950/50">
+                    <h2 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] mb-6">Pipeline execution</h2>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[calc(100vh-500px)]">
                         {steps.map((step) => {
                             const isCompleted = step.status === 'completed';
                             const isActive = step.status === 'active';
                             const isPending = !isActive && !isCompleted;
 
                             return (
-                                <div key={step.id} className="flex flex-col gap-1.5 px-1">
+                                <div key={step.id} className="flex flex-col gap-1.5 px-1 text-zinc-400">
                                     <div className="flex items-center gap-3">
                                         <div className="flex-shrink-0">
                                             {isCompleted ? (
-                                                <Check size={14} className="text-[#10b981]" />
+                                                <Check size={14} className="text-emerald-500" />
                                             ) : isActive ? (
                                                 <div className="relative">
-                                                    <Loader2 size={14} className="text-[#3b82f6] animate-spin" />
-                                                    <div className="absolute inset-0 bg-[#3b82f6]/20 blur-sm rounded-full animate-pulse" />
+                                                    <Loader2 size={14} className="text-indigo-400 animate-spin" />
+                                                    <div className="absolute inset-0 bg-indigo-400/20 blur-sm rounded-full animate-pulse" />
                                                 </div>
                                             ) : (
-                                                <Circle size={14} className="text-white/10" />
+                                                <Circle size={14} className="text-zinc-800" />
                                             )}
                                         </div>
 
                                         <div className="relative">
                                             <span className={cn(
                                                 "text-[11px] font-bold tracking-widest uppercase transition-colors duration-500",
-                                                isPending ? "text-white/20" : isCompleted ? "text-white/40" : "text-white/90"
+                                                isPending ? "text-zinc-700" : isCompleted ? "text-zinc-500" : "text-zinc-100"
                                             )}>
                                                 {step.label}
                                             </span>
@@ -107,7 +107,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
                                                         initial={{ width: 0 }}
                                                         animate={{ width: "100%" }}
                                                         transition={{ duration: 0.4, ease: "easeOut" }}
-                                                        className="absolute top-1/2 left-0 h-[1.5px] bg-[#10b981] -translate-y-1/2"
+                                                        className="absolute top-1/2 left-0 h-[1.5px] bg-emerald-500/50 -translate-y-1/2"
                                                     />
                                                 )}
                                             </AnimatePresence>
@@ -117,8 +117,8 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
                                     {/* Live Sub-text */}
                                     {isActive && step.logs.length > 0 && (
                                         <div className="pl-6 flex items-start gap-2">
-                                            <span className="text-white/20 text-[10px] font-mono mt-0.5">└─</span>
-                                            <p className="text-[10px] font-mono text-[#a0a0a0] transition-opacity duration-300">
+                                            <span className="text-zinc-800 text-[10px] font-mono mt-0.5">└─</span>
+                                            <p className="text-[10px] font-mono text-zinc-500 transition-opacity duration-300">
                                                 {step.logs[step.logs.length - 1]}<span className="animate-pulse">_</span>
                                             </p>
                                         </div>
@@ -127,16 +127,16 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
                                     {/* Completed Strike-through Sub-text */}
                                     {isCompleted && step.logs.length > 0 && (
                                         <div className="pl-6 flex items-start gap-2 opacity-30">
-                                            <span className="text-white/20 text-[10px] font-mono mt-0.5">└─</span>
+                                            <span className="text-zinc-800 text-[10px] font-mono mt-0.5">└─</span>
                                             <div className="relative">
-                                                <p className="text-[10px] font-mono text-[#a0a0a0]">
+                                                <p className="text-[10px] font-mono text-zinc-500">
                                                     {step.logs[step.logs.length - 1]}
                                                 </p>
                                                 <motion.div
                                                     initial={{ width: 0 }}
                                                     animate={{ width: "100%" }}
                                                     transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                                                    className="absolute top-1/2 left-0 h-[1px] bg-[#10b981] -translate-y-1/2"
+                                                    className="absolute top-1/2 left-0 h-[1px] bg-emerald-500/50 -translate-y-1/2"
                                                 />
                                             </div>
                                         </div>
@@ -149,12 +149,12 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
             </div>
 
             {/* Section 2: Live Activity */}
-            <div className="h-[300px] flex flex-col bg-[#0a0a0a] border-t border-white/5">
-                <div className="p-4 border-b border-white/[0.02] flex items-center justify-between">
-                    <h2 className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em]">Live Activity</h2>
+            <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/50 border-t border-zinc-800 shadow-inner">
+                <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                    <h2 className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Live activity</h2>
                     <div className="flex items-center gap-1.5">
-                        <div className="w-1 h-1 rounded-full bg-[#10b981] shadow-[0_0_5px_#10b981]" />
-                        <span className="text-[8px] font-mono text-white/20">BUFFERED</span>
+                        <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981]" />
+                        <span className="text-[8px] font-mono text-zinc-600">BUFFERED</span>
                     </div>
                 </div>
 
@@ -163,7 +163,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
                     className="flex-1 overflow-y-auto p-4 font-mono no-scrollbar flex flex-col gap-1 relative"
                 >
                     {/* Top Fade Overlay */}
-                    <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
+                    <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-zinc-900 to-transparent z-10 pointer-events-none" />
 
                     <AnimatePresence initial={false}>
                         {events.slice(-30).map((event) => (
@@ -177,7 +177,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
                                 <div className="mt-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
                                     {getIconForEvent(event.type)}
                                 </div>
-                                <div className="text-[#a0a0a0] flex-1 break-all">
+                                <div className="text-zinc-500 flex-1 break-all">
                                     {formatMessage(event.message)}
                                 </div>
                             </motion.div>
