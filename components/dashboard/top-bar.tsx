@@ -10,21 +10,22 @@ interface TopBarProps {
     user: any;
     scanCount?: number;
     scanLimit?: number;
-    planTier?: "free" | "starter" | "professional" | "enterprise";
+    planTier?: "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE" | string;
 }
 
-export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "free" }: TopBarProps) => {
+export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CODER" }: TopBarProps) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     const planConfig = {
-        free: { name: "Scout", color: "text-gray-400", showUpgrade: true },
-        starter: { name: "Sentinel", color: "text-purple-400", showUpgrade: true },
-        professional: { name: "Guardian", color: "text-blue-400", showUpgrade: false },
-        enterprise: { name: "Fortress", color: "text-white", showUpgrade: false },
+        VIBE_CODER: { name: "Vibe Coder", color: "text-gray-400", showUpgrade: true },
+        DEVELOPER: { name: "Developer", color: "text-purple-400", showUpgrade: true },
+        TEAMS: { name: "Teams", color: "text-blue-400", showUpgrade: true },
+        ENTERPRISE: { name: "Enterprise", color: "text-white", showUpgrade: false },
     };
 
-    const currentPlan = planConfig[planTier];
-    const isUnlimited = planTier === "professional" || planTier === "enterprise";
+    const rawTier = (planTier || "VIBE_CODER").toUpperCase();
+    const currentPlan = planConfig[rawTier as keyof typeof planConfig] || planConfig.VIBE_CODER;
+    const isUnlimited = rawTier === "ENTERPRISE";
 
     return (
         <div className="sticky top-0 z-50 bg-[#020202]/80 backdrop-blur-xl border-b border-white/5 supports-[backdrop-filter]:bg-[#020202]/60">

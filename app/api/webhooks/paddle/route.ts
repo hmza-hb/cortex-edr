@@ -3,7 +3,7 @@ import { Paddle, EventName, Environment } from '@paddle/paddle-node-sdk';
 import { createClient } from '@supabase/supabase-js';
 
 const paddle = new Paddle(process.env.PADDLE_API_KEY!, {
-    environment: Environment.sandbox, // Change to Environment.production for live
+    environment: process.env.PADDLE_API_KEY?.startsWith('pdl_live_') ? Environment.production : Environment.sandbox,
 });
 
 // Initialize Supabase with Service Role Key for admin overrides

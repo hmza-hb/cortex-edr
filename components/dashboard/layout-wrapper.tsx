@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 interface DashboardLayoutWrapperProps {
     children: React.ReactNode;
     user: any;
-    planTier: "free" | "starter" | "professional" | "enterprise";
+    planTier: "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE" | string;
     scanCount: number;
     scanLimit: number;
 }

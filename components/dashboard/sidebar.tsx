@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
     user: any;
-    planTier?: "free" | "starter" | "professional" | "enterprise";
+    planTier?: "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE" | string;
     scanCount?: number;
     scanLimit?: number;
 }

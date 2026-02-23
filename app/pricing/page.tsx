@@ -43,7 +43,7 @@ const pricingTiers = [
         cta: "Activate node",
         color: "purple",
         popular: true,
-        paddlePriceId: "pri_..." // Replace with actual Paddle Price ID
+        paddlePriceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID_DEVELOPER || ""
     },
     {
         name: SYSTEM_CONFIG.tiers.TEAMS.name,
@@ -54,7 +54,7 @@ const pricingTiers = [
         icon: Server,
         cta: "Connect cluster",
         color: "blue",
-        paddlePriceId: "pri_..." // Replace with actual Paddle Price ID
+        paddlePriceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID_TEAMS || ""
     },
     {
         name: SYSTEM_CONFIG.tiers.ENTERPRISE.name,
@@ -65,7 +65,7 @@ const pricingTiers = [
         icon: Shield,
         cta: "Inquire access",
         color: "white",
-        paddlePriceId: "pri_..." // Replace with actual Paddle Price ID
+        paddlePriceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID_ENTERPRISE || ""
     }
 ];
 
@@ -114,8 +114,10 @@ export default function PricingPage() {
     const supabase = createClient();
 
     React.useEffect(() => {
+        const isLive = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.startsWith("live_");
+
         initializePaddle({
-            environment: "sandbox", // Use 'production' for live
+            environment: isLive ? "production" : "sandbox",
             token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
             eventCallback: (event) => {
                 if (event.name === "checkout.completed") {
