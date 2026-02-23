@@ -66,11 +66,11 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
     return (
         <div className="w-[420px] border-l border-zinc-900 bg-zinc-950 flex flex-col h-full overflow-hidden z-50">
             {/* Section 1: Pipeline Execution */}
-            <div className="flex-1 flex flex-col min-h-0">
-                <div className="p-6 border-b border-zinc-900 bg-zinc-950/50">
-                    <h2 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] mb-6">Pipeline execution</h2>
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
+                <div className="p-6 border-b border-zinc-900 bg-zinc-950/50 flex flex-col h-full">
+                    <h2 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] mb-6 shrink-0">Pipeline execution</h2>
 
-                    <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[calc(100vh-500px)]">
+                    <div className="space-y-4 overflow-y-auto pr-2 premium-scrollbar flex-1">
                         {steps.map((step) => {
                             const isCompleted = step.status === 'completed';
                             const isActive = step.status === 'active';
@@ -149,7 +149,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
             </div>
 
             {/* Section 2: Live Activity */}
-            <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/50 border-t border-zinc-800 shadow-inner">
+            <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/30 border-t border-zinc-800 shadow-inner">
                 <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
                     <h2 className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Live activity</h2>
                     <div className="flex items-center gap-1.5">
@@ -160,7 +160,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({ steps, events }) => {
 
                 <div
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-4 font-mono no-scrollbar flex flex-col gap-1 relative"
+                    className="flex-1 overflow-y-auto p-4 font-mono premium-scrollbar flex flex-col gap-1 relative"
                 >
                     {/* Top Fade Overlay */}
                     <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-zinc-900 to-transparent z-10 pointer-events-none" />

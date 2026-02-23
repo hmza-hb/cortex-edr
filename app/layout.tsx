@@ -162,7 +162,42 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${inter.variable} ${outfit.variable} ${jetbrains.variable} font-sans`}>
+      <body className={`${inter.variable} ${outfit.variable} ${jetbrains.variable} font-sans overflow-x-hidden selection:bg-indigo-500/30`}>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          
+          /* Premium Slim Scrollbar */
+          .premium-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+          }
+          .premium-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .premium-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(161, 161, 170, 0.1);
+            border-radius: 20px;
+            border: 1px solid transparent;
+            background-clip: content-box;
+          }
+          .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.4);
+          }
+          
+          /* Hide scrollbar for Chrome, Safari and Opera */
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          /* Hide scrollbar for IE, Edge and Firefox */
+          .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+          }
+        `}} />
         <LoadingScreen />
         {children}
       </body>
