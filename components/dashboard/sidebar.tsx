@@ -183,7 +183,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
             )}>
                 {!isCollapsed && (
                     <div className="text-xs font-medium text-zinc-500 tracking-tight">
-                        Platform management
+                        CortexEDR, leave the TERROR behind
                     </div>
                 )}
                 <button

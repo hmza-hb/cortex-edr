@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronDown, Zap, Shield, HelpCircle, Share2, Command } from "lucide-react";
+import { Search, ChevronDown, Zap, Shield, HelpCircle, Share2, Command, Github, Slack, Figma } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ interface TopBarProps {
 
 export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CODER" }: TopBarProps) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isConnectMenuOpen, setIsConnectMenuOpen] = useState(false);
 
     const planConfig = {
         VIBE_CODER: { name: "Vibe Coder", color: "text-gray-400", showUpgrade: true },
@@ -36,8 +38,8 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                         <div className="h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-indigo-500/50 transition-all duration-300">
                             <Shield className="h-5 w-5 text-zinc-100 transition-all group-hover:text-indigo-400 group-hover:scale-110" />
                         </div>
-                        <span className="font-semibold text-sm tracking-tight hidden md:block text-zinc-100 ml-3">
-                            project/cortex
+                        <span className="font-semibold text-lg tracking-tight hidden md:block text-zinc-100 ml-4">
+                            CortexEDR
                         </span>
                     </Link>
 
@@ -63,11 +65,74 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                 {/* Right: Actions & User */}
                 <div className="flex items-center gap-4">
                     {/* Actions Group */}
-                    <div className="flex items-center gap-2 pr-4 border-r border-zinc-800 mr-1 hidden sm:flex">
-                        <button className="h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors border border-transparent">
-                            <Share2 className="h-4 w-4" />
-                            Connect
-                        </button>
+                    <div className="flex items-center gap-2 pr-4 border-r border-zinc-800 mr-1 hidden sm:flex relative">
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsConnectMenuOpen(!isConnectMenuOpen)}
+                                className={cn(
+                                    "h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors border border-transparent",
+                                    isConnectMenuOpen ? "text-white bg-zinc-900 border-zinc-800" : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                                )}
+                            >
+                                <Share2 className="h-4 w-4" />
+                                Connect
+                                <ChevronDown className={cn(
+                                    "h-3 w-3 opacity-50 transition-transform duration-300",
+                                    isConnectMenuOpen && "rotate-180"
+                                )} />
+                            </button>
+
+                            <AnimatePresence>
+                                {isConnectMenuOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsConnectMenuOpen(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            transition={{ duration: 0.2, ease: "easeOut" }}
+                                            className="absolute right-0 top-full mt-2 w-64 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/80 rounded-2xl shadow-2xl overflow-hidden z-50 p-2"
+                                        >
+                                            <div className="px-3 py-2 border-b border-zinc-800/50 mb-2">
+                                                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Connect Integrations</h4>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                {[
+                                                    { name: "GitHub", icon: Github, color: "hover:bg-zinc-100/10 hover:border-zinc-100/20", iconColor: "text-zinc-100" },
+                                                    { name: "Slack", icon: Slack, color: "hover:bg-[#E01E5A]/10 hover:border-[#E01E5A]/20", iconColor: "text-[#E01E5A]" },
+                                                    { name: "Figma", icon: Figma, color: "hover:bg-[#F24E1E]/10 hover:border-[#F24E1E]/20", iconColor: "text-[#F24E1E]" }
+                                                ].map((integration, idx) => (
+                                                    <motion.div
+                                                        key={integration.name}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: 0.1 + (idx * 0.05), duration: 0.3 }}
+                                                        className={cn(
+                                                            "flex items-center justify-between p-2.5 rounded-xl border border-transparent transition-all cursor-not-allowed group",
+                                                            integration.color
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                                <integration.icon className={cn("w-4 h-4", integration.iconColor)} />
+                                                            </div>
+                                                            <span className="text-sm font-semibold text-zinc-300 group-hover:text-white transition-colors">
+                                                                {integration.name}
+                                                            </span>
+                                                        </div>
+                                                        <div className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-wider group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 group-hover:text-indigo-400 transition-colors">
+                                                            Soon
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
                         <button className="h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors border border-transparent">
                             <HelpCircle className="h-4 w-4" />
                             Support
