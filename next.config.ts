@@ -2,8 +2,7 @@ import type { NextConfig } from "next";
 import nextra from "nextra";
 
 const withNextra = nextra({
-    theme: "nextra-theme-docs",
-    themeConfig: "./theme.config.tsx",
+    // Nextra 4 uses automatic theme resolution and page structure
 });
 
 const nextConfig: NextConfig = {
