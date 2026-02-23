@@ -176,27 +176,31 @@ export default async function DashboardPage() {
                 <div className="lg:col-span-8 space-y-8">
 
                     {/* Strategic Action Card */}
-                    <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl relative overflow-hidden group shadow-xl">
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/[0.03] blur-[120px] -mr-64 -mt-64 group-hover:bg-indigo-500/[0.05] transition-all duration-1000" />
+                    <Link
+                        href="/dashboard/new-scan"
+                        className="relative block p-8 md:p-12 bg-zinc-900 border border-zinc-800 rounded-[32px] overflow-hidden group shadow-2xl hover:border-indigo-500/30 transition-all duration-500"
+                    >
+                        {/* Decorative background flair */}
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/[0.03] blur-[120px] -mr-64 -mt-64 group-hover:bg-indigo-500/[0.08] transition-all duration-1000" />
 
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
                             <div className="flex-1 space-y-3 text-center md:text-left">
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 tracking-tight">
-                                    <Zap className="w-3 h-3 fill-current" /> Priority Operations
+                                    <Zap className="w-3 h-3 fill-current" /> Priority operations
                                 </div>
                                 <h2 className="text-2xl font-bold text-zinc-100 tracking-tight">Initiate new audit pipeline</h2>
                                 <p className="text-zinc-500 text-sm font-medium leading-relaxed max-w-md">
                                     Deploy our specialized AI agents to analyze a repository or infrastructure endpoint for vulnerabilities.
                                 </p>
                             </div>
-                            <Link href="/dashboard/new-scan" className="shrink-0 w-full md:w-auto">
-                                <Button className="w-full md:w-auto h-12 px-8 bg-zinc-100 text-zinc-950 hover:bg-zinc-300 font-bold text-sm rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2">
-                                    Launch scanner
-                                    <ArrowRight className="w-4 h-4" />
+                            <div className="shrink-0 w-full md:w-auto">
+                                <Button className="w-full md:w-auto h-12 px-8 bg-zinc-100 text-zinc-950 group-hover:bg-white font-bold text-sm rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2">
+                                    Initiate now
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </Button>
-                            </Link>
+                            </div>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* Recent Audits List */}
                     <div className="space-y-4">
