@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ScoreCard } from "@/components/report/ScoreCard";
 import { IssueList } from "@/components/report/IssueList";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, RotateCcw, ShieldCheck, Share2, Loader2, FileJson, Zap } from "lucide-react";
+import { ArrowLeft, Download, RotateCcw, ShieldCheck, Share2, Loader2, FileJson, Zap, MessageCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Issue } from "@/types/agent";
 
@@ -128,7 +128,34 @@ export default function ReportPage() {
                 </div>
             </motion.div>
 
-            {/* Score Section */}
+            {/* Brainstorming Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="relative group"
+            >
+                <div className="relative p-8 rounded-3xl border border-white/5 bg-white/[0.01] backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:bg-white/[0.02] hover:border-white/10">
+                    <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center shrink-0">
+                            <MessageCircle className="w-5 h-5 text-zinc-500" />
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-bold text-white tracking-tight">Codebase Intelligence Brainstorm</h3>
+                            <p className="text-sm text-zinc-500 font-medium leading-relaxed max-w-xl">
+                                Cortex now understands your codebase far better than any other LLM.
+                                Leverage this deep context to brainstorm architectural shifts or ask complex technical questions.
+                            </p>
+                        </div>
+                    </div>
+                    <Link href="/dashboard/chat">
+                        <Button variant="ghost" className="h-11 px-6 border border-white/10 text-white/40 hover:text-white rounded-xl hover:bg-white/5 transition-all flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+                            Ask a Question
+                            <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                    </Link>
+                </div>
+            </motion.div>
             <ScoreCard
                 score={scan?.score || 0}
                 severityCounts={severityCounts}
