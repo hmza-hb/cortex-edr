@@ -1,8 +1,7 @@
 import React from 'react'
-import type { DocsThemeConfig } from 'nextra-theme-docs'
 import { Shield } from 'lucide-react'
 
-const config: DocsThemeConfig = {
+const config = {
     logo: (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Shield size={24} style={{ color: '#818cf8' }} />

@@ -19,7 +19,7 @@ import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 export default function ReportPage() {
     const params = useParams();
     const router = useRouter();
-    const scanId = params.id as string;
+    const scanId = (params?.id as string) || "";
 
     const [scan, setScan] = useState<any>(null);
     const [issues, setIssues] = useState<Issue[]>([]);

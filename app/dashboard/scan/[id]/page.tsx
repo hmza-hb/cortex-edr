@@ -14,7 +14,7 @@ import Link from "next/link";
 export default function LiveScanPage() {
     const params = useParams();
     const router = useRouter();
-    const scanId = params.id as string;
+    const scanId = (params?.id as string) || "";
     const supabase = createClient();
 
     const { status, activityFeed } = useSSEScan(scanId);
