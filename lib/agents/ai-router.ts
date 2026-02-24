@@ -39,7 +39,7 @@ export async function callAI(
 
         // Critical Fallback to a super cheap/reliable model if primary and OpenRouter fallbacks fail
         if (plan !== 'vibe_coder') {
-            const emergencyModel = OPENROUTER_MODELS.vibe_coder[agentKey] || 'liquid/lfm-2-8b-a1b';
+            const emergencyModel = OPENROUTER_MODELS.vibe_coder[agentKey] || 'liquid/lfm2-8b-a1b';
             console.log(`[AI Router] Attempting emergency fallback to: ${emergencyModel}`);
             const { content } = await callOpenRouter(emergencyModel, systemPrompt, userPrompt);
             try { return JSON.parse(content); } catch { return content; }
@@ -55,10 +55,10 @@ export async function callAI(
  */
 function calculateCost(model: string, usage: { prompt_tokens: number, completion_tokens: number }): number {
     const rates: Record<string, { in: number, out: number }> = {
-        'liquid/lfm-2-8b-a1b': { in: 0.01, out: 0.02 },
+        'liquid/lfm2-8b-a1b': { in: 0.01, out: 0.02 },
         'qwen/qwq-32b-preview': { in: 0.20, out: 0.40 },
         'deepseek/deepseek-r1': { in: 0.55, out: 0.55 },
-        'qwen/qwen-2.5-72b': { in: 0.40, out: 0.40 },
+        'qwen/qwen-2.5-72b-instruct': { in: 0.40, out: 0.40 },
         'anthropic/claude-3.5-haiku': { in: 1.00, out: 5.00 },
         'minimax/minimax-m2': { in: 0.25, out: 1.00 },
     };
