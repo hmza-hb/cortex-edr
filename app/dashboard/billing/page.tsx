@@ -12,6 +12,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SYSTEM_CONFIG, TierId } from '@/lib/config/system';
 
 export default function BillingPage() {
     const [profile, setProfile] = React.useState<any>(null);
@@ -89,14 +90,18 @@ export default function BillingPage() {
                         <div className="grid md:grid-cols-2 gap-8 items-end">
                             <div>
                                 <div className="space-y-3 mb-6">
-                                    <div className="flex items-center gap-2 text-sm text-white/60">
-                                        <CheckCircle2 className="h-4 w-4 text-purple-500" />
-                                        <span>Unlimited intelligence scans</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-white/60">
-                                        <CheckCircle2 className="h-4 w-4 text-purple-500" />
-                                        <span>Priority security orchestration</span>
-                                    </div>
+                                    {profile?.plan_tier && (
+                                        <>
+                                            <div className="flex items-center gap-2 text-sm text-white/60">
+                                                <CheckCircle2 className="h-4 w-4 text-purple-500" />
+                                                <span>{SYSTEM_CONFIG.tiers[profile.plan_tier.toUpperCase() as TierId]?.limits.maxScansPerMonth} audit scans per month</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm text-white/60">
+                                                <CheckCircle2 className="h-4 w-4 text-purple-500" />
+                                                <span>{SYSTEM_CONFIG.tiers[profile.plan_tier.toUpperCase() as TierId]?.features.detailedExplanations ? 'Detailed logic analysis' : 'Basic security scanning'}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <button
                                     onClick={openCustomerPortal}

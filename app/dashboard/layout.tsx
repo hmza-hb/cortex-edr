@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { DashboardLayoutWrapper } from "@/components/dashboard/layout-wrapper";
 import { currentUser } from "@clerk/nextjs/server";
+import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 
 export default async function DashboardLayout({
     children,
@@ -28,19 +29,16 @@ export default async function DashboardLayout({
         .eq("email", user.primaryEmailAddress?.emailAddress)
         .maybeSingle();
 
-    const rawTier = profile?.plan_tier || "VIBE_CODER";
-    const planTier = rawTier.toUpperCase() as "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE";
+    const rawTier = profile?.plan_tier || "vibe_coder";
+    const tierId = rawTier.toUpperCase() as TierId;
+    const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
 
-    // Calculate scan limits based on plan
-    const scanLimits = {
-        VIBE_CODER: 5,
-        DEVELOPER: 25,
-        TEAMS: 100,
-        ENTERPRISE: 500,
-    };
+    const planTier = rawTier.toLowerCase();
+    const scanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
+        ? tierConfig.limits.maxScansPerMonth
+        : 1000; // Fallback for Unlimited
 
-    const scanLimit = scanLimits[planTier] || 5;
-    const scansRemaining = profile?.scans_remaining || 0;
+    const scansRemaining = profile?.scans_remaining ?? scanLimit;
     const scanCount = scanLimit - scansRemaining;
 
     // Serialize Clerk user for Client Components to prevent Next.js boundaries error

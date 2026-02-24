@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 import {
     Shield,
     Activity,
@@ -40,19 +41,19 @@ export default async function DashboardPage() {
         .eq("email", user.primaryEmailAddress?.emailAddress)
         .maybeSingle();
 
-    const planTier = (profile?.plan_tier || "free") as "free" | "starter" | "professional" | "enterprise";
+    const rawTier = profile?.plan_tier || "vibe_coder";
+    const tierId = rawTier.toUpperCase() as TierId;
+    const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+
+    const planTier = rawTier.toLowerCase() as any;
+    const scanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
+        ? tierConfig.limits.maxScansPerMonth
+        : 1000;
+
+    const scansRemaining = profile?.scans_remaining ?? scanLimit;
+    const scansUsed = Math.max(0, scanLimit - scansRemaining);
     const supabaseUserId = profile?.id;
 
-    const scanLimits = {
-        free: 1,
-        starter: 10,
-        professional: 1000, // Visual limit for "unlimited" feel
-        enterprise: 5000,
-    };
-
-    const scanLimit = scanLimits[planTier];
-    const scansRemaining = profile?.scans_remaining || 0;
-    const scansUsed = Math.max(0, scanLimit - scansRemaining);
 
     // 2. Fetch Aggregated Scan Data (Only if we have a mapped Supabase UUID)
     let scans: any[] = [];
