@@ -56,7 +56,8 @@ export default function Login() {
 
                 <div className="relative z-50">
                     <SignIn
-                        routing="hash"
+                        routing="path"
+                        path="/login"
                         fallbackRedirectUrl="/dashboard"
                         signUpFallbackRedirectUrl="/dashboard"
                         appearance={{
