@@ -1,6 +1,8 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import {
     Shield,
     Activity,
@@ -24,19 +26,22 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await currentUser();
 
-    if (!user) return null;
+    if (!user) return redirect("/login");
+
+    const supabase = await createClient();
 
     // 1. Fetch User Profile for Plan & Capacity
+    // Map Clerk user to Supabase UUID via email since Supabase uses UUIDs
     const { data: profile } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
-        .single();
+        .eq("email", user.primaryEmailAddress?.emailAddress)
+        .maybeSingle();
 
     const planTier = (profile?.plan_tier || "free") as "free" | "starter" | "professional" | "enterprise";
+    const supabaseUserId = profile?.id;
 
     const scanLimits = {
         free: 1,
@@ -49,12 +54,16 @@ export default async function DashboardPage() {
     const scansRemaining = profile?.scans_remaining || 0;
     const scansUsed = Math.max(0, scanLimit - scansRemaining);
 
-    // 2. Fetch Aggregated Scan Data
-    const { data: scans } = await supabase
-        .from("scans")
-        .select("id, score, repo_url, created_at, status")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+    // 2. Fetch Aggregated Scan Data (Only if we have a mapped Supabase UUID)
+    let scans: any[] = [];
+    if (supabaseUserId) {
+        const { data } = await supabase
+            .from("scans")
+            .select("id, score, repo_url, created_at, status")
+            .eq("user_id", supabaseUserId)
+            .order("created_at", { ascending: false });
+        scans = data || [];
+    }
 
     const recentScans = scans?.slice(0, 5) || [];
     const totalScans = scans?.length || 0;
@@ -65,10 +74,14 @@ export default async function DashboardPage() {
         : 0;
 
     // 3. Fetch Repository Data
-    const { count: repoCount } = await supabase
-        .from("repositories")
-        .select("*", { count: 'exact', head: true })
-        .eq("user_id", user.id);
+    let repoCount = 0;
+    if (supabaseUserId) {
+        const { count } = await supabase
+            .from("repositories")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", supabaseUserId);
+        repoCount = count || 0;
+    }
 
     // 4. Fetch Issue Statistics (Across all user's scans)
     // We get all scan IDs first to filter issues

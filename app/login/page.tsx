@@ -1,105 +1,11 @@
-import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
-import { getAppUrl } from '@/lib/auth'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LoginForm } from '@/components/auth/login-form'
 import { ChevronLeft } from 'lucide-react'
 import { MarketingScroller } from '@/components/ui/marketing-scroller'
 import Image from 'next/image'
+import { SignIn } from "@clerk/nextjs"
+import { dark } from "@clerk/themes"
 
-export default async function Login(props: {
-    searchParams: Promise<{ message: string }>
-}) {
-    const searchParams = await props.searchParams
-
-    const signIn = async (formData: FormData) => {
-        'use server'
-
-        const email = formData.get('email') as string
-        const password = formData.get('password') as string
-        const supabase = await createClient()
-
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        })
-
-        if (error) {
-            console.error('Sign in error:', error.message)
-            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
-        }
-
-        return redirect('/dashboard')
-    }
-
-    const signUp = async (formData: FormData) => {
-        'use server'
-
-        const origin = (await headers()).get('origin')
-        const appUrl = getAppUrl(origin)
-        const email = formData.get('email') as string
-        const password = formData.get('password') as string
-        const supabase = await createClient()
-
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                emailRedirectTo: `${appUrl}/auth/callback`,
-            },
-        })
-
-        if (error) {
-            console.error('Sign up error:', error.message)
-            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
-        }
-
-        return redirect('/login?message=Verification email sent. Please check your inbox.')
-    }
-
-    const signInWithGithub = async () => {
-        'use server'
-        const supabase = await createClient()
-        const origin = (await headers()).get('origin')
-        const appUrl = getAppUrl(origin)
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: `${appUrl}/auth/callback?next=/dashboard`,
-            },
-        })
-
-        if (error) {
-            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
-        }
-
-        if (data.url) redirect(data.url)
-    }
-
-    const signInWithGoogle = async () => {
-        'use server'
-        const supabase = await createClient()
-        const origin = (await headers()).get('origin')
-        const appUrl = getAppUrl(origin)
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${appUrl}/auth/callback?next=/dashboard`,
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent',
-                },
-            },
-        })
-
-        if (error) {
-            return redirect(`/login?message=${encodeURIComponent(error.message)}`)
-        }
-
-        if (data.url) redirect(data.url)
-    }
-
+export default function Login() {
     return (
         <div className="min-h-screen w-full flex flex-col md:flex-row bg-black overflow-hidden relative">
             {/* Left Side: Cinematic Background */}
@@ -142,23 +48,40 @@ export default async function Login(props: {
 
                 <Link
                     href="/"
-                    className="absolute left-8 top-8 text-xs font-mono uppercase tracking-[0.2em] text-white hover:text-purple-300 transition-all flex items-center gap-2 group font-black underline decoration-white/20 underline-offset-4"
+                    className="absolute left-8 top-8 text-xs font-mono uppercase tracking-[0.2em] text-white hover:text-purple-300 transition-all flex items-center gap-2 group font-black underline decoration-white/20 underline-offset-4 z-50"
                 >
                     <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     BACK TO HOME
                 </Link>
 
-                <LoginForm
-                    signIn={signIn}
-                    signUp={signUp}
-                    signInWithGithub={signInWithGithub}
-                    signInWithGoogle={signInWithGoogle}
-                    message={searchParams?.message}
-                />
+                <div className="relative z-50">
+                    <SignIn
+                        routing="hash"
+                        fallbackRedirectUrl="/dashboard"
+                        signUpFallbackRedirectUrl="/dashboard"
+                        appearance={{
+                            baseTheme: dark,
+                            elements: {
+                                rootBox: "scale-110",
+                                card: "bg-zinc-950 border border-zinc-800",
+                                headerTitle: "font-outfit text-white",
+                                headerSubtitle: "text-zinc-400 font-mono text-xs uppercase",
+                                socialButtonsBlockButton: "border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-white",
+                                dividerText: "text-zinc-500",
+                                dividerLine: "bg-zinc-800",
+                                formFieldLabel: "text-zinc-300",
+                                formFieldInput: "bg-zinc-900 border-zinc-800 text-white focus:border-indigo-500",
+                                formButtonPrimary: "bg-indigo-600 hover:bg-indigo-700 text-white h-10",
+                                footerActionText: "text-zinc-400",
+                                footerActionLink: "text-indigo-400 hover:text-indigo-300"
+                            }
+                        }}
+                    />
+                </div>
 
-                <div className="mt-12 text-center">
+                <div className="mt-12 text-center absolute bottom-8">
                     <p className="text-[10px] font-mono text-white/50 uppercase tracking-[0.4em] font-black">
-                        SECURE ACCESS v2.4.0
+                        SECURE ACCESS v3.0.0
                     </p>
                 </div>
             </div>

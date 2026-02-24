@@ -6,6 +6,8 @@ import { Search, ChevronDown, Zap, Shield, HelpCircle, Share2, Command, Github, 
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { UserButton } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
 interface TopBarProps {
     user: any;
@@ -222,82 +224,16 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                         </Link>
                     )}
 
-                    {/* User Menu Dropdown */}
-                    <div className="relative ml-1">
-                        <button
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className="flex items-center gap-3 pl-1 pr-2 py-1.5 rounded-lg hover:bg-zinc-900 transition-all group border border-transparent"
-                        >
-                            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center relative overflow-hidden shrink-0">
-                                <span className="text-xs font-semibold text-indigo-400 relative z-10">
-                                    {user.email?.[0].toUpperCase()}
-                                </span>
-                            </div>
-                            <div className="hidden lg:flex flex-col items-start gap-0.5">
-                                <span className="text-sm font-semibold text-zinc-100 truncate max-w-[120px]">
-                                    {user.email?.split("@")[0]}
-                                </span>
-                                <span className={cn("text-[10px] font-bold tracking-tight leading-none", currentPlan.color)}>
-                                    {currentPlan.name} tier
-                                </span>
-                            </div>
-                            <ChevronDown className={cn(
-                                "h-3 w-3 text-zinc-500 transition-transform duration-300",
-                                isUserMenuOpen && "rotate-180"
-                            )} />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {isUserMenuOpen && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
-                                <div className="absolute right-0 top-full mt-2 w-60 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="p-4 border-b border-zinc-800/50 bg-zinc-900/10">
-                                        <p className="text-sm font-medium text-zinc-100 truncate">{user.email}</p>
-                                        <div className="flex items-center gap-2 mt-1.5">
-                                            <span className={cn("text-[10px] px-1.5 py-0.5 rounded border border-zinc-800 bg-zinc-900 font-bold", currentPlan.color)}>
-                                                {currentPlan.name}
-                                            </span>
-                                            {isUnlimited ? (
-                                                <span className="text-[10px] text-zinc-500">Unlimited scans</span>
-                                            ) : (
-                                                <span className="text-[10px] text-zinc-500">{scanCount}/{scanLimit} scans used</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="p-2 space-y-0.5">
-                                        <Link href="/dashboard/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
-                                            Account settings
-                                        </Link>
-                                        <Link href="/dashboard/billing" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
-                                            Subscription and billing
-                                        </Link>
-                                        <Link href="/dashboard/referrals" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
-                                            Referral program
-                                        </Link>
-                                    </div>
-                                    <div className="h-px bg-zinc-800/50 my-1 mx-2" />
-                                    <div className="p-2 space-y-0.5">
-                                        <Link href="/docs" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
-                                            Developer documentation
-                                        </Link>
-                                        <Link href="/support" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors rounded-lg group">
-                                            Customer support
-                                        </Link>
-                                    </div>
-                                    <div className="p-2 border-t border-zinc-800/50 bg-zinc-900/10">
-                                        <form action="/auth/sign-out" method="post">
-                                            <button
-                                                type="submit"
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500/80 hover:bg-red-500/10 hover:text-red-400 transition-colors rounded-lg"
-                                            >
-                                                Sign out of session
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                    {/* User Menu Dropdown (Clerk) */}
+                    <div className="relative ml-1 flex items-center justify-center">
+                        <UserButton
+                            appearance={{
+                                baseTheme: dark,
+                                elements: {
+                                    userButtonAvatarBox: "w-8 h-8 rounded-lg border border-zinc-800",
+                                }
+                            }}
+                        />
                     </div>
                 </div>
             </div>
