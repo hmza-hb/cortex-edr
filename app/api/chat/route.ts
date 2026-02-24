@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@clerk/nextjs/server';
+import { supabaseService } from '@/lib/supabase/service';
 import { getEmbedding } from '@/lib/ai/embeddings';
 import { callOpenRouter } from '@/lib/openrouter/client';
 import { OPENROUTER_MODELS } from '@/lib/agents/openrouter-config';
 
 export async function POST(req: NextRequest) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { userId } = await auth();
 
-    if (!user) {
+    if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Search for relevant code in Supabase
         // Note: The RPC match_codebase_embeddings needs to be created in Supabase first
-        const { data: matches, error: matchError } = await supabase.rpc('match_codebase_embeddings', {
+        const { data: matches, error: matchError } = await supabaseService.rpc('match_codebase_embeddings', {
             query_embedding: queryEmbedding,
             match_threshold: 0.5,
             match_count: 5,
