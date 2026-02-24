@@ -41,6 +41,7 @@ export interface SharedMemory {
     issues: Issue[];
     summary?: string;
     score?: number;
+    planTier?: string;
 }
 
 export interface AgentUpdate {

@@ -8,8 +8,22 @@ import { runQualityAgent } from './agent4-quality';
 import { runDebtAgent } from './agent5-debt';
 import { runAISpecificAgent } from './agent6-ai-specific';
 import { runSynthesisAgent } from './agent7-synthesis';
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 export async function startScanPipeline(scanId: string, repoUrl: string) {
+    const user = await currentUser();
+
+    if (!user) {
+        return redirect("/login");
+    }
+
+    const { data: profile } = await supabaseService
+        .from('profiles')
+        .select('plan_tier')
+        .eq('email', user.primaryEmailAddress?.emailAddress)
+        .maybeSingle();
+
     const sharedMemory: SharedMemory = {
         scanId,
         repoPath: '', // Will be set by Agent 0
@@ -17,6 +31,7 @@ export async function startScanPipeline(scanId: string, repoUrl: string) {
         fileTree: [],
         techStack: { languages: [], frameworks: [], dependencies: {} },
         issues: [],
+        planTier: profile?.plan_tier || 'vibe_coder',
     };
 
     const emitEvent = async (event: Partial<AgentEvent>) => {
