@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { callOpenRouter } from '../openrouter/client';
-import { OPENROUTER_MODELS, FALLBACK_MODELS } from './openrouter-config';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import fs from 'fs';
 import path from 'path';
 import { AGENT_PROMPTS } from './prompts';
@@ -11,6 +11,22 @@ const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+let groqClient: Groq | null = null;
+function getGroqClient() {
+    if (!groqClient) {
+        groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY || 'MISSING_KEY' });
+    }
+    return groqClient;
+}
+
+let geminiClient: GoogleGenerativeAI | null = null;
+function getGeminiClient() {
+    if (!geminiClient) {
+        geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'MISSING_KEY');
+    }
+    return geminiClient;
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CORE EVENT EMITTER
@@ -39,16 +55,26 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
     }
 }
 
-// Map agentId to config keys
-const AGENT_ID_MAP: Record<number, string> = {
-    1: 'recon',
-    2: 'security',
-    3: 'architecture',
-    4: 'quality',
-    5: 'debt',
-    6: 'ai_specific',
-    7: 'synthesis'
-};
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STRATEGIC AI ROUTER (Tier-Based)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getRoutingForAgent(agentId: number): { primary: string; fallback: string } {
+    const defaultFallback = 'groq-llama-3.3-70b-versatile';
+
+    // Agent Mapping as per USER request:
+    // 1 (Recon), 3 (Arch), 4 (Quality), 5 (Debt) -> Gemini 2.0 Flash
+    // 2 (Security), 6 (AI-Specific), 7 (Orchestrator) -> DeepSeek R1 (OpenRouter)
+
+    if ([1, 3, 4, 5].includes(agentId)) {
+        return { primary: 'gemini-2.0-flash', fallback: defaultFallback };
+    }
+
+    if ([2, 6, 7].includes(agentId)) {
+        return { primary: 'deepseek-r1', fallback: defaultFallback };
+    }
+
+    return { primary: 'gemini-2.0-flash', fallback: defaultFallback };
+}
 
 async function callAI(
     systemPrompt: string,
@@ -58,46 +84,124 @@ async function callAI(
     logger: AILogger,
     tierKey: TierId = TierId.VIBE_CODER
 ): Promise<string> {
-    const start = Date.now();
-
-    // 1. Determine Tier Slug for config lookup
-    const tierSlug = tierKey.toLowerCase();
-    const agentKey = AGENT_ID_MAP[agentId] || 'recon';
-
-    // 2. Get Model from Config
-    const tierConfig = OPENROUTER_MODELS[tierSlug] || OPENROUTER_MODELS.vibe_coder;
-    const model = tierConfig[agentKey] || tierConfig.recon;
+    const routing = getRoutingForAgent(agentId);
 
     try {
-        console.log(`[AI ROUTER] Agent ${agentId} (${agentName}) - Using OpenRouter Model: ${model}`);
-
-        const { content, usage } = await callOpenRouter(model, systemPrompt, userPrompt, {
-            temperature: 0.1,
-            fallbacks: FALLBACK_MODELS.filter(m => m !== model)
-        });
-
-        const durationMs = Date.now() - start;
-        await logger.logInteraction(agentId, agentName, userPrompt, content, durationMs, {
-            modelUsed: model,
-            tokens: usage
-        });
-
-        return content;
+        console.log(`[AI ROUTER] ${agentName} (Agent ${agentId}) calling primary: ${routing.primary}`);
+        return await executeAICall(routing.primary, systemPrompt, userPrompt, agentId, agentName, logger);
     } catch (error: any) {
-        console.error(`[AI ROUTER] Critical Failure for ${agentName} (${model}):`, error.message);
+        console.warn(`[AI ROUTER] Primary (${routing.primary}) failed for ${agentName}: ${error.message}. Trying fallback: ${routing.fallback}...`);
 
-        // Final Emergency Fallback to LiquidAI if not already on it
-        if (model !== 'liquid/lfm-2-8b-a1b') {
-            console.log(`[AI ROUTER] Emergency fallback to LiquidAI...`);
-            const { content } = await callOpenRouter('liquid/lfm-2-8b-a1b', systemPrompt, userPrompt);
-            return content;
+        try {
+            return await executeAICall(routing.fallback, systemPrompt, userPrompt, agentId, agentName, logger);
+        } catch (finalError: any) {
+            console.error(`[AI ROUTER] Critical Failure: Fallback ${routing.fallback} also failed for ${agentName}.`);
+
+            // EMERGENCY SECOND FALLBACK: Llama 8B (highly available)
+            const emergencyFallback = 'groq-llama-3.1-8b-instant';
+            try {
+                console.log(`[AI ROUTER] Attempting emergency fallback: ${emergencyFallback}`);
+                return await executeAICall(emergencyFallback, systemPrompt, userPrompt, agentId, agentName, logger);
+            } catch (superFinalError: any) {
+                throw new Error(`AI_PIPELINE_CRASH: All providers failed for ${agentName}. Final error: ${superFinalError.message}`);
+            }
         }
-
-        throw new Error(`AI_PIPELINE_STALL: ${agentName} failed after all OpenRouter attempts.`);
     }
 }
 
-// executeAICall removed as functionality merged into callAI for unified OpenRouter flow
+async function executeAICall(
+    modelId: string,
+    systemPrompt: string,
+    userPrompt: string,
+    agentId: number,
+    agentName: string,
+    logger: AILogger
+): Promise<string> {
+    const start = Date.now();
+    const MAX_RETRIES = 2; // Fail fast so Vercel doesn't hit 60s timeout before fallback connects
+    let attempt = 0;
+
+    while (attempt < MAX_RETRIES) {
+        try {
+            let response = '';
+
+            if (modelId.startsWith('groq-')) {
+                const groq = getGroqClient();
+                const completion = await groq.chat.completions.create({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    model: modelId.replace('groq-', ''),
+                    temperature: 0.1,
+                    response_format: { type: 'json_object' }
+                });
+                response = completion.choices[0]?.message?.content || '[]';
+            }
+            else if (modelId.startsWith('gemini-')) {
+                const gemini = getGeminiClient();
+                const model = gemini.getGenerativeModel({
+                    model: modelId,
+                    systemInstruction: systemPrompt,
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+                const result = await model.generateContent(userPrompt);
+                response = result.response.text();
+            }
+            else if (modelId === 'deepseek-r1') {
+                // Priority: DeepSeek via OpenRouter. Fallback to Groq Llama if no key.
+                const openRouterKey = process.env.OPENROUTER_API_KEY;
+                if (!openRouterKey) {
+                    console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Groq Llama.');
+                    return await executeAICall('groq-llama-3.3-70b-versatile', systemPrompt, userPrompt, agentId, agentName, logger);
+                }
+
+                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openRouterKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://cortex-edr.com',
+                        'X-Title': 'Cortex EDR'
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek/deepseek-r1',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText}`);
+                const data = await res.json();
+                response = data.choices[0]?.message?.content || '[]';
+            }
+
+            const durationMs = Date.now() - start;
+            console.log(`[AI SUCCESS] ${agentName} used ${modelId} (${durationMs}ms)`);
+            await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs);
+            return response;
+
+        } catch (error: any) {
+            const isRateLimit = error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests');
+
+            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+                attempt++;
+                const backoffMs = Math.pow(2, attempt) * 1500; // max wait 3s
+                console.warn(`[AI RETRY] ${agentName} hit rate limit on ${modelId}. Waiting ${backoffMs}ms (Attempt ${attempt}/${MAX_RETRIES})...`);
+                await new Promise(r => setTimeout(r, backoffMs));
+                continue;
+            }
+
+            const durationMs = Date.now() - start;
+            await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${modelId}): ${error.message}`, durationMs);
+            throw error;
+        }
+    }
+    throw new Error('Max retries exceeded');
+}
 
 // Parse AI JSON response safely — handles bare arrays AND wrapped objects
 function parseAIResponse(raw: string, fallback: any = []): any {
