@@ -156,6 +156,9 @@ async function executeAICall(
                     return await executeAICall('groq-llama-3.3-70b-versatile', systemPrompt, userPrompt, agentId, agentName, logger);
                 }
 
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for deep thinking models
+
                 const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -171,10 +174,13 @@ async function executeAICall(
                             { role: 'user', content: userPrompt }
                         ],
                         response_format: { type: 'json_object' }
-                    })
+                    }),
+                    signal: controller.signal
                 });
 
-                if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText}`);
+                clearTimeout(timeoutId);
+
+                if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText} (${res.status})`);
                 const data = await res.json();
                 response = data.choices[0]?.message?.content || '[]';
             }
@@ -186,11 +192,13 @@ async function executeAICall(
 
         } catch (error: any) {
             const isRateLimit = error.message.includes('429') || error.message.includes('quota') || error.message.includes('Too Many Requests');
+            const isAborted = error.name === 'AbortError';
+            const isNetworkError = error.message.includes('fetch') || error.message.includes('ECONN') || error.message.includes('TIMEOUT');
 
-            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+            if ((isRateLimit || isAborted || isNetworkError) && attempt < MAX_RETRIES - 1) {
                 attempt++;
-                const backoffMs = Math.pow(2, attempt) * 1500; // max wait 3s
-                console.warn(`[AI RETRY] ${agentName} hit rate limit on ${modelId}. Waiting ${backoffMs}ms (Attempt ${attempt}/${MAX_RETRIES})...`);
+                const backoffMs = Math.pow(2, attempt) * 2000; // max wait 4s
+                console.warn(`[AI RETRY] ${agentName} (${modelId}) failed: ${error.message}. Waiting ${backoffMs}ms (Attempt ${attempt}/${MAX_RETRIES})...`);
                 await new Promise(r => setTimeout(r, backoffMs));
                 continue;
             }
@@ -203,18 +211,30 @@ async function executeAICall(
     throw new Error('Max retries exceeded');
 }
 
-// Parse AI JSON response safely — handles bare arrays AND wrapped objects
+// Parse AI JSON response safely — handles markdown blocks, bare arrays, and wrapped objects
 function parseAIResponse(raw: string, fallback: any = []): any {
     try {
-        const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(clean);
-        // If it's already an array, return it directly
-        if (Array.isArray(parsed)) return parsed;
-        // If it's an object, find the first key that holds an array
-        if (typeof parsed === 'object' && parsed !== null) {
-            // Keep specialized objects intact (don't unwrap arrays from Recon or Orchestrator)
-            if (parsed.executiveSummary || parsed.techStack || parsed.topPriorities) return parsed;
+        if (!raw || raw.trim() === '') return fallback;
 
+        // 1. Aggressively clean markdown blocks
+        let clean = raw.trim();
+        const jsonMatch = clean.match(/```json\s*([\s\S]*?)\s*```/i) || clean.match(/```\s*([\s\S]*?)\s*```/i);
+        if (jsonMatch) clean = jsonMatch[1];
+
+        // 2. Remove accidental reasoning artifacts (common in DeepSeek)
+        clean = clean.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+        // 3. Parse
+        const parsed = JSON.parse(clean);
+
+        // 4. Handle unwrapping logic
+        if (Array.isArray(parsed)) return parsed;
+
+        if (typeof parsed === 'object' && parsed !== null) {
+            // Keep specialized objects intact
+            if (parsed.executiveSummary || parsed.techStack || parsed.topPriorities || parsed.overallScore) return parsed;
+
+            // Search for arrays to unwrap
             for (const key of Object.keys(parsed)) {
                 if (Array.isArray(parsed[key])) {
                     console.log(`[PARSE] Unwrapped array from key: "${key}" (${parsed[key].length} items)`);
@@ -224,9 +244,23 @@ function parseAIResponse(raw: string, fallback: any = []): any {
             return parsed;
         }
         return fallback;
-    } catch {
-        console.error('[PARSE] Failed to parse AI response, using fallback');
-        console.error('[PARSE] Raw (first 300 chars):', raw.substring(0, 300));
+    } catch (err) {
+        console.error('[PARSE] JSON Extraction Failed:', err);
+        // LAST RESORT: Try to find anything that looks like a JSON array/object inside the string
+        try {
+            const startArray = raw.indexOf('[');
+            const endArray = raw.lastIndexOf(']');
+            if (startArray !== -1 && endArray !== -1) {
+                return JSON.parse(raw.substring(startArray, endArray + 1));
+            }
+            const startObj = raw.indexOf('{');
+            const endObj = raw.lastIndexOf('}');
+            if (startObj !== -1 && endObj !== -1) {
+                return JSON.parse(raw.substring(startObj, endObj + 1));
+            }
+        } catch { /* fail silently */ }
+
+        console.error('[PARSE] Raw Snippet:', raw.substring(0, 300));
         return fallback;
     }
 }
