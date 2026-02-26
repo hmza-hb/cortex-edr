@@ -1,0 +1,79 @@
+# API Reference
+
+The CortexEDR API allows you to programmatically interact with our intelligence engine and integrate security audits into your own tools.
+
+## Authentication
+CortexEDR uses **Clerk JSON Web Tokens (JWT)** for authentication. All API requests must include a valid session token in the `Authorization` header.
+
+```bash
+Authorization: Bearer <your_session_token>
+```
+
+---
+
+## Scan Orchestration
+
+### `POST /api/scan/start`
+Initiates a deep-pass security audit for a specific repository.
+
+**Request Body:**
+```json
+{
+  "repo_url": "https://github.com/username/project"
+}
+```
+
+**Response:**
+```json
+{
+  "scan_id": "uuid-v4-string"
+}
+```
+
+### `GET /api/scan/status/:id`
+Check the real-time progress of an active scan.
+
+**Response:**
+```json
+{
+  "status": "in_progress",
+  "current_agent": 3,
+  "percentage": 42
+}
+```
+
+---
+
+## Intelligence & Chat
+
+### `POST /api/chat`
+Query the **Neural Codebase Index** for specific architectural or security insights.
+
+**Request Body:**
+```json
+{
+  "message": "Explain the authentication flow in this project.",
+  "scanId": "uuid-v4-string",
+  "planTier": "vibe_coder"
+}
+```
+
+**Response:**
+```json
+{
+  "response": "The authentication flow utilizes Clerk for identity management and..."
+}
+```
+
+---
+
+## Rate Limits
+| Plan | Scans/Month | API Priority |
+| :--- | :--- | :--- |
+| **Vibe Coder** | 5 | Standard |
+| **Developer** | 50 | High |
+| **Teams** | 500 | Enterprise |
+| **Enterprise** | Custom | Dedicated Instance |
+
+> [!TIP]
+> Use the [Cortex CLI](https://github.com/hamza-hafeez82/cortex-cli) to automate these API calls directly from your terminal.

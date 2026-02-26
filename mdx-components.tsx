@@ -1,7 +1,7 @@
-// MDX components for Nextra documentation
+import type { MDXComponents } from 'nextra/mdx-components'
 
-export function useMDXComponents(components: any) {
+export function useMDXComponents(components: MDXComponents): MDXComponents {
     return {
-        ...components,
-    };
+        ...components
+    }
 }

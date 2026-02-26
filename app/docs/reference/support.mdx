@@ -1,0 +1,44 @@
+# Troubleshooting & Support
+
+Everything doesn't always go according to protocol. This guide helps you resolve common technical obstacles with the CortexEDR platform.
+
+## Common Issues
+
+### 1. Repository Clone Failures
+If Cortex is unable to clone your repository, verify the following:
+- **Public URL**: Ensure the URL is accessible without authentication (for non-connected accounts).
+- **Private Access**: For private repos, ensure you have authorized the **Cortex GitHub App**.
+- **Large Repositories**: Repositories over 500MB may timeout during the initial clone phase.
+
+### 2. AI Synthesis Timeouts
+The synthesis phase (Agent 6) can be computationally intense for massive monorepos.
+- **Solution**: Upgrade to the **Developer** or **Teams** tier for dedicated reasoning compute and higher timeout thresholds.
+- **Selective Scans**: Use `.cortex-ignore` (coming soon) to skip non-critical directories.
+
+### 3. Billing & Tier Sync
+If you've upgraded but don't see your new limits:
+1.  Verify the payment was successful in [Paddle](https://paddle.com).
+2.  Refresh the dashboard to trigger a profile sync.
+3.  If issues persist, contact support with your **Order ID**.
+
+---
+
+## Escalation Protocols
+If this guide hasn't resolved your issue, please use the following escalation paths:
+
+| Level | Channel | Response Time |
+| :--- | :--- | :--- |
+| **P1: Critical Bug** | Discord `#emergency` | < 4 Hours |
+| **P2: Feature Request** | GitHub Issues | < 1 Week |
+| **P3: General Help** | Email Support | < 48 Hours |
+
+### Direct Engineering Support
+For complex architectural audits or enterprise deployments, reach out to our core engineering team directly:
+
+- **Email**: `upvistadigital@gmail.com`
+- **Discord**: [Join the Community](https://discord.gg/cortex-edr)
+
+---
+
+> [!NOTE]
+> When reporting an issue, please always include your **Scan ID** and a link to the repository (if public). This helps us diagnose the specific agent behavior and resolve the issue faster.

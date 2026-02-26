@@ -1,25 +1,19 @@
-import type { NextConfig } from "next";
 import nextra from "nextra";
-import { resolve } from "path";
 
 const withNextra = nextra({});
 
-const nextConfig: NextConfig = {
+const nextConfig = {
     images: {
         remotePatterns: [
             {
-                protocol: "https",
+                protocol: "https" as const,
                 hostname: "avatars.githubusercontent.com",
             },
         ],
     },
     turbopack: {
         resolveAlias: {
-            "next-mdx-import-source-file": [
-                "private-next-root-dir/mdx-components",
-                "private-next-root-dir/src/mdx-components",
-                "@/mdx-components",
-            ],
+            "next-mdx-import-source-file": "./mdx-components",
         },
     },
 };
