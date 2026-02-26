@@ -1,18 +1,11 @@
-import nextra from 'nextra'
-
-const withNextra = nextra({})
-
-export default withNextra({
+/** @type {import('next').NextConfig} */
+const nextConfig = {
     images: {
         remotePatterns: [{
             protocol: 'https',
             hostname: 'avatars.githubusercontent.com'
         }]
     },
-    turbopack: {
-        resolveAlias: {
-            "next-mdx-import-source-file": "./mdx-components.tsx"
-        }
-    },
-    transpilePackages: ['nextra', 'nextra-theme-docs']
-})
+}
+
+export default nextConfig
