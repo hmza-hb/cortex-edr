@@ -9,12 +9,9 @@ export default withNextra({
             hostname: 'avatars.githubusercontent.com'
         }]
     },
-    // In Next.js 15+, resolving virtual modules for MDX often requires this alias
-    experimental: {
-        turbo: {
-            resolveAlias: {
-                "next-mdx-import-source-file": "./mdx-components.tsx"
-            }
+    turbopack: {
+        resolveAlias: {
+            "next-mdx-import-source-file": "./mdx-components.tsx"
         }
     },
     transpilePackages: ['nextra', 'nextra-theme-docs']
