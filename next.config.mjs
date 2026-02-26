@@ -1,9 +1,6 @@
 import nextra from 'nextra'
 
-const withNextra = nextra({
-    theme: 'nextra-theme-docs',
-    themeConfig: './theme.config.tsx'
-})
+const withNextra = nextra({})
 
 export default withNextra({
     images: {
@@ -12,7 +9,13 @@ export default withNextra({
             hostname: 'avatars.githubusercontent.com'
         }]
     },
-    // Disabling Turbopack for building if it's causing issues with virtual modules
-    // In Next.js 15+, you might need to use Webpack explicitly for some ESM packages
+    // In Next.js 15+, resolving virtual modules for MDX often requires this alias
+    experimental: {
+        turbo: {
+            resolveAlias: {
+                "next-mdx-import-source-file": "./mdx-components.tsx"
+            }
+        }
+    },
     transpilePackages: ['nextra', 'nextra-theme-docs']
 })
