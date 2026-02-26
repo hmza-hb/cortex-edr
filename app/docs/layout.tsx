@@ -1,11 +1,19 @@
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
 import { getPageMap } from 'nextra/page-map'
-import { Shield, Brain, Github } from 'lucide-react'
+import { Shield } from 'lucide-react'
 import 'nextra-theme-docs/style.css'
-import Link from 'next/link'
+
+// Force dynamic rendering — Nextra's getPageMap depends on git metadata
+// which is not available in Railway's build container
+export const dynamic = 'force-dynamic'
 
 export default async function DocsLayout({ children }: { children: React.ReactNode }) {
-    const pageMap = await getPageMap('/docs')
+    let pageMap: any[] = []
+    try {
+        pageMap = await getPageMap('/docs')
+    } catch (e) {
+        console.warn('[Docs Layout] Failed to get page map:', e)
+    }
 
     return (
         <Layout
