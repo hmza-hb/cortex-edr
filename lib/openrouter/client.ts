@@ -40,6 +40,10 @@ export async function callOpenRouter(
         { role: 'user', content: userPrompt }
     ];
 
+    // Enhanced error handling with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -54,20 +58,41 @@ export async function callOpenRouter(
                 messages,
                 temperature: options.temperature ?? 0.3,
                 max_tokens: options.max_tokens ?? 4096,
-                ...(options.fallbacks && { fallbacks: options.fallbacks })
-            })
+                ...(options.fallbacks && { fallbacks: options.fallbacks }),
+                // Add retry logic
+                'retries': 2
+            }),
+            signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({}));
             console.error('[OpenRouter Client] Error:', error);
-            throw new Error(`OpenRouter API error: ${error.error?.message || response.statusText}`);
+            
+            // Handle specific error cases
+            if (response.status === 429) {
+                throw new Error(`Rate limit exceeded. Please try again later. ${error.error?.message || ''}`);
+            } else if (response.status === 401) {
+                throw new Error('Invalid API key. Please check your OPENROUTER_API_KEY.');
+            } else if (response.status >= 500) {
+                throw new Error('OpenRouter service temporarily unavailable. Please try again.');
+            } else {
+                throw new Error(`OpenRouter API error: ${error.error?.message || response.statusText}`);
+            }
         }
 
         const data: OpenRouterResponse = await response.json();
 
         if (!data.choices?.[0]?.message?.content) {
+            console.error('[OpenRouter Client] Invalid response structure:', data);
             throw new Error('Invalid response structure from OpenRouter');
+        }
+
+        // Log usage for monitoring
+        if (data.usage) {
+            console.log(`[OpenRouter Usage] Model: ${model}, Tokens: ${data.usage.total_tokens}, Cost: $${calculateCost(model, data.usage).toFixed(4)}`);
         }
 
         return {
@@ -75,7 +100,33 @@ export async function callOpenRouter(
             usage: data.usage
         };
     } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Request timeout. AI service is taking too long to respond.');
+        }
+        
         console.error('[OpenRouter Client] Fetch Error:', error);
         throw error;
     }
+}
+
+// Enhanced cost calculation
+function calculateCost(model: string, usage: { prompt_tokens: number, completion_tokens: number }): number {
+    const rates: Record<string, { in: number, out: number }> = {
+        'liquid/lfm-2-8b-a1b': { in: 0.01, out: 0.02 },
+        'mistralai/mistral-7b-instruct': { in: 0.05, out: 0.10 }, // Often free tier
+        'huggingfaceh4/zephyr-7b-beta': { in: 0.05, out: 0.10 }, // Free tier
+        'microsoft/wizardlm-2-8x22b': { in: 0.10, out: 0.20 },
+        'openchat/openchat-7b': { in: 0.05, out: 0.10 },
+        'qwen/qwq-32b-preview': { in: 0.20, out: 0.40 },
+        'deepseek/deepseek-r1': { in: 0.55, out: 0.55 },
+        'qwen/qwen-2.5-72b': { in: 0.40, out: 0.40 },
+        'anthropic/claude-3.5-haiku': { in: 1.00, out: 5.00 },
+        'minimax/minimax-m2': { in: 0.25, out: 1.00 },
+    };
+
+    const rate = rates[model] || { in: 0.50, out: 0.50 };
+    const cost = (usage.prompt_tokens / 1000000 * rate.in) + (usage.completion_tokens / 1000000 * rate.out);
+    return cost;
 }

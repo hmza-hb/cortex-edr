@@ -18,34 +18,98 @@ export async function callAI(
 
     console.log(`[AI Router] Plan: ${plan}, Agent: ${agentKey}, Using Model: ${model}`);
 
-    try {
-        const { content, usage } = await callOpenRouter(model, systemPrompt, userPrompt, {
-            fallbacks: FALLBACK_MODELS.filter(m => m !== model)
-        });
-
-        // Log usage if scanId is provided
-        // Usage tracking will be handled by the caller or a unified logger instance
-
-        // Try to parse JSON if the agent expects it
+    // Enhanced retry mechanism with exponential backoff
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1 second base delay
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            return JSON.parse(content);
-        } catch (e) {
-            // If not JSON, return as text (useful for chat or loose synthesis)
-            return content;
+            const { content, usage } = await callOpenRouter(model, systemPrompt, userPrompt, {
+                fallbacks: FALLBACK_MODELS.filter(m => m !== model)
+            });
+
+            // Try to parse JSON if the agent expects it
+            try {
+                return JSON.parse(content);
+            } catch (e) {
+                // If not JSON, return as text (useful for chat or loose synthesis)
+                return content;
+            }
+
+        } catch (error) {
+            console.error(`[AI Router] Attempt ${attempt}/${maxRetries} failed with model ${model}:`, error);
+            
+            // If this is the last attempt, try emergency fallback
+            if (attempt === maxRetries) {
+                console.log(`[AI Router] All retries failed. Attempting emergency fallback...`);
+                
+                // Try the cheapest, most reliable models as final fallback
+                const emergencyModels = [
+                    'liquid/lfm-2-8b-a1b',    // $0.01/M - Super cheap
+                    'mistralai/mistral-7b-instruct', // Free tier often available
+                    'huggingfaceh4/zephyr-7b-beta'   // Another free option
+                ];
+                
+                for (const emergencyModel of emergencyModels) {
+                    try {
+                        console.log(`[AI Router] Emergency fallback trying: ${emergencyModel}`);
+                        const { content } = await callOpenRouter(emergencyModel, systemPrompt, userPrompt, {
+                            temperature: 0.1, // Lower temperature for more reliable output
+                            max_tokens: 2048  // Smaller token limit for reliability
+                        });
+                        try { return JSON.parse(content); } catch { return content; }
+                    } catch (emergencyError) {
+                        console.error(`[AI Router] Emergency model ${emergencyModel} also failed:`, emergencyError);
+                        continue;
+                    }
+                }
+                
+                // If all models fail, return a structured error response
+                return {
+                    error: "AI_SERVICE_UNAVAILABLE",
+                    message: "All AI models are currently unavailable. Please try again later.",
+                    fallbackResponse: generateFallbackResponse(agentKey, userPrompt)
+                };
+            }
+            
+            // Wait before retry with exponential backoff
+            const delay = baseDelay * Math.pow(2, attempt - 1);
+            console.log(`[AI Router] Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
+    }
 
-    } catch (error) {
-        console.error(`[AI Router] Critical failure with model ${model}:`, error);
+    throw new Error('AI service completely unavailable after all retries');
+}
 
-        // Critical Fallback to a super cheap/reliable model if primary and OpenRouter fallbacks fail
-        if (plan !== 'vibe_coder') {
-            const emergencyModel = OPENROUTER_MODELS.vibe_coder[agentKey] || 'liquid/lfm-2-8b-a1b';
-            console.log(`[AI Router] Attempting emergency fallback to: ${emergencyModel}`);
-            const { content } = await callOpenRouter(emergencyModel, systemPrompt, userPrompt);
-            try { return JSON.parse(content); } catch { return content; }
-        }
-
-        throw error;
+// Generate basic fallback responses for critical agents
+function generateFallbackResponse(agentKey: string, userPrompt: string): any {
+    switch (agentKey) {
+        case 'recon':
+            return {
+                techStack: { framework: "Unknown", language: "Unknown", runtime: "Unknown" },
+                complexity: "medium",
+                quality: "unknown",
+                summary: "AI analysis unavailable - manual review recommended"
+            };
+        case 'security':
+            return {
+                vulnerabilities: [],
+                criticalIssues: [],
+                recommendations: ["Manual security review recommended due to AI service unavailability"]
+            };
+        case 'architecture':
+            return {
+                patterns: [],
+                issues: [],
+                score: 50,
+                note: "AI architectural analysis unavailable - manual review recommended"
+            };
+        default:
+            return {
+                status: "unavailable",
+                message: "AI analysis temporarily unavailable"
+            };
     }
 }
 
