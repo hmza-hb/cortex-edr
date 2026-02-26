@@ -11,9 +11,14 @@ const nextConfig = {
             },
         ],
     },
-    turbopack: {
+    // Next.js 15+ uses top-level turbo config
+    turbo: {
         resolveAlias: {
-            "next-mdx-import-source-file": "./mdx-components",
+            "next-mdx-import-source-file": [
+                "./mdx-components.tsx",
+                "./mdx-components",
+                "mdx-components.tsx"
+            ],
         },
     },
 };
