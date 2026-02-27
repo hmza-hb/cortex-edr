@@ -31,6 +31,8 @@ export async function callOpenRouter(
 ): Promise<{ content: string; usage?: OpenRouterResponse['usage'] }> {
     const API_KEY = process.env.OPENROUTER_API_KEY;
 
+    const referer = process.env.NEXT_PUBLIC_APP_URL || 'https://cortex-edr.com';
+
     if (!API_KEY) {
         throw new Error('OPENROUTER_API_KEY is not defined in environment variables');
     }
@@ -49,7 +51,7 @@ export async function callOpenRouter(
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${API_KEY}`,
-                'HTTP-Referer': 'https://cortex-edr.com', // Required by OpenRouter
+                'HTTP-Referer': referer, // Required by OpenRouter
                 'X-Title': 'CortexEDR',
                 'Content-Type': 'application/json'
             },
@@ -59,8 +61,7 @@ export async function callOpenRouter(
                 temperature: options.temperature ?? 0.3,
                 max_tokens: options.max_tokens ?? 4096,
                 ...(options.fallbacks && { fallbacks: options.fallbacks }),
-                // Add retry logic
-                'retries': 2
+                // Note: keep request body OpenAI-compatible; retries are handled client-side
             }),
             signal: controller.signal
         });

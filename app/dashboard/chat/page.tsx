@@ -115,7 +115,12 @@ export default function CortexChatPage() {
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data?.error || "Failed to send message");
+            if (!res.ok) {
+                if (data?.error === "AI_SERVICE_UNAVAILABLE") {
+                    throw new Error("AI service is temporarily unavailable. Please try again in a minute.");
+                }
+                throw new Error(data?.message || data?.error || "Failed to send message");
+            }
 
             if (data.threadId && data.threadId !== threadId) {
                 setThreadId(data.threadId);
@@ -136,7 +141,17 @@ export default function CortexChatPage() {
             // Refresh threads ordering/titles
             await load(data.threadId || threadId);
         } catch (e: any) {
-            setMessages((prev) => [...prev, { role: "assistant", content: `I couldn't process that request. ${e?.message || ""}` }]);
+            const msg = typeof e?.message === "string" ? e.message : "";
+            setMessages((prev) => [
+                ...prev,
+                {
+                    role: "assistant",
+                    content:
+                        msg.includes("temporarily unavailable")
+                            ? "AI is temporarily unavailable right now. Please try again shortly."
+                            : `I couldn't process that request. ${msg}`
+                }
+            ]);
         } finally {
             setSending(false);
             setTimeout(scrollToBottom, 50);

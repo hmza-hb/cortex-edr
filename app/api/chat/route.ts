@@ -157,6 +157,19 @@ Rules:
 
         const aiResult = await callAI(planTier, 'synthesis', systemPrompt, userPrompt, { scanId: scanId || undefined });
 
+        if (aiResult && typeof aiResult === 'object' && aiResult.error === 'AI_SERVICE_UNAVAILABLE') {
+            return NextResponse.json(
+                {
+                    error: 'AI_SERVICE_UNAVAILABLE',
+                    message: aiResult.message || 'AI service temporarily unavailable',
+                    fallbackResponse: aiResult.fallbackResponse || null,
+                    threadId: resolvedThreadId,
+                    megaContext: mega
+                },
+                { status: 503 }
+            );
+        }
+
         const assistantText = typeof aiResult === 'string'
             ? aiResult
             : aiResult?.content
@@ -187,6 +200,14 @@ Rules:
         });
     } catch (error) {
         console.error('[Chat POST Error]:', error);
-        return NextResponse.json({ error: 'Failed to process intelligence request' }, { status: 500 });
+        const msg = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json(
+            {
+                error: 'CHAT_REQUEST_FAILED',
+                message: 'Failed to process intelligence request',
+                details: msg
+            },
+            { status: 500 }
+        );
     }
 }
