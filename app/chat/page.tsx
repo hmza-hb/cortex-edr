@@ -17,8 +17,6 @@ import {
     HelpCircle,
     History,
     LogOut,
-    PanelLeftClose,
-    PanelLeftOpen,
     Plus,
     RefreshCcw,
     Search,
@@ -27,6 +25,12 @@ import {
     Shield,
     Sparkles,
     SquarePen,
+    ThumbsDown,
+    ThumbsUp,
+    MoreHorizontal,
+    CheckCheck,
+    FileDown,
+    Flag,
     TriangleAlert,
     User,
     Send,
@@ -137,8 +141,6 @@ function ChatHomeInner() {
     const [isPlusOpen, setIsPlusOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
 
-    const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null);
-
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -183,8 +185,35 @@ function ChatHomeInner() {
         setMessages([]);
         setInput("");
         setAttachments([]);
-        setHoveredMessageIndex(null);
         setTimeout(scrollToBottom, 10);
+    };
+
+    const replayFromMessage = async (messageId: string, editedContent?: string) => {
+        if (!threadId) return;
+        const res = await fetch("/api/chat/message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                threadId,
+                messageId,
+                action: editedContent ? "edit" : "retry",
+                content: editedContent
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || data?.error || "Failed to replay message");
+        setMessages(data.messages || []);
+        if (data.threadId) setThreadId(data.threadId);
+        await load(data.threadId || threadId);
+    };
+
+    const editMessage = async (m: ChatMessage) => {
+        if (!m.id) return;
+        const next = window.prompt("Edit your message", m.content);
+        if (typeof next !== "string") return;
+        const trimmed = next.trim();
+        if (!trimmed) return;
+        await replayFromMessage(m.id, trimmed);
     };
 
     const sendMessageWithContent = async (content: string) => {
@@ -346,19 +375,6 @@ function ChatHomeInner() {
                                         <SquarePen className="h-4 w-4 text-zinc-200" />
                                     </Button>
                                 )}
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSidebarCollapsed((v) => !v)}
-                                    className="h-9 w-9 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]"
-                                    aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                                >
-                                    {sidebarCollapsed ? (
-                                        <PanelLeftOpen className="h-4 w-4 text-zinc-200" />
-                                    ) : (
-                                        <PanelLeftClose className="h-4 w-4 text-zinc-200" />
-                                    )}
-                                </Button>
                             </div>
                         </div>
 
@@ -784,8 +800,6 @@ function ChatHomeInner() {
                                 <div
                                     key={m.id || idx}
                                     className={cn("group", m.role === "user" ? "flex justify-end" : "flex justify-start")}
-                                    onMouseEnter={() => setHoveredMessageIndex(idx)}
-                                    onMouseLeave={() => setHoveredMessageIndex((v) => (v === idx ? null : v))}
                                 >
                                     <div className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
                                         <div
@@ -799,34 +813,96 @@ function ChatHomeInner() {
                                             {m.content}
                                         </div>
 
-                                        {m.role === "user" && hoveredMessageIndex === idx && (
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <button
-                                                    onClick={() => safeCopy(m.content)}
-                                                    className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
-                                                    aria-label="Copy message"
-                                                >
-                                                    <Copy className="h-3 w-3" />
-                                                    Copy
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setInput(m.content);
-                                                        scrollToBottom();
-                                                    }}
-                                                    className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300"
-                                                    aria-label="Edit message"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => void sendMessageWithContent(m.content)}
-                                                    className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
-                                                    aria-label="Retry"
-                                                >
-                                                    <RefreshCcw className="h-3 w-3" />
-                                                    Retry
-                                                </button>
+                                        {m.role === "user" && (
+                                            <div className="mt-2 h-8">
+                                                <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                                                    <button
+                                                        onClick={() => safeCopy(m.content)}
+                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
+                                                        aria-label="Copy message"
+                                                    >
+                                                        <Copy className="h-3 w-3" />
+                                                        Copy
+                                                    </button>
+                                                    <button
+                                                        onClick={() => void editMessage(m)}
+                                                        disabled={!m.id}
+                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 disabled:opacity-40"
+                                                        aria-label="Edit message"
+                                                        title={m.id ? "Edit" : "Save to enable editing"}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => (m.id ? void replayFromMessage(m.id) : undefined)}
+                                                        disabled={!m.id}
+                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1 disabled:opacity-40"
+                                                        aria-label="Retry"
+                                                        title={m.id ? "Retry" : "Save to enable retry"}
+                                                    >
+                                                        <RefreshCcw className="h-3 w-3" />
+                                                        Retry
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {m.role === "assistant" && (
+                                            <div className="mt-2 h-8">
+                                                <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                                                    <button
+                                                        onClick={() => safeCopy(m.content)}
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Copy"
+                                                        title="Copy"
+                                                    >
+                                                        <Copy className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Like"
+                                                        title="Like"
+                                                        onClick={() => {}}
+                                                    >
+                                                        <ThumbsUp className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Dislike"
+                                                        title="Dislike"
+                                                        onClick={() => {}}
+                                                    >
+                                                        <ThumbsDown className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsShareOpen(true)}
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Share"
+                                                        title="Share"
+                                                    >
+                                                        <Share2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Retry"
+                                                        title="Retry"
+                                                        onClick={() => {}}
+                                                    >
+                                                        <RefreshCcw className="h-3.5 w-3.5" />
+                                                    </button>
+
+                                                    <div className="relative">
+                                                        <button
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="More"
+                                                            title="More"
+                                                            onClick={() => {}}
+                                                        >
+                                                            <MoreHorizontal className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <div className="hidden" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
