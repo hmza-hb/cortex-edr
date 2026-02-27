@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -54,6 +54,14 @@ function ThinkingDots() {
 }
 
 export default function ChatHomePage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-screen bg-zinc-950 text-zinc-100" />}>
+            <ChatHomeInner />
+        </Suspense>
+    );
+}
+
+function ChatHomeInner() {
     const searchParams = useSearchParams();
     const scanIdFromUrl = searchParams.get("scanId");
 
