@@ -1,5 +1,6 @@
 import React from "react";
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
+import { supabaseAdmin } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FolderGit2, TrendingUp, TrendingDown, Minus, Settings as SettingsIcon } from "lucide-react";
@@ -7,18 +8,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function RepositoriesPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { userId } = await auth();
 
-    if (!user) {
+    if (!userId) {
         return redirect("/login");
     }
 
     // Fetch user's repositories
-    const { data: repositories } = await supabase
+    const { data: repositories } = await supabaseAdmin
         .from("repositories")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("last_scan_at", { ascending: false });
 
     const getTrendIcon = (trend: string) => {

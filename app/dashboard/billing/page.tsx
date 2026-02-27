@@ -13,16 +13,17 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SYSTEM_CONFIG, TierId } from '@/lib/config/system';
+import { useUser } from "@clerk/nextjs";
 
 export default function BillingPage() {
+    const { user, isLoaded } = useUser();
     const [profile, setProfile] = React.useState<any>(null);
     const [loading, setLoading] = React.useState(true);
     const supabase = createClient();
 
     React.useEffect(() => {
         const fetchProfile = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
+            if (isLoaded && user) {
                 const { data } = await supabase
                     .from('profiles')
                     .select('*')
@@ -30,10 +31,10 @@ export default function BillingPage() {
                     .single();
                 setProfile(data);
             }
-            setLoading(false);
+            if (isLoaded) setLoading(false);
         };
         fetchProfile();
-    }, []);
+    }, [isLoaded, user]);
 
     const openCustomerPortal = () => {
         // Paddle doesn't have a direct "Portal" link like Stripe, 

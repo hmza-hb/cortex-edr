@@ -1,5 +1,6 @@
 import React from "react";
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
+import { supabaseAdmin } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Search, Filter, Clock, TrendingUp, MoreVertical, Shield, Zap, History } from "lucide-react";
@@ -7,18 +8,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function ScanHistoryPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { userId } = await auth();
 
-    if (!user) {
+    if (!userId) {
         return redirect("/login");
     }
 
     // Fetch all scans
-    const { data: scans } = await supabase
+    const { data: scans } = await supabaseAdmin
         .from("scans")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
     const getScoreColor = (score: number) => {

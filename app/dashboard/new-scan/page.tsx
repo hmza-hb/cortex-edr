@@ -21,9 +21,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
 
 export default function NewScanPage() {
     const router = useRouter();
+    const { user, isLoaded } = useUser();
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
     const [repositories, setRepositories] = useState<any[]>([]);
@@ -31,11 +33,12 @@ export default function NewScanPage() {
     const [scanMode, setScanMode] = useState<"quick" | "managed">("quick");
 
     useEffect(() => {
-        fetchRepositories();
-    }, []);
+        if (isLoaded) {
+            fetchRepositories();
+        }
+    }, [isLoaded, user]);
 
     const fetchRepositories = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
         const { data } = await supabase

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
 
 // --- Tab Components (To be extracted later if they get too big) ---
 
@@ -437,6 +438,7 @@ const BillingTab = ({ profile, scansUsed, scanLimit }: any) => (
 // --- Main Page Component ---
 
 export default function SettingsPage() {
+    const { user, isLoaded } = useUser();
     const [activeTab, setActiveTab] = useState("profile");
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -446,8 +448,7 @@ export default function SettingsPage() {
     useEffect(() => {
         async function loadProfile() {
             setLoading(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
+            if (isLoaded && user) {
                 const { data } = await supabase
                     .from("profiles")
                     .select("*")
@@ -455,13 +456,12 @@ export default function SettingsPage() {
                     .single();
                 setProfile(data);
             }
-            setLoading(false);
+            if (isLoaded) setLoading(false);
         }
         loadProfile();
-    }, []);
+    }, [isLoaded, user]);
 
     const handleSave = async (updates: any) => {
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
         const { error } = await supabase
