@@ -1,6 +1,6 @@
 import React from "react";
 import { auth } from "@clerk/nextjs/server";
-import { supabaseAdmin } from "@/lib/supabase/service";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FolderGit2, TrendingUp, TrendingDown, Minus, Settings as SettingsIcon } from "lucide-react";
