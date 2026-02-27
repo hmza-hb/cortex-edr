@@ -9,7 +9,6 @@ import {
     BookOpen,
     Bot,
     ChevronDown,
-    ChevronRight,
     Cloud,
     Copy,
     FolderGit2,
@@ -45,6 +44,47 @@ interface ChatMessage {
     content: string;
     created_at?: string;
     attachments?: any;
+}
+
+function BrandXIcon(props: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
+            <path
+                fill="currentColor"
+                d="M18.244 2H21l-6.54 7.474L22.5 22h-6.69l-5.24-6.32L4.96 22H2.2l7.02-8.02L1.5 2h6.86l4.73 5.73L18.244 2Zm-2.35 18h1.86L7.34 3.93H5.36l10.535 16.07Z"
+            />
+        </svg>
+    );
+}
+
+function BrandWhatsAppIcon(props: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
+            <path
+                fill="currentColor"
+                d="M20.52 3.48A11.88 11.88 0 0 0 12.03 0C5.43 0 .06 5.37.06 11.97c0 2.1.55 4.16 1.6 5.98L0 24l6.2-1.62a11.9 11.9 0 0 0 5.82 1.48h.01c6.6 0 11.97-5.37 11.97-11.97 0-3.2-1.25-6.2-3.48-8.41Zm-8.5 18.4h-.01a9.9 9.9 0 0 1-5.05-1.39l-.36-.21-3.68.97.98-3.59-.23-.37a9.9 9.9 0 0 1-1.52-5.3C2.15 6.5 6.53 2.12 12.03 2.12c2.61 0 5.06 1.02 6.9 2.86a9.7 9.7 0 0 1 2.86 6.9c0 5.5-4.48 9.99-9.99 9.99Zm5.48-7.48c-.3-.15-1.77-.87-2.04-.97-.27-.1-.46-.15-.65.15-.19.3-.75.97-.92 1.17-.17.2-.34.22-.64.07-.3-.15-1.25-.46-2.38-1.46-.88-.78-1.48-1.74-1.65-2.03-.17-.3-.02-.46.13-.61.13-.13.3-.34.45-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.65-1.57-.9-2.15-.24-.58-.48-.5-.65-.5h-.56c-.2 0-.52.08-.8.37-.27.3-1.05 1.02-1.05 2.49 0 1.47 1.08 2.89 1.23 3.09.15.2 2.12 3.23 5.13 4.53.72.31 1.27.5 1.7.64.71.23 1.36.2 1.87.12.57-.08 1.77-.72 2.02-1.41.25-.7.25-1.3.17-1.41-.07-.12-.27-.2-.57-.35Z"
+            />
+        </svg>
+    );
+}
+
+function BrandLinkedInIcon(props: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
+            <path
+                fill="currentColor"
+                d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.95v5.66H9.37V9h3.41v1.56h.05c.48-.9 1.66-1.85 3.42-1.85 3.66 0 4.33 2.41 4.33 5.55v6.19ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.23 0H1.77C.79 0 0 .78 0 1.74v20.52C0 23.22.79 24 1.77 24h20.46c.98 0 1.77-.78 1.77-1.74V1.74C24 .78 23.21 0 22.23 0Z"
+            />
+        </svg>
+    );
+}
+
+function BrandGoogleDriveIcon(props: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
+            <path fill="currentColor" d="M7.67 3 1.5 13.67l3.1 5.36L10.77 8.36 7.67 3Zm14.83 10.67L16.33 3h-6.2l6.17 10.67h6.2ZM4.6 19.03h12.33l3.1-5.36H7.7l-3.1 5.36Z" />
+        </svg>
+    );
 }
 
 function safeCopy(text: string) {
@@ -90,11 +130,12 @@ function ChatHomeInner() {
 
     const [searchThreads, setSearchThreads] = useState("");
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [isLearnOpen, setIsLearnOpen] = useState(false);
+    const [isLearnDrawerOpen, setIsLearnDrawerOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isPlanOpen, setIsPlanOpen] = useState(false);
     const [plan, setPlan] = useState<"Vibe Coder" | "Developer" | "Teams" | "Enterprise">("Vibe Coder");
     const [isPlusOpen, setIsPlusOpen] = useState(false);
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null);
 
@@ -142,12 +183,29 @@ function ChatHomeInner() {
         setMessages([]);
         setInput("");
         setAttachments([]);
+        setHoveredMessageIndex(null);
         setTimeout(scrollToBottom, 10);
     };
 
     const sendMessageWithContent = async (content: string) => {
         if (sending) return;
         if (!content.trim() && attachments.length === 0) return;
+
+        const isNewThread = !threadId;
+        const optimisticThreadId = isNewThread ? `pending-${Date.now()}` : null;
+        if (optimisticThreadId) {
+            setThreads((prev) => [
+                {
+                    id: optimisticThreadId,
+                    title: content.trim().slice(0, 48) || "New chat",
+                    last_scan_id: scanId || null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                ...prev
+            ]);
+            setThreadId(optimisticThreadId);
+        }
 
         setSending(true);
         const optimisticUser: ChatMessage = { role: "user", content };
@@ -157,7 +215,7 @@ function ChatHomeInner() {
         try {
             const payload = {
                 message: content,
-                threadId,
+                threadId: optimisticThreadId || threadId,
                 scanId,
                 attachments: attachments.map((f) => ({ name: f.name, size: f.size, type: f.type }))
             };
@@ -182,6 +240,21 @@ function ChatHomeInner() {
 
             if (data.threadId && data.threadId !== threadId) setThreadId(data.threadId);
 
+            if (optimisticThreadId && data.threadId) {
+                setThreads((prev) => {
+                    const next = prev.map((t) => {
+                        if (t.id !== optimisticThreadId) return t;
+                        return {
+                            ...t,
+                            id: data.threadId,
+                            title: data.threadTitle || t.title,
+                            updated_at: new Date().toISOString()
+                        };
+                    });
+                    return next;
+                });
+            }
+
             const assistantMsg: ChatMessage = data.assistantMessage
                 ? data.assistantMessage
                 : { role: "assistant", content: data.response };
@@ -202,6 +275,11 @@ function ChatHomeInner() {
                     content: msg || "I couldn't process that request."
                 }
             ]);
+
+            if (optimisticThreadId) {
+                setThreads((prev) => prev.filter((t) => t.id !== optimisticThreadId));
+                setThreadId(null);
+            }
         } finally {
             setSending(false);
             setTimeout(scrollToBottom, 50);
@@ -218,7 +296,7 @@ function ChatHomeInner() {
     };
 
     const shareChat = async () => {
-        safeCopy(window.location.href);
+        setIsShareOpen(true);
     };
 
     const filteredThreads = useMemo(() => {
@@ -238,17 +316,24 @@ function ChatHomeInner() {
                 <div className="h-full flex flex-col">
                     <div className="px-4 pt-4 pb-3">
                         <div className="flex items-center justify-between">
-                            <Link href="/dashboard" className="flex items-center gap-2">
-                                <div className="h-9 w-9 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-center overflow-hidden">
-                                    <Image src="/assets/logo.png" alt="Cortex" width={24} height={24} className="h-6 w-6" />
+                            <button
+                                onClick={() => setSidebarCollapsed((v) => !v)}
+                                className={cn("flex items-center gap-3", sidebarCollapsed && "justify-center w-full")}
+                                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                            >
+                                <div className={cn(
+                                    "rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center overflow-hidden",
+                                    sidebarCollapsed ? "h-11 w-11" : "h-11 w-11"
+                                )}>
+                                    <Image src="/assets/logo.png" alt="Cortex" width={32} height={32} className="h-8 w-8" />
                                 </div>
                                 {!sidebarCollapsed && (
-                                    <div className="leading-tight">
+                                    <div className="leading-tight text-left">
                                         <div className="text-sm font-bold tracking-tight">Cortex Chat</div>
                                         <div className="text-[11px] text-zinc-500 font-medium">chat.cortex-edr.com</div>
                                     </div>
                                 )}
-                            </Link>
+                            </button>
                             <div className="flex items-center gap-2">
                                 {!sidebarCollapsed && (
                                     <Button
@@ -311,6 +396,39 @@ function ChatHomeInner() {
                                     />
                                 </div>
                             </>
+                        )}
+
+                        {sidebarCollapsed && (
+                            <div className="mt-3 flex flex-col items-center gap-2">
+                                <Link href="/dashboard" className="w-full flex justify-center">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-10 rounded-2xl border-white/10 bg-transparent hover:bg-white/5"
+                                        aria-label="Back to EDR"
+                                    >
+                                        <ArrowLeft className="h-4 w-4 text-zinc-200" />
+                                    </Button>
+                                </Link>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={startNewChat}
+                                    className="h-10 w-10 rounded-2xl border-white/10 bg-transparent hover:bg-white/5"
+                                    aria-label="New chat"
+                                >
+                                    <SquarePen className="h-4 w-4 text-zinc-200" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setSidebarCollapsed(false)}
+                                    className="h-10 w-10 rounded-2xl border-white/10 bg-transparent hover:bg-white/5"
+                                    aria-label="Search chats"
+                                >
+                                    <Search className="h-4 w-4 text-zinc-200" />
+                                </Button>
+                            </div>
                         )}
                     </div>
 
@@ -456,55 +574,14 @@ function ChatHomeInner() {
 
                                         <div className="my-2 h-px bg-zinc-800" />
 
-                                        <div className="relative">
-                                            <button
-                                                onMouseEnter={() => setIsLearnOpen(true)}
-                                                onMouseLeave={() => setIsLearnOpen(false)}
-                                                onClick={() => setIsLearnOpen((v) => !v)}
-                                                className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
-                                            >
-                                                <span className="flex items-center gap-3">
-                                                    <BookOpen className="h-4 w-4 text-zinc-500" />
-                                                    Learn more
-                                                </span>
-                                                <ChevronRight className="h-4 w-4 text-zinc-600" />
-                                            </button>
-
-                                            {isLearnOpen && (
-                                                <div
-                                                    onMouseEnter={() => setIsLearnOpen(true)}
-                                                    onMouseLeave={() => setIsLearnOpen(false)}
-                                                    className="absolute left-full top-0 ml-2 w-64 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden"
-                                                >
-                                                    <div className="p-2">
-                                                        <Link href="/features" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200">
-                                                            <Shield className="h-4 w-4 text-zinc-500" />
-                                                            About Project Cortex
-                                                        </Link>
-                                                        <Link href="/docs" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200">
-                                                            <BookOpen className="h-4 w-4 text-zinc-500" />
-                                                            Tutorials
-                                                        </Link>
-                                                        <button onClick={() => setIsProfileOpen(false)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left">
-                                                            <Sparkles className="h-4 w-4 text-zinc-500" />
-                                                            Courses
-                                                        </button>
-                                                        <Link href="/legal/terms" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200">
-                                                            <TriangleAlert className="h-4 w-4 text-zinc-500" />
-                                                            Usage policy
-                                                        </Link>
-                                                        <Link href="/legal/privacy" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200">
-                                                            <Shield className="h-4 w-4 text-zinc-500" />
-                                                            Privacy policy
-                                                        </Link>
-                                                        <Link href="/legal/terms" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200">
-                                                            <Shield className="h-4 w-4 text-zinc-500" />
-                                                            Terms & conditions
-                                                        </Link>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                        <button
+                                            onMouseEnter={() => setIsLearnDrawerOpen(true)}
+                                            onClick={() => setIsLearnDrawerOpen(true)}
+                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                        >
+                                            <BookOpen className="h-4 w-4 text-zinc-500" />
+                                            Learn more
+                                        </button>
                                         <Link
                                             href="/support"
                                             onClick={() => setIsProfileOpen(false)}
@@ -581,6 +658,113 @@ function ChatHomeInner() {
                     </Button>
                 </div>
 
+                {isShareOpen && (
+                    <>
+                        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setIsShareOpen(false)} />
+                        <div className="fixed inset-x-0 top-24 z-50">
+                            <div className="mx-auto w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+                                <div className="p-4">
+                                    <div className="text-sm font-bold text-white">Share this chat</div>
+                                    <div className="mt-1 text-xs text-zinc-500 font-medium">Make your conversation shareable.</div>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => safeCopy(window.location.href)}
+                                            className="h-11 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] text-sm font-semibold text-zinc-200"
+                                        >
+                                            Copy chat link
+                                        </button>
+                                        <button
+                                            onClick={() => setIsShareOpen(false)}
+                                            className="h-11 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] text-sm font-semibold text-zinc-200"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                        <a
+                                            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="h-11 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-sm font-semibold text-zinc-200"
+                                        >
+                                            <BrandXIcon className="h-4 w-4" />
+                                            X
+                                        </a>
+                                        <a
+                                            href={`https://wa.me/?text=${encodeURIComponent(window.location.href)}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="h-11 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-sm font-semibold text-zinc-200"
+                                        >
+                                            <BrandWhatsAppIcon className="h-4 w-4" />
+                                            WhatsApp
+                                        </a>
+                                        <a
+                                            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="h-11 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-sm font-semibold text-zinc-200"
+                                        >
+                                            <BrandLinkedInIcon className="h-4 w-4" />
+                                            LinkedIn
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {isLearnDrawerOpen && (
+                    <>
+                        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setIsLearnDrawerOpen(false)} />
+                        <div className="fixed right-0 top-0 bottom-0 z-50 w-[360px] border-l border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl">
+                            <div className="p-4 flex items-center justify-between">
+                                <div>
+                                    <div className="text-sm font-bold text-white">Learn more</div>
+                                    <div className="text-xs text-zinc-500 font-medium">Project Cortex resources</div>
+                                </div>
+                                <button
+                                    onClick={() => setIsLearnDrawerOpen(false)}
+                                    className="h-9 w-9 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center"
+                                    aria-label="Close"
+                                >
+                                    <X className="h-4 w-4 text-zinc-200" />
+                                </button>
+                            </div>
+
+                            <div className="px-2 pb-4">
+                                <Link href="/features" onClick={() => setIsLearnDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/[0.03] text-sm text-zinc-200">
+                                    <Shield className="h-4 w-4 text-zinc-500" />
+                                    About Project Cortex
+                                </Link>
+                                <Link href="/docs" onClick={() => setIsLearnDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/[0.03] text-sm text-zinc-200">
+                                    <BookOpen className="h-4 w-4 text-zinc-500" />
+                                    Tutorials
+                                </Link>
+                                <button onClick={() => setIsLearnDrawerOpen(false)} className="w-full flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left">
+                                    <Sparkles className="h-4 w-4 text-zinc-500" />
+                                    Courses
+                                </button>
+                                <Link href="/legal/terms" onClick={() => setIsLearnDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/[0.03] text-sm text-zinc-200">
+                                    <TriangleAlert className="h-4 w-4 text-zinc-500" />
+                                    Usage policy
+                                </Link>
+                                <Link href="/legal/privacy" onClick={() => setIsLearnDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/[0.03] text-sm text-zinc-200">
+                                    <Shield className="h-4 w-4 text-zinc-500" />
+                                    Privacy policy
+                                </Link>
+                                <Link href="/legal/terms" onClick={() => setIsLearnDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/[0.03] text-sm text-zinc-200">
+                                    <Shield className="h-4 w-4 text-zinc-500" />
+                                    Terms & conditions
+                                </Link>
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 <div ref={scrollerRef} className="flex-1 overflow-auto custom-scrollbar">
                     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
                         {loading ? (
@@ -599,58 +783,62 @@ function ChatHomeInner() {
                             messages.map((m, idx) => (
                                 <div
                                     key={m.id || idx}
-                                    className={cn("group relative", m.role === "user" ? "flex justify-end" : "flex justify-start")}
+                                    className={cn("group", m.role === "user" ? "flex justify-end" : "flex justify-start")}
                                     onMouseEnter={() => setHoveredMessageIndex(idx)}
                                     onMouseLeave={() => setHoveredMessageIndex((v) => (v === idx ? null : v))}
                                 >
-                                    <div
-                                        className={cn(
-                                            "max-w-[92%] md:max-w-[78%] rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap",
-                                            m.role === "user"
-                                                ? "bg-zinc-900/80 border border-white/5 text-zinc-50"
-                                                : "text-zinc-200"
-                                        )}
-                                    >
-                                        {m.content}
-                                    </div>
-
-                                    {m.role === "user" && hoveredMessageIndex === idx && (
-                                        <div className="absolute -top-3 right-2 flex items-center gap-1">
-                                            <button
-                                                onClick={() => safeCopy(m.content)}
-                                                className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
-                                                aria-label="Copy message"
-                                            >
-                                                <Copy className="h-3 w-3" />
-                                                Copy
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setInput(m.content);
-                                                    scrollToBottom();
-                                                }}
-                                                className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300"
-                                                aria-label="Edit message"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => void sendMessageWithContent(m.content)}
-                                                className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
-                                                aria-label="Retry"
-                                            >
-                                                <RefreshCcw className="h-3 w-3" />
-                                                Retry
-                                            </button>
+                                    <div className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
+                                        <div
+                                            className={cn(
+                                                "max-w-[92%] md:max-w-[78%] rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap",
+                                                m.role === "user"
+                                                    ? "bg-zinc-900/80 border border-white/5 text-zinc-50"
+                                                    : "text-zinc-200"
+                                            )}
+                                        >
+                                            {m.content}
                                         </div>
-                                    )}
+
+                                        {m.role === "user" && hoveredMessageIndex === idx && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <button
+                                                    onClick={() => safeCopy(m.content)}
+                                                    className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
+                                                    aria-label="Copy message"
+                                                >
+                                                    <Copy className="h-3 w-3" />
+                                                    Copy
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setInput(m.content);
+                                                        scrollToBottom();
+                                                    }}
+                                                    className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300"
+                                                    aria-label="Edit message"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => void sendMessageWithContent(m.content)}
+                                                    className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
+                                                    aria-label="Retry"
+                                                >
+                                                    <RefreshCcw className="h-3 w-3" />
+                                                    Retry
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ))
                         )}
 
                         {sending && (
-                            <div className="text-xs font-semibold text-purple-300/80 tracking-wide">
-                                Cortex is thinking…
+                            <div className="text-xs font-semibold tracking-wide">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-fuchsia-300 to-purple-300 animate-pulse">
+                                    Cortex is thinking…
+                                </span>
                             </div>
                         )}
                     </div>
@@ -709,7 +897,7 @@ function ChatHomeInner() {
                                                     onClick={() => setIsPlusOpen(false)}
                                                     className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
                                                 >
-                                                    <Cloud className="h-4 w-4 text-zinc-500" />
+                                                    <BrandGoogleDriveIcon className="h-4 w-4 text-zinc-500" />
                                                     Add from Google Drive
                                                 </button>
                                                 <button

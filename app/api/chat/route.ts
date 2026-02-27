@@ -4,6 +4,13 @@ import { supabaseService } from '@/lib/supabase/service';
 import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
 
+function deriveThreadTitle(params: { message: string; repoUrl?: string | null }) {
+    const cleaned = (params.message || "").trim().replace(/\s+/g, " ");
+    if (cleaned) return cleaned.length > 56 ? `${cleaned.slice(0, 56)}…` : cleaned;
+    if (params.repoUrl) return `Cortex: ${params.repoUrl.split('/').slice(-2).join('/')}`;
+    return "Cortex Chat";
+}
+
 async function ensureThread(params: {
     userId: string;
     threadId?: string | null;
@@ -96,16 +103,28 @@ export async function POST(req: NextRequest) {
 
     try {
         const mega = await buildMegaContext({ userId, email, name, scanId });
-        const threadTitle = mega?.stats?.lastScan?.repo_url
-            ? `Cortex: ${mega.stats.lastScan.repo_url.split('/').slice(-2).join('/')}`
-            : 'Cortex Chat';
+        const computedTitle = deriveThreadTitle({
+            message,
+            repoUrl: mega?.stats?.lastScan?.repo_url || null
+        });
 
-        const ensured = await ensureThread({ userId, threadId, scanId, title: threadTitle });
+        const ensured = await ensureThread({ userId, threadId, scanId, title: computedTitle });
         if ('error' in ensured) {
             return NextResponse.json({ error: ensured.error }, { status: ensured.status });
         }
 
         const resolvedThreadId = ensured.threadId;
+
+        if (!threadId) {
+            const { error: updateTitleError } = await supabaseService
+                .from('chat_threads')
+                .update({ title: computedTitle })
+                .eq('id', resolvedThreadId)
+                .eq('user_id', userId);
+            if (updateTitleError) {
+                console.error('[Chat] Failed to update thread title:', updateTitleError);
+            }
+        }
 
         const { data: recentMessages } = await supabaseService
             .from('chat_messages')
@@ -164,6 +183,7 @@ Rules:
                     message: aiResult.message || 'AI service temporarily unavailable',
                     fallbackResponse: aiResult.fallbackResponse || null,
                     threadId: resolvedThreadId,
+                    threadTitle: computedTitle,
                     megaContext: mega
                 },
                 { status: 503 }
@@ -194,6 +214,7 @@ Rules:
 
         return NextResponse.json({
             threadId: resolvedThreadId,
+            threadTitle: computedTitle,
             megaContext: mega,
             response: assistantText,
             assistantMessage: assistantRow || null
