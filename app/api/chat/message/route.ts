@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { loadUserScans, buildScanContext } from '@/lib/chat/context-loader';
+import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
 import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
 
@@ -97,11 +97,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'LOAD_FAILED', message: 'Failed to load messages' }, { status: 500 });
         }
 
-        // Load ALL user's scans with full context
-        const scans = await loadUserScans(userId)
-
-        // Build comprehensive scan context
-        const scanContext = buildScanContext(scans, thread.last_scan_id ? String(thread.last_scan_id) : undefined)
+        const mega = await buildMegaContext({ userId, scanId: thread.last_scan_id ? String(thread.last_scan_id) : null });
 
         const historyBlock = (allMessages || [])
             .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -111,7 +107,7 @@ export async function POST(req: NextRequest) {
 
         const systemPrompt = FULL_SYSTEM_PROMPT;
 
-        const userPrompt = `${scanContext}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n`;
+        const userPrompt = `MEGA_CONTEXT_JSON:\n${JSON.stringify(mega)}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n`;
 
         const aiResult = await callAI('vibe_coder', 'synthesis', systemPrompt, userPrompt, {
             scanId: thread.last_scan_id ? String(thread.last_scan_id) : undefined

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { loadUserScans, buildScanContext } from '@/lib/chat/context-loader';
+import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
 import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
 
@@ -54,6 +54,10 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const threadId = url.searchParams.get('threadId');
+    const scanId = url.searchParams.get('scanId');
+    const planTier = (url.searchParams.get('planTier') || 'vibe_coder').toLowerCase();
+    const email = url.searchParams.get('email') || undefined;
+    const name = url.searchParams.get('name') || undefined;
 
     try {
         const { data: threads } = await supabaseService
@@ -75,10 +79,14 @@ export async function GET(req: NextRequest) {
                 .limit(200)
             : { data: [] };
 
+        const mega = await buildMegaContext({ userId, email, name, scanId });
+
         return NextResponse.json({
+            planTier,
             threadId: resolvedThreadId,
             threads: threads || [],
-            messages: messages || []
+            messages: messages || [],
+            megaContext: mega
         });
     } catch (error) {
         console.error('[Chat GET Error]:', error);
@@ -106,15 +114,10 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        // Load ALL user's scans with full context
-        const scans = await loadUserScans(userId)
-
-        // Build comprehensive scan context
-        const scanContext = buildScanContext(scans, scanId)
-
+        const mega = await buildMegaContext({ userId, email, name, scanId });
         const computedTitle = deriveThreadTitle({
             message,
-            repoUrl: scans.find(s => s.id === scanId)?.repo_url || null
+            repoUrl: mega?.stats?.lastScan?.repo_url || null
         });
 
         const ensured = await ensureThread({ userId, threadId, scanId, title: computedTitle });
@@ -161,11 +164,12 @@ export async function POST(req: NextRequest) {
 
         const systemPrompt = FULL_SYSTEM_PROMPT;
 
+        const contextBlock = JSON.stringify(mega);
         const historyBlock = history
             .map(m => `${m.role.toUpperCase()}: ${m.content}`)
             .join('\n');
 
-        const userPrompt = `${scanContext}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n\nNEW_MESSAGE:\n${message}`;
+        const userPrompt = `MEGA_CONTEXT_JSON:\n${contextBlock}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n\nNEW_MESSAGE:\n${message}`;
 
         const aiResult = await callAI(planTier, 'synthesis', systemPrompt, userPrompt, { scanId: scanId || undefined });
 
@@ -177,8 +181,7 @@ export async function POST(req: NextRequest) {
                     fallbackResponse: aiResult.fallbackResponse || null,
                     threadId: resolvedThreadId,
                     threadTitle: computedTitle,
-                    scanCount: scans.length,
-                    hasScans: scans.length > 0
+                    megaContext: mega
                 },
                 { status: 503 }
             );
@@ -209,8 +212,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             threadId: resolvedThreadId,
             threadTitle: computedTitle,
-            scanCount: scans.length,
-            hasScans: scans.length > 0,
+            megaContext: mega,
             response: assistantText,
             assistantMessage: assistantRow || null
         });

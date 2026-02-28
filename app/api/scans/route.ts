@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-        // Determine which identifier is stored in scans.user_id
+        // Get profile to determine user ID mapping
         const { data: profile } = await supabaseService
             .from('profiles')
             .select('id')
@@ -24,25 +24,20 @@ export async function GET(req: NextRequest) {
                 .select('id, repo_url, score, created_at, status')
                 .eq('user_id', scanUserId)
                 .order('created_at', { ascending: false })
-                .limit(10);
+                .limit(20);
 
             if (data && data.length > 0) {
-                scans = data;
+                scans = data.map(scan => ({
+                    ...scan,
+                    title: scan.repo_url.split('/').slice(-2).join('/'),
+                }));
                 break;
             }
         }
 
-        return NextResponse.json({
-            scans: scans.map(scan => ({
-                id: scan.id,
-                repo_url: scan.repo_url,
-                score: scan.score,
-                created_at: scan.created_at,
-                status: scan.status
-            }))
-        });
+        return NextResponse.json({ scans });
     } catch (error) {
-        console.error('[Recent Scans API Error]:', error);
-        return NextResponse.json({ error: 'Failed to fetch recent scans' }, { status: 500 });
+        console.error('[Scans API Error]:', error);
+        return NextResponse.json({ error: 'Failed to load scans' }, { status: 500 });
     }
 }
