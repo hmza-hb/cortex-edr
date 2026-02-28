@@ -140,6 +140,8 @@ function ChatHomeInner() {
     const [plan, setPlan] = useState<"Vibe Coder" | "Developer" | "Teams" | "Enterprise">("Vibe Coder");
     const [isPlusOpen, setIsPlusOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
+    const [streamingMessage, setStreamingMessage] = useState("");
+    const [isStreaming, setIsStreaming] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -151,6 +153,23 @@ function ChatHomeInner() {
             scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: "smooth" });
         });
     }, []);
+
+    const typewriterEffect = useCallback((text: string, callback?: () => void) => {
+        setIsStreaming(true);
+        setStreamingMessage("");
+        let index = 0;
+        const interval = setInterval(() => {
+            if (index < text.length) {
+                setStreamingMessage((prev) => prev + text[index]);
+                index++;
+                scrollToBottom();
+            } else {
+                clearInterval(interval);
+                setIsStreaming(false);
+                if (callback) callback();
+            }
+        }, 12); // Adjust speed here (lower = faster)
+    }, [scrollToBottom]);
 
     const load = useCallback(async (preferredThreadId?: string | null) => {
         setLoading(true);
@@ -261,57 +280,51 @@ function ChatHomeInner() {
             const data = await res.json();
 
             if (!res.ok) {
-                if (data?.error === "AI_SERVICE_UNAVAILABLE") {
-                    throw new Error("AI is temporarily unavailable right now. Please try again shortly.");
+                if (data.error === "AI_SERVICE_UNAVAILABLE") {
+                    const fallback = typeof data.fallbackResponse === "object" 
+                        ? JSON.stringify(data.fallbackResponse, null, 2)
+                        : data.fallbackResponse || "Cortex AI is temporarily unavailable. Please try again shortly.";
+                    const assistantMsg: ChatMessage = { role: "assistant", content: fallback };
+                    setMessages((prev) => [...prev, assistantMsg]);
+                    scrollToBottom();
+                    return;
                 }
                 throw new Error(data?.message || data?.error || "Failed to send message");
             }
 
-            if (data.threadId && data.threadId !== threadId) setThreadId(data.threadId);
-
+            // Update thread ID if this was a new thread
             if (optimisticThreadId && data.threadId) {
-                setThreads((prev) => {
-                    const next = prev.map((t) => {
-                        if (t.id !== optimisticThreadId) return t;
-                        return {
-                            ...t,
-                            id: data.threadId,
-                            title: data.threadTitle || t.title,
-                            updated_at: new Date().toISOString()
-                        };
-                    });
-                    return next;
-                });
+                setThreadId(data.threadId);
+                // Replace optimistic thread with real one
+                setThreads((prev) => prev.map((t) => 
+                    t.id === optimisticThreadId 
+                        ? { ...t, id: data.threadId, title: data.threadTitle || t.title }
+                        : t
+                ));
             }
 
-            const assistantMsg: ChatMessage = data.assistantMessage
-                ? data.assistantMessage
-                : { role: "assistant", content: data.response };
-
-            setMessages((prev) => {
-                const next = [...prev];
-                next.push(assistantMsg);
-                return next;
+            // Use typewriter effect for the assistant response
+            const assistantText = data.response || "I'm here to help!";
+            typewriterEffect(assistantText, () => {
+                // After typewriter finishes, add the message to the list
+                const assistantMsg: ChatMessage = { role: "assistant", content: assistantText };
+                setMessages((prev) => [...prev, assistantMsg]);
+                setStreamingMessage("");
+                
+                // Reload to get persisted messages with proper IDs
+                load(data.threadId || threadId);
             });
 
-            await load(data.threadId || threadId);
-        } catch (e: any) {
-            const msg = typeof e?.message === "string" ? e.message : "";
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    content: msg || "I couldn't process that request."
-                }
-            ]);
-
-            if (optimisticThreadId) {
-                setThreads((prev) => prev.filter((t) => t.id !== optimisticThreadId));
-                setThreadId(null);
-            }
+        } catch (err) {
+            console.error("Send error:", err);
+            const errMsg = err instanceof Error ? err.message : "Something went wrong";
+            const assistantMsg: ChatMessage = { role: "assistant", content: errMsg };
+            setMessages((prev) => [...prev, assistantMsg]);
+            scrollToBottom();
         } finally {
             setSending(false);
-            setTimeout(scrollToBottom, 50);
+            setAttachments([]);
+            setInput("");
         }
     };
 
@@ -910,7 +923,18 @@ function ChatHomeInner() {
                             ))
                         )}
 
-                        {sending && (
+                        {isStreaming && (
+                            <div className="flex justify-start">
+                                <div className="flex flex-col items-start max-w-[92%] md:max-w-[78%]">
+                                    <div className="rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap text-zinc-200">
+                                        {streamingMessage}
+                                        <span className="animate-pulse">|</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {sending && !isStreaming && (
                             <div className="text-xs font-semibold tracking-wide">
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-fuchsia-300 to-purple-300 animate-pulse">
                                     Cortex is thinking…
