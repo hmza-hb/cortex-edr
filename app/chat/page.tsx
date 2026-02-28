@@ -881,7 +881,7 @@ function ChatHomeInner() {
                         didUserScrollAwayRef.current = !nearBottom;
                     }}
                 >
-                    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+                    <div className="max-w-5xl mx-auto px-10 py-8 space-y-6">
                         {loading ? (
                             <div className="pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
                         ) : messages.length === 0 ? (
@@ -890,11 +890,11 @@ function ChatHomeInner() {
                                     <Image src="/assets/logo.png" alt="CortexEDR" width={56} height={56} />
                                 </div>
                                 <div className="mt-6 text-3xl font-bold tracking-tight text-white">Chat with Cortex</div>
-                                <div className="mt-3 text-sm text-zinc-400 font-medium leading-6 max-w-xl mx-auto">
-                                    Precision guidance for shipping safer code.
+                                <div className="mt-3 text-sm text-zinc-300 font-semibold leading-6 max-w-xl mx-auto">
+                                    Ship with clarity. Fix what matters. Leave the rest.
                                 </div>
                                 <div className="mt-2 text-sm text-zinc-500 font-medium leading-6 max-w-xl mx-auto">
-                                    Point-to-point, high-signal answers grounded in your scans when available.
+                                    Direct, point-to-point guidance grounded in your scans, your architecture, and your priorities.
                                 </div>
                             </div>
                         ) : (
