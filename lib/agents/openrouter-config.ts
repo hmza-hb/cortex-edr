@@ -6,7 +6,7 @@ export const OPENROUTER_MODELS: Record<string, Record<string, string>> = {
         quality: 'liquid/lfm-2-8b-a1b',         // $0.01/M - Fast
         debt: 'liquid/lfm-2-8b-a1b',            // $0.01/M - Fast
         ai_specific: 'liquid/lfm-2-8b-a1b',      // $0.01/M - Fast
-        synthesis: 'huggingfaceh4/zephyr-7b-beta' // Free tier available
+        synthesis: 'microsoft/wizardlm-2-8x22b' // Free tier, better quality than zephyr
     },
     developer: {
         recon: 'liquid/lfm-2-8b-a1b',           // $0.01/M

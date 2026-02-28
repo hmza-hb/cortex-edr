@@ -123,7 +123,7 @@ Rules:
             return NextResponse.json(
                 {
                     error: 'AI_SERVICE_UNAVAILABLE',
-                    message: aiResult.message || 'AI service temporarily unavailable',
+                    message: aiResult.message || 'Cortex AI service temporarily unavailable',
                     threadId,
                     messages: allMessages || []
                 },

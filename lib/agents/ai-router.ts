@@ -1,6 +1,9 @@
 import { callOpenRouter } from '@/lib/openrouter/client';
 import { OPENROUTER_MODELS, FALLBACK_MODELS } from './openrouter-config';
 import { AILogger } from './ai-logger';
+import { askGemini } from '@/lib/ai/gemini';
+import { askGroq } from '@/lib/ai/groq';
+import { askDeepSeek } from '@/lib/ai/deepseek';
 
 export async function callAI(
     userPlan: string,
@@ -18,68 +21,70 @@ export async function callAI(
 
     console.log(`[AI Router] Plan: ${plan}, Agent: ${agentKey}, Using Model: ${model}`);
 
-    // Enhanced retry mechanism with exponential backoff
-    const maxRetries = 3;
-    const baseDelay = 1000; // 1 second base delay
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            const { content, usage } = await callOpenRouter(model, systemPrompt, userPrompt, {
-                fallbacks: FALLBACK_MODELS.filter(m => m !== model)
-            });
-
-            // Try to parse JSON if the agent expects it
-            try {
-                return JSON.parse(content);
-            } catch (e) {
-                // If not JSON, return as text (useful for chat or loose synthesis)
+    // Multi-provider fallback chain
+    const providers = [
+        {
+            name: 'OpenRouter',
+            func: async () => {
+                const { content, usage } = await callOpenRouter(model, systemPrompt, userPrompt, {
+                    fallbacks: FALLBACK_MODELS.filter(m => m !== model)
+                });
                 return content;
             }
-
-        } catch (error) {
-            console.error(`[AI Router] Attempt ${attempt}/${maxRetries} failed with model ${model}:`, error);
-            
-            // If this is the last attempt, try emergency fallback
-            if (attempt === maxRetries) {
-                console.log(`[AI Router] All retries failed. Attempting emergency fallback...`);
-                
-                // Try the cheapest, most reliable models as final fallback
-                const emergencyModels = [
-                    'liquid/lfm-2-8b-a1b',    // $0.01/M - Super cheap
-                    'mistralai/mistral-7b-instruct', // Free tier often available
-                    'huggingfaceh4/zephyr-7b-beta'   // Another free option
-                ];
-                
-                for (const emergencyModel of emergencyModels) {
-                    try {
-                        console.log(`[AI Router] Emergency fallback trying: ${emergencyModel}`);
-                        const { content } = await callOpenRouter(emergencyModel, systemPrompt, userPrompt, {
-                            temperature: 0.1, // Lower temperature for more reliable output
-                            max_tokens: 2048  // Smaller token limit for reliability
-                        });
-                        try { return JSON.parse(content); } catch { return content; }
-                    } catch (emergencyError) {
-                        console.error(`[AI Router] Emergency model ${emergencyModel} also failed:`, emergencyError);
-                        continue;
-                    }
-                }
-                
-                // If all models fail, return a structured error response
-                return {
-                    error: "AI_SERVICE_UNAVAILABLE",
-                    message: "All AI models are currently unavailable. Please try again later.",
-                    fallbackResponse: generateFallbackResponse(agentKey, userPrompt)
-                };
+        },
+        {
+            name: 'Gemini',
+            func: async () => {
+                const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+                return await askGemini(fullPrompt, 'gemini-1.5-flash');
             }
-            
-            // Wait before retry with exponential backoff
-            const delay = baseDelay * Math.pow(2, attempt - 1);
-            console.log(`[AI Router] Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+        },
+        {
+            name: 'Groq',
+            func: async () => {
+                const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+                return await askGroq(fullPrompt, 'llama3-8b-8192');
+            }
+        },
+        {
+            name: 'DeepSeek',
+            func: async () => {
+                const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+                return await askDeepSeek(fullPrompt, 'deepseek-chat');
+            }
+        }
+    ];
+
+    for (const provider of providers) {
+        try {
+            console.log(`[AI Router] Trying provider: ${provider.name}`);
+            const result = await provider.func();
+            // Try the best free, reliable models as emergency fallback
+            const emergencyModels = [
+                'microsoft/wizardlm-2-8x22b',    // Better quality free model
+                'mistralai/mistral-7b-instruct', // Free tier often available
+                'liquid/lfm-2-8b-a1b'           // Super cheap as last resort
+            ]; 
+            // Try to parse JSON if the agent expects it
+            try {
+                return JSON.parse(result);
+            } catch (e) {
+                // If not JSON, return as text (useful for chat or loose synthesis)
+                return result;
+            }
+        } catch (error) {
+            console.error(`[AI Router] Provider ${provider.name} failed:`, error);
+            continue; // Try next provider
         }
     }
 
-    throw new Error('AI service completely unavailable after all retries');
+    // If all providers fail, return structured error
+    console.error(`[AI Router] All providers failed`);
+    return {
+        error: "AI_SERVICE_UNAVAILABLE",
+        message: "All AI providers are currently unavailable. Please try again later.",
+        fallbackResponse: generateFallbackResponse(agentKey, userPrompt)
+    };
 }
 
 // Generate basic fallback responses for critical agents
