@@ -5,6 +5,15 @@ import { askGemini } from '@/lib/ai/gemini';
 import { askGroq } from '@/lib/ai/groq';
 import { askDeepSeek } from '@/lib/ai/deepseek';
 
+function coerceToText(result: unknown): string {
+    if (typeof result === 'string') return result;
+    if (result == null) return '';
+    if (typeof result === 'object' && 'response' in (result as any) && typeof (result as any).response === 'string') {
+        return (result as any).response;
+    }
+    return JSON.stringify(result);
+}
+
 export async function callAI(
     userPlan: string,
     agentKey: string,
@@ -36,21 +45,21 @@ export async function callAI(
             name: 'Gemini',
             func: async () => {
                 const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-                return await askGemini(fullPrompt, 'gemini-1.5-flash');
+                return coerceToText(await askGemini(fullPrompt, 'gemini-1.5-flash'));
             }
         },
         {
             name: 'Groq',
             func: async () => {
                 const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-                return await askGroq(fullPrompt, 'llama3-8b-8192');
+                return coerceToText(await askGroq(fullPrompt, 'llama-3.1-8b-instant'));
             }
         },
         {
             name: 'DeepSeek',
             func: async () => {
                 const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-                return await askDeepSeek(fullPrompt, 'deepseek-chat');
+                return coerceToText(await askDeepSeek(fullPrompt, 'deepseek-chat'));
             }
         }
     ];
@@ -59,12 +68,6 @@ export async function callAI(
         try {
             console.log(`[AI Router] Trying provider: ${provider.name}`);
             const result = await provider.func();
-            // Try the best free, reliable models as emergency fallback
-            const emergencyModels = [
-                'microsoft/wizardlm-2-8x22b',    // Better quality free model
-                'mistralai/mistral-7b-instruct', // Free tier often available
-                'liquid/lfm-2-8b-a1b'           // Super cheap as last resort
-            ]; 
             // Try to parse JSON if the agent expects it
             try {
                 return JSON.parse(result);

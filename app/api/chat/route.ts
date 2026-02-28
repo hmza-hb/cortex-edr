@@ -3,10 +3,15 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
+import { CORTEX_SYSTEM_PROMPT } from '@/lib/chat/system-prompt';
 
 function deriveThreadTitle(params: { message: string; repoUrl?: string | null }) {
     const cleaned = (params.message || "").trim().replace(/\s+/g, " ");
-    if (cleaned) return cleaned.length > 56 ? `${cleaned.slice(0, 56)}…` : cleaned;
+    if (cleaned) {
+        const words = cleaned.split(' ').filter(Boolean);
+        const title = words.slice(0, 4).join(' ');
+        return title || 'Cortex Chat';
+    }
     if (params.repoUrl) return `Cortex: ${params.repoUrl.split('/').slice(-2).join('/')}`;
     return "Cortex Chat";
 }
@@ -155,22 +160,7 @@ export async function POST(req: NextRequest) {
             console.error('[Chat] Failed to store user message:', insertUserError);
         }
 
-        const systemPrompt = `You are Cortex.
-
-You are a deeply personal advisor to the developer.
-
-You can answer:
-- Technical (security, architecture, debugging)
-- Strategic (priorities, roadmaps)
-- Business (positioning, launch, pricing)
-- Emotional support (overwhelm, confidence, accountability)
-
-Rules:
-- Be precise. If you are unsure, ask a clarifying question.
-- Do not invent repo details.
-- Use the provided context. If something is missing, say so.
-- Keep a professional tone (no emojis unless the user uses them).
-`;
+        const systemPrompt = CORTEX_SYSTEM_PROMPT;
 
         const contextBlock = JSON.stringify(mega);
         const historyBlock = history

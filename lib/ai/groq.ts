@@ -17,20 +17,9 @@ export async function askGroq(prompt: string, model: string = 'llama3-8b-8192') 
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.1,
             max_tokens: 4096,
-            response_format: { type: 'json_object' },
         });
 
-        const text = completion.choices[0]?.message?.content || '';
-        try {
-            return JSON.parse(text);
-        } catch (e) {
-            // Try to extract JSON
-            const jsonMatch = text.match(/{[\s\S]*}/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
-            }
-            throw new Error('Invalid JSON response from Groq');
-        }
+        return completion.choices[0]?.message?.content || '';
     } catch (error) {
         console.error('Error calling Groq API:', error);
         throw error;
