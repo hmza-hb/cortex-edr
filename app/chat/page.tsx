@@ -921,17 +921,21 @@ function ChatHomeInner() {
                                         >
                                             {m.role === "assistant" ? (
                                                 <div className="min-w-0">
-                                                    <div className="prose prose-invert max-w-none prose-p:my-2 prose-li:my-0 prose-ul:my-2 prose-ol:my-2 prose-pre:my-3 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                    <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
                                                         <ReactMarkdown
                                                             remarkPlugins={[remarkGfm]}
                                                             components={{
-                                                                p: (p) => <p className="leading-7 text-zinc-200" {...p} />,
-                                                                ul: (p) => <ul className="my-2 ml-6 list-disc space-y-1" {...p} />,
-                                                                ol: (p) => <ol className="my-2 ml-6 list-decimal space-y-1" {...p} />,
-                                                                li: (p) => <li className="leading-6 text-zinc-200" {...p} />,
+                                                                p: (p) => <p className="leading-6 text-zinc-200 my-1.5" {...p} />,
+                                                                ul: (p) => <ul className="my-1 ml-5 list-disc space-y-0.5" {...p} />,
+                                                                ol: (p) => <ol className="my-1 ml-5 list-decimal space-y-0.5" {...p} />,
+                                                                li: (p) => <li className="leading-5 text-zinc-200" {...p} />,
+                                                                h1: (p) => <h1 className="text-lg font-semibold text-zinc-100 my-2" {...p} />,
+                                                                h2: (p) => <h2 className="text-base font-semibold text-zinc-100 my-2" {...p} />,
+                                                                h3: (p) => <h3 className="text-sm font-semibold text-zinc-100 my-1.5" {...p} />,
+                                                                h4: (p) => <h4 className="text-sm font-medium text-zinc-100 my-1.5" {...p} />,
                                                                 a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
                                                                 code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
-                                                                pre: (p) => <pre className="overflow-auto" {...p} />
+                                                                pre: (p) => <pre className="overflow-auto my-2" {...p} />
                                                             }}
                                                         >
                                                             {m.content}
