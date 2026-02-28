@@ -881,7 +881,7 @@ function ChatHomeInner() {
                         didUserScrollAwayRef.current = !nearBottom;
                     }}
                 >
-                    <div className="max-w-5xl mx-auto px-10 py-8 space-y-6">
+                    <div className="max-w-5xl mx-auto px-[20px] py-8 space-y-6">
                         {loading ? (
                             <div className="pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
                         ) : messages.length === 0 ? (
@@ -912,41 +912,7 @@ function ChatHomeInner() {
                                                     : "text-zinc-200"
                                             )}
                                         >
-                                            {m.role === "user" && editState?.messageId === m.id ? (
-                                                <div>
-                                                    {(() => {
-                                                        const localDraft = editState?.draft ?? "";
-                                                        return (
-                                                            <textarea
-                                                                value={localDraft}
-                                                        onChange={(e) => {
-                                                            const next = e.target.value;
-                                                            setEditState((prev) => {
-                                                                if (!prev) return prev;
-                                                                return { ...prev, draft: next };
-                                                            });
-                                                        }}
-                                                        className="w-full min-h-[96px] resize-none rounded-xl bg-zinc-950/60 border border-white/10 px-4 py-3 text-[15px] leading-7 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
-                                                            />
-                                                        );
-                                                    })()}
-                                                    <div className="mt-3 flex items-center justify-end gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            className="h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5"
-                                                            onClick={cancelEdit}
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                        <Button
-                                                            className="h-9 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200"
-                                                            onClick={() => void saveEdit()}
-                                                        >
-                                                            Save & resend
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : m.role === "assistant" ? (
+                                            {m.role === "assistant" ? (
                                                 <div className="min-w-0">
                                                     <div className="prose prose-invert max-w-none prose-p:my-3 prose-li:my-1 prose-ul:my-3 prose-ol:my-3 prose-pre:my-4 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
                                                         <ReactMarkdown
@@ -966,6 +932,41 @@ function ChatHomeInner() {
                                                 m.content
                                             )}
                                         </div>
+
+                                        {m.role === "user" && editState?.messageId === m.id && (
+                                            <div className="w-full mt-2">
+                                                {(() => {
+                                                    const localDraft = editState?.draft ?? "";
+                                                    return (
+                                                        <textarea
+                                                            value={localDraft}
+                                                            onChange={(e) => {
+                                                                const next = e.target.value;
+                                                                setEditState((prev) => {
+                                                                    if (!prev) return prev;
+                                                                    return { ...prev, draft: next };
+                                                                });
+                                                            }}
+                                                            className="w-full min-h-[80px] resize-none rounded-xl bg-zinc-950/40 border border-white/10 px-4 py-3 text-[15px] leading-7 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                                                        />
+                                                    );
+                                                })()}
+                                                <div className="mt-2 flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={cancelEdit}
+                                                        className="h-8 px-3 rounded-lg border border-white/10 bg-transparent hover:bg-white/5 text-xs font-semibold text-zinc-300"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => void saveEdit()}
+                                                        className="h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {m.role === "user" && (
                                             <div className="mt-2 h-8">
@@ -1096,7 +1097,7 @@ function ChatHomeInner() {
                 </div>
 
                 <div className="bg-zinc-950/70 backdrop-blur-xl">
-                    <div className="max-w-3xl mx-auto px-4 py-4">
+                    <div className="max-w-5xl mx-auto px-[20px] py-4">
                         {attachments.length > 0 && (
                             <div className="mb-3 flex flex-wrap gap-2">
                                 {attachments.map((f, i) => (
