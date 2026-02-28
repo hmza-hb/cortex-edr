@@ -242,6 +242,10 @@ function ChatHomeInner() {
         load(null);
     }, [load]);
 
+    useEffect(() => {
+        setEditState(null);
+    }, [threadId]);
+
     const removeAttachment = (idx: number) => {
         setAttachments((prev) => prev.filter((_, i) => i !== idx));
     };
@@ -249,6 +253,7 @@ function ChatHomeInner() {
     const startNewChat = async () => {
         setThreadId(null);
         setMessages([]);
+        setEditState(null);
         setInput("");
         setAttachments([]);
         setTimeout(scrollToBottom, 10);
@@ -295,6 +300,8 @@ function ChatHomeInner() {
     const sendMessageWithContent = async (content: string) => {
         if (sending) return;
         if (!content.trim() && attachments.length === 0) return;
+
+        setEditState(null);
 
         const isNewThread = !threadId;
         const optimisticThreadId = isNewThread ? `pending-${Date.now()}` : null;
@@ -914,11 +921,14 @@ function ChatHomeInner() {
                                         >
                                             {m.role === "assistant" ? (
                                                 <div className="min-w-0">
-                                                    <div className="prose prose-invert max-w-none prose-p:my-2 prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2 prose-pre:my-3 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                    <div className="prose prose-invert max-w-none prose-p:my-2 prose-li:my-0 prose-ul:my-2 prose-ol:my-2 prose-pre:my-3 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
                                                         <ReactMarkdown
                                                             remarkPlugins={[remarkGfm]}
                                                             components={{
                                                                 p: (p) => <p className="leading-7 text-zinc-200" {...p} />,
+                                                                ul: (p) => <ul className="my-2 ml-6 list-disc space-y-1" {...p} />,
+                                                                ol: (p) => <ol className="my-2 ml-6 list-decimal space-y-1" {...p} />,
+                                                                li: (p) => <li className="leading-6 text-zinc-200" {...p} />,
                                                                 a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
                                                                 code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
                                                                 pre: (p) => <pre className="overflow-auto" {...p} />
@@ -933,7 +943,7 @@ function ChatHomeInner() {
                                             )}
                                         </div>
 
-                                        {m.role === "user" && editState?.messageId === m.id && (
+                                        {m.role === "user" && !!editState?.messageId && editState.messageId === m.id && (
                                             <div className="w-full mt-2 max-w-[84%] md:max-w-[72%]">
                                                 {(() => {
                                                     const localDraft = editState?.draft ?? "";
