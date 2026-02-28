@@ -11,6 +11,10 @@ function deriveThreadTitle(params: { message: string; repoUrl?: string | null })
     return "Cortex Chat";
 }
 
+function isValidUuid(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 async function ensureThread(params: {
     userId: string;
     threadId?: string | null;
@@ -90,10 +94,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const message = typeof body?.message === 'string' ? body.message : '';
-    const threadId = typeof body?.threadId === 'string' ? body.threadId : null;
-    const scanId = typeof body?.scanId === 'string' ? body.scanId : null;
-    const planTier = (typeof body?.planTier === 'string' ? body.planTier : 'vibe_coder').toLowerCase();
-    const email = typeof body?.email === 'string' ? body.email : undefined;
+    const rawThreadId = typeof body?.threadId === 'string' ? body.threadId : null;
+    const threadId = rawThreadId && isValidUuid(rawThreadId) ? rawThreadId : null;
+    const scanId = body?.scanId || null;
+    const planTier = (body?.planTier || body?.plan || 'vibe_coder').toLowerCase();
+    const email = body?.email || undefined;
     const name = typeof body?.name === 'string' ? body.name : undefined;
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
 

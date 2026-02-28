@@ -4,6 +4,8 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
     ArrowLeft,
     BookOpen,
@@ -142,11 +144,23 @@ function ChatHomeInner() {
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [streamingMessage, setStreamingMessage] = useState("");
     const [isStreaming, setIsStreaming] = useState(false);
+    const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
 
     const scanId = useMemo(() => scanIdFromUrl, [scanIdFromUrl]);
+
+    const isNearBottom = useCallback(() => {
+        const el = scrollerRef.current;
+        if (!el) return true;
+        const threshold = 140;
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        return distanceFromBottom < threshold;
+    }, []);
+
+    const shouldAutoScrollRef = useRef(true);
 
     const scrollToBottom = useCallback(() => {
         requestAnimationFrame(() => {
@@ -154,7 +168,13 @@ function ChatHomeInner() {
         });
     }, []);
 
+    const maybeAutoScroll = useCallback(() => {
+        if (!shouldAutoScrollRef.current) return;
+        scrollToBottom();
+    }, [scrollToBottom]);
+
     const typewriterEffect = useCallback((text: string, callback?: () => void) => {
+        shouldAutoScrollRef.current = isNearBottom();
         setIsStreaming(true);
         setStreamingMessage("");
         let index = 0;
@@ -162,14 +182,22 @@ function ChatHomeInner() {
             if (index < text.length) {
                 setStreamingMessage((prev) => prev + text[index]);
                 index++;
-                scrollToBottom();
+                maybeAutoScroll();
             } else {
                 clearInterval(interval);
                 setIsStreaming(false);
                 if (callback) callback();
             }
         }, 12); // Adjust speed here (lower = faster)
-    }, [scrollToBottom]);
+    }, [isNearBottom, maybeAutoScroll]);
+
+    useEffect(() => {
+        if (!sending || isStreaming) return;
+        const tick = setInterval(() => {
+            setThinkingDots((prev) => (prev === "..." ? "." : prev === ".." ? "..." : ".."));
+        }, 450);
+        return () => clearInterval(tick);
+    }, [sending, isStreaming]);
 
     const load = useCallback(async (preferredThreadId?: string | null) => {
         setLoading(true);
@@ -242,10 +270,16 @@ function ChatHomeInner() {
         const isNewThread = !threadId;
         const optimisticThreadId = isNewThread ? `pending-${Date.now()}` : null;
         if (optimisticThreadId) {
+            const words = content
+                .trim()
+                .replace(/\s+/g, " ")
+                .split(" ")
+                .filter(Boolean);
+            const title = words.slice(0, 4).join(" ") || "New chat";
             setThreads((prev) => [
                 {
                     id: optimisticThreadId,
-                    title: content.trim().slice(0, 48) || "New chat",
+                    title,
                     last_scan_id: scanId || null,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -261,9 +295,10 @@ function ChatHomeInner() {
         scrollToBottom();
 
         try {
+            const realThreadId = threadId && !threadId.startsWith("pending-") ? threadId : null;
             const payload = {
                 message: content,
-                threadId: optimisticThreadId || threadId,
+                threadId: isNewThread ? null : realThreadId,
                 scanId,
                 attachments: attachments.map((f) => ({ name: f.name, size: f.size, type: f.type }))
             };
@@ -513,7 +548,7 @@ function ChatHomeInner() {
                                         )}
                                         aria-label={t.title || "Cortex Chat"}
                                     >
-                                        <Shield className="h-4 w-4 text-zinc-400" />
+                                        <div className="h-4 w-4" />
                                     </button>
                                 ))}
                             </div>
@@ -794,7 +829,13 @@ function ChatHomeInner() {
                     </>
                 )}
 
-                <div ref={scrollerRef} className="flex-1 overflow-auto custom-scrollbar">
+                <div
+                    ref={scrollerRef}
+                    className="flex-1 overflow-auto custom-scrollbar"
+                    onScroll={() => {
+                        shouldAutoScrollRef.current = isNearBottom();
+                    }}
+                >
                     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
                         {loading ? (
                             <div className="pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
@@ -823,18 +864,43 @@ function ChatHomeInner() {
                                                     : "text-zinc-200"
                                             )}
                                         >
-                                            {m.content}
+                                            {m.role === "assistant" ? (
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        h1: (p) => <h1 className="text-[18px] font-bold tracking-tight mb-2" {...p} />,
+                                                        h2: (p) => <h2 className="text-[16px] font-bold tracking-tight mb-2" {...p} />,
+                                                        h3: (p) => <h3 className="text-[15px] font-semibold tracking-tight mb-2" {...p} />,
+                                                        p: (p) => <p className="mb-2 last:mb-0" {...p} />,
+                                                        ul: (p) => <ul className="list-disc pl-5 mb-2" {...p} />,
+                                                        ol: (p) => <ol className="list-decimal pl-5 mb-2" {...p} />,
+                                                        li: (p) => <li className="mb-1" {...p} />,
+                                                        code: (p) => <code className="px-1 py-0.5 rounded bg-white/5 border border-white/10" {...p} />,
+                                                        pre: (p) => <pre className="p-3 rounded-xl bg-white/5 border border-white/10 overflow-auto text-[13px]" {...p} />,
+                                                        a: (p) => <a className="underline text-zinc-100 hover:text-white" {...p} />
+                                                    }}
+                                                >
+                                                    {m.content}
+                                                </ReactMarkdown>
+                                            ) : (
+                                                m.content
+                                            )}
                                         </div>
 
                                         {m.role === "user" && (
                                             <div className="mt-2 h-8">
                                                 <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
                                                     <button
-                                                        onClick={() => safeCopy(m.content)}
+                                                        onClick={() => {
+                                                            safeCopy(m.content);
+                                                            const key = `user-${m.id || idx}`;
+                                                            setCopiedKey(key);
+                                                            setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
+                                                        }}
                                                         className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
                                                         aria-label="Copy message"
                                                     >
-                                                        <Copy className="h-3 w-3" />
+                                                        {copiedKey === `user-${m.id || idx}` ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                                                         Copy
                                                     </button>
                                                     <button
@@ -864,12 +930,17 @@ function ChatHomeInner() {
                                             <div className="mt-2 h-8">
                                                 <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
                                                     <button
-                                                        onClick={() => safeCopy(m.content)}
+                                                        onClick={() => {
+                                                            safeCopy(m.content);
+                                                            const key = `assistant-${m.id || idx}`;
+                                                            setCopiedKey(key);
+                                                            setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
+                                                        }}
                                                         className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
                                                         aria-label="Copy"
                                                         title="Copy"
                                                     >
-                                                        <Copy className="h-3.5 w-3.5" />
+                                                        {copiedKey === `assistant-${m.id || idx}` ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                                                     </button>
                                                     <button
                                                         className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
@@ -937,7 +1008,7 @@ function ChatHomeInner() {
                         {sending && !isStreaming && (
                             <div className="text-xs font-semibold tracking-wide">
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-fuchsia-300 to-purple-300 animate-pulse">
-                                    Cortex is thinking…
+                                    Cortex is thinking{thinkingDots}
                                 </span>
                             </div>
                         )}
