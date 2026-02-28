@@ -208,6 +208,15 @@ function ChatHomeInner() {
 
             const res = await fetch(`/api/chat?${qs.toString()}`, { method: "GET" });
             const data = await res.json();
+            if (res.status === 401) {
+                setLoading(false);
+                setMessages((prev) =>
+                    prev.length
+                        ? prev
+                        : [{ role: "assistant", content: "Your session expired. Please refresh and sign in again." }]
+                );
+                return;
+            }
             if (!res.ok) throw new Error(data?.message || data?.error || "Failed to load chat");
 
             setThreads(data.threads || []);
@@ -248,10 +257,12 @@ function ChatHomeInner() {
             })
         });
         const data = await res.json();
+        if (res.status === 401) {
+            throw new Error("Your session expired. Please refresh and sign in again.");
+        }
         if (!res.ok) throw new Error(data?.message || data?.error || "Failed to replay message");
         setMessages(data.messages || []);
         if (data.threadId) setThreadId(data.threadId);
-        await load(data.threadId || threadId);
     };
 
     const editMessage = async (m: ChatMessage) => {
@@ -314,6 +325,10 @@ function ChatHomeInner() {
 
             const data = await res.json();
 
+            if (res.status === 401) {
+                throw new Error("Unauthorized. Please refresh and sign in again.");
+            }
+
             if (!res.ok) {
                 if (data.error === "AI_SERVICE_UNAVAILABLE") {
                     const fallback = typeof data.fallbackResponse === "object" 
@@ -342,12 +357,22 @@ function ChatHomeInner() {
             const assistantText = data.response || "I'm here to help!";
             typewriterEffect(assistantText, () => {
                 // After typewriter finishes, add the message to the list
-                const assistantMsg: ChatMessage = { role: "assistant", content: assistantText };
-                setMessages((prev) => [...prev, assistantMsg]);
+                const assistantMsg: ChatMessage = data.assistantMessage
+                    ? {
+                        id: data.assistantMessage.id,
+                        role: data.assistantMessage.role,
+                        content: data.assistantMessage.content,
+                        attachments: data.assistantMessage.attachments ?? null,
+                        created_at: data.assistantMessage.created_at
+                    }
+                    : { role: "assistant", content: assistantText };
+
+                setMessages((prev) => {
+                    // If we already appended the assistant msg earlier, avoid duplicates
+                    const alreadyHas = prev.some((m) => m.role === 'assistant' && m.content === assistantMsg.content);
+                    return alreadyHas ? prev : [...prev, assistantMsg];
+                });
                 setStreamingMessage("");
-                
-                // Reload to get persisted messages with proper IDs
-                load(data.threadId || threadId);
             });
 
         } catch (err) {
