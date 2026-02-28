@@ -22,7 +22,7 @@ export default function Login() {
                 {/* Branding Overlay */}
                 <div className="absolute bottom-12 left-12 z-20">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="relative h-12 w-12 rounded-xl bg-white flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.5)] overflow-hidden">
+                        <div className="relative h-12 w-12 rounded-xl flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.5)] overflow-hidden">
                             <Image
                                 src="/assets/logo.png"
                                 alt="CortexEDR Logo"

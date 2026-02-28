@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Brain } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Footer } from "@/components/landing/footer";
 
 export default function LegalLayout({
@@ -18,7 +18,7 @@ export default function LegalLayout({
                         <span className="font-mono text-[10px] tracking-widest uppercase">BACK_TO_SYSTEM</span>
                     </Link>
                     <div className="flex items-center gap-2 font-bold text-lg tracking-tighter text-white">
-                        <Brain className="h-5 w-5 text-purple-500" />
+                        <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-5 w-5" />
                         <span className="font-mono text-[11px] tracking-[0.3em] uppercase hidden md:inline">CORTEX_LEGAL_MODULE</span>
                     </div>
                     <div className="w-24 hidden md:block" />

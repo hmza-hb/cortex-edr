@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Hero } from '@/components/landing/hero'
-import { Shield, Brain, Terminal, Activity } from 'lucide-react'
+import { Shield, Terminal, Activity } from 'lucide-react'
 import { TerminalDemo } from '@/components/ui/terminal-demo'
 import { AgentScanningVfx } from '@/components/landing/agent-scanning-vfx'
 import { PricingSection } from '@/components/landing/pricing-section'
@@ -18,13 +18,13 @@ export default async function Home() {
       <header className="fixed top-6 left-0 right-0 z-[100] flex justify-center px-4">
         <div className="bg-black/40 backdrop-blur-xl border border-white/[0.1] rounded-full px-6 py-3 flex items-center justify-between w-full max-w-4xl shadow-2xl shadow-purple-500/10">
           <div className="flex items-center gap-2 font-bold text-xl tracking-tighter text-white">
-            <Brain className="h-6 w-6 text-purple-500" />
+            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-8 w-8" />
             <span className="font-sans uppercase tracking-[0.2em] text-sm md:block hidden">Cortex<span className="text-purple-500">EDR</span></span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-[11px] font-mono tracking-widest text-white/70">
             <Link href="/features" className="hover:text-white transition-all">Features</Link>
             <Link href="/pricing" className="hover:text-white transition-all">Pricing</Link>
-            <Link href="#" className="hover:text-white transition-all">Docs</Link>
+            <Link href="/docs" className="hover:text-white transition-all">Docs</Link>
           </nav>
           <div className="flex items-center gap-4">
             {user ? (

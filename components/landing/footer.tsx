@@ -2,7 +2,6 @@
 import React from "react";
 import Link from "next/link";
 import {
-    Brain,
     ArrowUpRight,
 } from "lucide-react";
 
@@ -47,7 +46,7 @@ export const Footer = () => {
         {
             title: "Resources",
             links: [
-                { label: "Documentation", href: "#" },
+                { label: "Documentation", href: "/docs" },
                 { label: "API Reference", href: "#" },
                 { label: "Security Audit", href: "#" },
                 { label: "System Status", href: "/legal/status" },
@@ -79,7 +78,7 @@ export const Footer = () => {
                     {/* Brand Section */}
                     <div className="lg:col-span-2">
                         <Link href="/" className="flex items-center gap-3 mb-6">
-                            <Brain className="h-8 w-8 text-purple-500" />
+                            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-8 w-8" />
                             <span className="text-xl font-bold text-white tracking-tight">
                                 Cortex<span className="text-purple-500">EDR</span>
                             </span>
