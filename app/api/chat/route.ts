@@ -3,7 +3,9 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
-import { CORTEX_SYSTEM_PROMPT } from '@/lib/chat/system-prompt';
+import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
+
+const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
 function deriveThreadTitle(params: { message: string; repoUrl?: string | null }) {
     const cleaned = (params.message || "").trim().replace(/\s+/g, " ");
@@ -160,7 +162,7 @@ export async function POST(req: NextRequest) {
             console.error('[Chat] Failed to store user message:', insertUserError);
         }
 
-        const systemPrompt = CORTEX_SYSTEM_PROMPT;
+        const systemPrompt = FULL_SYSTEM_PROMPT;
 
         const contextBlock = JSON.stringify(mega);
         const historyBlock = history
