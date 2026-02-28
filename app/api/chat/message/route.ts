@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { buildMegaContext } from '@/lib/chat/mega-context';
+import { loadUserScans, buildScanContext } from '@/lib/chat/context-loader';
 import { callAI } from '@/lib/agents/ai-router';
 import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
-import { loadUserScans, buildScanContextString } from '@/lib/chat/context-loader';
 
 const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
@@ -98,7 +97,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'LOAD_FAILED', message: 'Failed to load messages' }, { status: 500 });
         }
 
-        const mega = await buildMegaContext({ userId, scanId: thread.last_scan_id ? String(thread.last_scan_id) : null });
+        // Load ALL user's scans with full context
+        const scans = await loadUserScans(userId)
+
+        // Build comprehensive scan context
+        const scanContext = buildScanContext(scans, thread.last_scan_id ? String(thread.last_scan_id) : undefined)
 
         const historyBlock = (allMessages || [])
             .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -106,12 +109,9 @@ export async function POST(req: NextRequest) {
             .map((m) => `${String(m.role).toUpperCase()}: ${m.content}`)
             .join('\n');
 
-        const scanContext = await loadUserScans(userId, thread.last_scan_id ? String(thread.last_scan_id) : null);
-        const scanContextString = buildScanContextString(scanContext);
+        const systemPrompt = FULL_SYSTEM_PROMPT;
 
-        const systemPrompt = FULL_SYSTEM_PROMPT + '\n\n' + scanContextString;
-
-        const userPrompt = `MEGA_CONTEXT_JSON:\n${JSON.stringify(mega)}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n`;
+        const userPrompt = `${scanContext}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n`;
 
         const aiResult = await callAI('vibe_coder', 'synthesis', systemPrompt, userPrompt, {
             scanId: thread.last_scan_id ? String(thread.last_scan_id) : undefined

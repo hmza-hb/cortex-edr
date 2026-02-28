@@ -148,7 +148,7 @@ export default function ReportPage() {
                             </p>
                         </div>
                     </div>
-                    <Link href="/dashboard/chat">
+                    <Link href={`/chat?scanId=${scanId}`}>
                         <Button variant="ghost" className="h-11 px-6 border border-white/10 text-white/40 hover:text-white rounded-xl hover:bg-white/5 transition-all flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
                             Ask a Question
                             <ArrowRight className="h-3.5 w-3.5" />

@@ -62,55 +62,57 @@ export default async function RepositoriesPage() {
             {repositories && repositories.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {repositories.map((repo) => (
-                        <div key={repo.id} className="group p-6 bg-[#0A0A0A] border border-white/5 hover:border-white/10 transition-all rounded-xl relative overflow-hidden">
-                            <div className="flex items-start gap-4 mb-6">
-                                <div className="h-12 w-12 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center shrink-0">
-                                    <FolderGit2 className="h-6 w-6 text-white/40 group-hover:text-purple-400 transition-colors" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-base font-bold text-white group-hover:text-purple-400 transition-colors truncate tracking-tight">
-                                        {repo.name}
-                                    </h3>
-                                    <p className="text-xs text-white/40 mt-1 truncate font-medium">{repo.url}</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6 mb-6">
-                                <div>
-                                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Last Audit</div>
-                                    <div className="text-xs text-white/80 font-semibold uppercase">
-                                        {repo.last_scan_at ? new Date(repo.last_scan_at).toLocaleDateString() : 'No History'}
+                        <Link key={repo.id} href={`/chat?repoId=${repo.id}`} className="block group">
+                            <div className="p-6 bg-[#0A0A0A] border border-white/5 hover:border-white/10 transition-all rounded-xl relative overflow-hidden cursor-pointer">
+                                <div className="flex items-start gap-4 mb-6">
+                                    <div className="h-12 w-12 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center shrink-0">
+                                        <FolderGit2 className="h-6 w-6 text-white/40 group-hover:text-purple-400 transition-colors" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-base font-bold text-white group-hover:text-purple-400 transition-colors truncate tracking-tight">
+                                            {repo.name}
+                                        </h3>
+                                        <p className="text-xs text-white/40 mt-1 truncate font-medium">{repo.url}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Integrity Score</div>
-                                    <div className={cn("text-sm font-bold", getScoreColor(repo.latest_score || 0))}>
-                                        {repo.latest_score || 0}/100
-                                        <span className="ml-2 text-[10px] font-bold opacity-40 uppercase tracking-tighter">
-                                            {repo.trend || "Stable"}
-                                        </span>
+
+                                <div className="grid grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Last Audit</div>
+                                        <div className="text-xs text-white/80 font-semibold uppercase">
+                                            {repo.last_scan_at ? new Date(repo.last_scan_at).toLocaleDateString() : 'No History'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Integrity Score</div>
+                                        <div className={cn("text-sm font-bold", getScoreColor(repo.latest_score || 0))}>
+                                            {repo.latest_score || 0}/100
+                                            <span className="ml-2 text-[10px] font-bold opacity-40 uppercase tracking-tighter">
+                                                {repo.trend || "Stable"}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-center gap-3 pt-6 border-t border-white/5">
-                                <Link href={`/dashboard/new-scan?repo=${repo.id}`} className="flex-1">
-                                    <Button size="sm" className="w-full h-9 bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 text-xs font-bold transition-all text-white/60 hover:text-white rounded-lg">
-                                        Initiate Scan
-                                    </Button>
-                                </Link>
-                                <Link href={`/dashboard/scans?repo=${repo.id}`} className="flex-1">
-                                    <Button size="sm" className="w-full h-9 bg-white/5 border border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5 text-xs font-bold transition-all text-white/60 hover:text-white rounded-lg">
-                                        View History
-                                    </Button>
-                                </Link>
-                                <Link href={`/dashboard/repositories/${repo.id}/settings`}>
-                                    <Button size="icon" variant="ghost" className="h-10 w-10 border border-white/10 hover:border-white/30 text-white/40 hover:text-white transition-all">
-                                        <SettingsIcon className="h-4 w-4" />
-                                    </Button>
-                                </Link>
+                                <div className="flex items-center gap-3 pt-6 border-t border-white/5">
+                                    <Link href={`/dashboard/new-scan?repo=${repo.id}`} className="flex-1" onClick={(e) => e.stopPropagation()}>
+                                        <Button size="sm" className="w-full h-9 bg-white/5 border border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 text-xs font-bold transition-all text-white/60 hover:text-white rounded-lg">
+                                            Initiate Scan
+                                        </Button>
+                                    </Link>
+                                    <Link href={`/dashboard/scans?repo=${repo.id}`} className="flex-1" onClick={(e) => e.stopPropagation()}>
+                                        <Button size="sm" className="w-full h-9 bg-white/5 border border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5 text-xs font-bold transition-all text-white/60 hover:text-white rounded-lg">
+                                            View History
+                                        </Button>
+                                    </Link>
+                                    <Link href={`/dashboard/repositories/${repo.id}/settings`} onClick={(e) => e.stopPropagation()}>
+                                        <Button size="icon" variant="ghost" className="h-10 w-10 border border-white/10 hover:border-white/30 text-white/40 hover:text-white transition-all">
+                                            <SettingsIcon className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             ) : (

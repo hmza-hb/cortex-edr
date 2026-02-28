@@ -38,7 +38,7 @@ import {
     Send,
     X
 } from "lucide-react";
-import { useClerk, useUser } from "@clerk/nextjs";
+import { supabaseService } from "@/lib/supabase/service";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -125,6 +125,7 @@ export default function ChatHomePage() {
 function ChatHomeInner() {
     const searchParams = useSearchParams();
     const scanIdFromUrl = searchParams.get("scanId");
+    const repoIdFromUrl = searchParams.get("repoId");
 
     const { user } = useUser();
     const { signOut } = useClerk();
@@ -146,6 +147,8 @@ function ChatHomeInner() {
     const [isPlanOpen, setIsPlanOpen] = useState(false);
     const [plan, setPlan] = useState<"Vibe Coder" | "Developer" | "Teams" | "Enterprise">("Vibe Coder");
     const [isPlusOpen, setIsPlusOpen] = useState(false);
+    const [isRecentScansOpen, setIsRecentScansOpen] = useState(false);
+    const [recentScansForMenu, setRecentScansForMenu] = useState<any[]>([]);
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [streamingMessage, setStreamingMessage] = useState("");
     const [isStreaming, setIsStreaming] = useState(false);
@@ -209,12 +212,29 @@ function ChatHomeInner() {
         return () => clearInterval(tick);
     }, [sending, isStreaming]);
 
-    const load = useCallback(async (preferredThreadId?: string | null) => {
+    const load = useCallback(async (preferredThreadId?: string | null, preferredScanId?: string | null) => {
         setLoading(true);
         try {
+            let finalScanId = preferredScanId || scanId;
+
+            // If repoId is provided, find the latest scan for that repository
+            if (repoIdFromUrl && !finalScanId) {
+                const { data: latestScan } = await supabaseService
+                    .from('scans')
+                    .select('id')
+                    .eq('repo_id', repoIdFromUrl)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (latestScan) {
+                    finalScanId = latestScan.id;
+                }
+            }
+
             const qs = new URLSearchParams();
             if (preferredThreadId) qs.set("threadId", preferredThreadId);
-            if (scanId) qs.set("scanId", scanId);
+            if (finalScanId) qs.set("scanId", finalScanId);
 
             const res = await fetch(`/api/chat?${qs.toString()}`, { method: "GET" });
             const data = await res.json();
@@ -236,10 +256,10 @@ function ChatHomeInner() {
             setLoading(false);
             setTimeout(scrollToBottom, 50);
         }
-    }, [scanId, scrollToBottom]);
+    }, [scanId, repoIdFromUrl, scrollToBottom]);
 
     useEffect(() => {
-        load(null);
+        load(null, null);
     }, [load]);
 
     useEffect(() => {
@@ -422,8 +442,23 @@ function ChatHomeInner() {
         await sendMessageWithContent(content);
     };
 
-    const shareChat = async () => {
-        setIsShareOpen(true);
+    const fetchRecentScansForMenu = async () => {
+        try {
+            const response = await fetch('/api/scans/recent');
+            if (!response.ok) throw new Error('Failed to fetch scans');
+            const data = await response.json();
+            setRecentScansForMenu(data.scans || []);
+        } catch (error) {
+            console.error('Failed to fetch recent scans:', error);
+            setRecentScansForMenu([]);
+        }
+    };
+
+    const loadScanIntoChat = async (scanId: string) => {
+        setIsPlusOpen(false);
+        setIsRecentScansOpen(false);
+        // Load the chat with this scan's context
+        load(null, scanId);
     };
 
     const filteredThreads = useMemo(() => {
@@ -764,7 +799,7 @@ function ChatHomeInner() {
 
                     <Button
                         variant="ghost"
-                        onClick={shareChat}
+                        onClick={() => setIsShareOpen(true)}
                         className="h-9 px-3 rounded-xl border border-white/5 text-zinc-300 hover:text-white bg-white/[0.02] hover:bg-white/[0.05]"
                     >
                         <Share2 className="h-4 w-4 mr-2" />
@@ -1174,7 +1209,11 @@ function ChatHomeInner() {
                                                     Add a GitHub repository
                                                 </button>
                                                 <button
-                                                    onClick={() => setIsPlusOpen(false)}
+                                                    onClick={() => {
+                                                        setIsPlusOpen(false);
+                                                        fetchRecentScansForMenu();
+                                                        setIsRecentScansOpen(true);
+                                                    }}
                                                     className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
                                                 >
                                                     <History className="h-4 w-4 text-zinc-500" />
@@ -1211,6 +1250,37 @@ function ChatHomeInner() {
                                                 <div className="mt-1 px-3 py-2 text-[11px] text-zinc-600 font-medium">
                                                     Some actions will be enabled soon.
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {isRecentScansOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsRecentScansOpen(false)} />
+                                        <div className="absolute left-0 bottom-[52px] z-50 w-80 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden max-h-96">
+                                            <div className="p-3">
+                                                <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Recent Scans</div>
+                                                {recentScansForMenu.length === 0 ? (
+                                                    <div className="text-sm text-zinc-600 font-medium py-4 text-center">No recent scans found</div>
+                                                ) : (
+                                                    <div className="space-y-1 max-h-80 overflow-auto">
+                                                        {recentScansForMenu.map((scan) => (
+                                                            <button
+                                                                key={scan.id}
+                                                                onClick={() => loadScanIntoChat(scan.id)}
+                                                                className="w-full text-left px-3 py-2 rounded-xl hover:bg-white/[0.03] transition-colors"
+                                                            >
+                                                                <div className="text-sm font-medium text-zinc-200 truncate">
+                                                                    {scan.repo_url.split('/').slice(-2).join('/')}
+                                                                </div>
+                                                                <div className="text-xs text-zinc-500 font-medium mt-0.5">
+                                                                    Score: {scan.score || 'N/A'} • {new Date(scan.created_at).toLocaleDateString()}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </>

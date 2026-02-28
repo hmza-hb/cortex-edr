@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { buildMegaContext } from '@/lib/chat/mega-context';
+import { loadUserScans, buildScanContext } from '@/lib/chat/context-loader';
 import { callAI } from '@/lib/agents/ai-router';
 import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
-import { loadUserScans, buildScanContextString } from '@/lib/chat/context-loader';
 
 const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
@@ -115,10 +114,15 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const mega = await buildMegaContext({ userId, email, name, scanId });
+        // Load ALL user's scans with full context
+        const scans = await loadUserScans(userId)
+
+        // Build comprehensive scan context
+        const scanContext = buildScanContext(scans, scanId)
+
         const computedTitle = deriveThreadTitle({
             message,
-            repoUrl: mega?.stats?.lastScan?.repo_url || null
+            repoUrl: scans.find(s => s.id === scanId)?.repo_url || null
         });
 
         const ensured = await ensureThread({ userId, threadId, scanId, title: computedTitle });
@@ -163,17 +167,19 @@ export async function POST(req: NextRequest) {
             console.error('[Chat] Failed to store user message:', insertUserError);
         }
 
-        const scanContext = await loadUserScans(userId, scanId);
-        const scanContextString = buildScanContextString(scanContext);
+        const systemPrompt = FULL_SYSTEM_PROMPT;
 
-        const systemPrompt = FULL_SYSTEM_PROMPT + '\n\n' + scanContextString;
-
-        const contextBlock = JSON.stringify(mega);
+        const contextBlock = JSON.stringify({
+            user: { userId, email, name },
+            scanCount: scans.length,
+            activeScanId: scanId,
+            hasScans: scans.length > 0
+        });
         const historyBlock = history
             .map(m => `${m.role.toUpperCase()}: ${m.content}`)
             .join('\n');
 
-        const userPrompt = `MEGA_CONTEXT_JSON:\n${contextBlock}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n\nNEW_MESSAGE:\n${message}`;
+        const userPrompt = `${scanContext}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n\nNEW_MESSAGE:\n${message}`;
 
         const aiResult = await callAI(planTier, 'synthesis', systemPrompt, userPrompt, { scanId: scanId || undefined });
 
@@ -185,7 +191,8 @@ export async function POST(req: NextRequest) {
                     fallbackResponse: aiResult.fallbackResponse || null,
                     threadId: resolvedThreadId,
                     threadTitle: computedTitle,
-                    megaContext: mega
+                    scanCount: scans.length,
+                    hasScans: scans.length > 0
                 },
                 { status: 503 }
             );
@@ -216,7 +223,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             threadId: resolvedThreadId,
             threadTitle: computedTitle,
-            megaContext: mega,
+            scanCount: scans.length,
+            hasScans: scans.length > 0,
             response: assistantText,
             assistantMessage: assistantRow || null
         });
