@@ -54,10 +54,6 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const threadId = url.searchParams.get('threadId');
-    const scanId = url.searchParams.get('scanId');
-    const planTier = (url.searchParams.get('planTier') || 'vibe_coder').toLowerCase();
-    const email = url.searchParams.get('email') || undefined;
-    const name = url.searchParams.get('name') || undefined;
 
     try {
         const { data: threads } = await supabaseService
@@ -80,7 +76,6 @@ export async function GET(req: NextRequest) {
             : { data: [] };
 
         return NextResponse.json({
-            planTier,
             threadId: resolvedThreadId,
             threads: threads || [],
             messages: messages || []

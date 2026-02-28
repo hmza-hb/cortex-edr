@@ -31,16 +31,15 @@ import {
     ThumbsUp,
     MoreHorizontal,
     CheckCheck,
-    FileDown,
-    Flag,
+    Send,
     TriangleAlert,
     User,
-    Send,
     X
 } from "lucide-react";
 import { supabaseService } from "@/lib/supabase/service";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useClerk, useUser } from "@clerk/nextjs";
 
 type ChatRole = "user" | "assistant" | "system";
 
