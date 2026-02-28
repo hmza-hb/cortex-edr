@@ -63,13 +63,14 @@ function getRoutingForAgent(agentId: number): { primary: string; fallback: strin
 
     // Agent Mapping as per USER request:
     // 1 (Recon), 3 (Arch), 4 (Quality), 5 (Debt) -> Gemini 2.0 Flash
-    // 2 (Security), 6 (AI-Specific), 7 (Orchestrator) -> DeepSeek R1 (OpenRouter)
+    // 2 (Security) -> Gemini 2.0 Flash (changed from DeepSeek R1)
+    // 6 (AI-Specific), 7 (Orchestrator) -> DeepSeek R1 (OpenRouter)
 
-    if ([1, 3, 4, 5].includes(agentId)) {
+    if ([1, 2, 3, 4, 5].includes(agentId)) {
         return { primary: 'gemini-2.0-flash', fallback: defaultFallback };
     }
 
-    if ([2, 6, 7].includes(agentId)) {
+    if ([6, 7].includes(agentId)) {
         return { primary: 'deepseek-r1', fallback: defaultFallback };
     }
 
