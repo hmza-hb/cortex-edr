@@ -881,7 +881,7 @@ function ChatHomeInner() {
                         didUserScrollAwayRef.current = !nearBottom;
                     }}
                 >
-                    <div className="max-w-5xl mx-auto px-[20px] py-8 space-y-6">
+                    <div className="max-w-4xl mx-auto px-[20px] py-8 space-y-6">
                         {loading ? (
                             <div className="pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
                         ) : messages.length === 0 ? (
@@ -906,15 +906,15 @@ function ChatHomeInner() {
                                     <div className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
                                         <div
                                             className={cn(
-                                                "w-full rounded-2xl px-6 py-5 text-[15px] leading-7 whitespace-pre-wrap",
+                                                "rounded-2xl px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap",
                                                 m.role === "user"
-                                                    ? "bg-zinc-900/80 border border-white/5 text-zinc-50"
-                                                    : "text-zinc-200"
+                                                    ? "max-w-[84%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
+                                                    : "w-full max-w-[92%] md:max-w-[82%] text-zinc-200"
                                             )}
                                         >
                                             {m.role === "assistant" ? (
                                                 <div className="min-w-0">
-                                                    <div className="prose prose-invert max-w-none prose-p:my-3 prose-li:my-1 prose-ul:my-3 prose-ol:my-3 prose-pre:my-4 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                    <div className="prose prose-invert max-w-none prose-p:my-2 prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2 prose-pre:my-3 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
                                                         <ReactMarkdown
                                                             remarkPlugins={[remarkGfm]}
                                                             components={{
@@ -934,7 +934,7 @@ function ChatHomeInner() {
                                         </div>
 
                                         {m.role === "user" && editState?.messageId === m.id && (
-                                            <div className="w-full mt-2">
+                                            <div className="w-full mt-2 max-w-[84%] md:max-w-[72%]">
                                                 {(() => {
                                                     const localDraft = editState?.draft ?? "";
                                                     return (
@@ -1097,7 +1097,7 @@ function ChatHomeInner() {
                 </div>
 
                 <div className="bg-zinc-950/70 backdrop-blur-xl">
-                    <div className="max-w-5xl mx-auto px-[20px] py-4">
+                    <div className="max-w-4xl mx-auto px-[20px] py-4">
                         {attachments.length > 0 && (
                             <div className="mb-3 flex flex-wrap gap-2">
                                 {attachments.map((f, i) => (
