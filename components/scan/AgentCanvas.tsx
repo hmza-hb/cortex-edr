@@ -109,7 +109,7 @@ export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
         }
     }
 
-    const calculateConnections = () => {
+    const calculateConnections = useCallback(() => {
         if (!canvasRef.current || !cortexRef.current) return;
 
         const newConnections = [
@@ -179,7 +179,7 @@ export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
             }
         ];
         setConnections(newConnections);
-    };
+    }, [augmentedStates]);
 
     useEffect(() => {
         const timer = setTimeout(calculateConnections, 200);
@@ -188,7 +188,7 @@ export const AgentCanvas: React.FC<AgentCanvasProps> = ({ scanId }) => {
             clearTimeout(timer);
             window.removeEventListener('resize', calculateConnections);
         };
-    }, [augmentedStates, status]);
+    }, [augmentedStates, status, calculateConnections]);
 
     const getAgentPosition = (id: number) => {
         // x≈270px for Left Column, x≈650px for Right Column

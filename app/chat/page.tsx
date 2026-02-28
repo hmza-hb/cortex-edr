@@ -84,13 +84,42 @@ function BrandLinkedInIcon(props: { className?: string }) {
         <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
             <path
                 fill="currentColor"
+                d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.95v5.66H9.37V9h3.41v1.56h.05c.48-.9 1.66-1.85 3.42-1.85 3.66 0 4.33 2.41 4.33 5.55v6.19ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.23 0H1.77C.79 0 0 .78 0 1.74v20.52C0 23.22.79 24 1.77 24h20.46c.98 0 1.77-.78 1.77-1.74V1.74C24 .78 23.21 0 22.23 0Z"
+            />
+        </svg>
+    );
+}
+
+function BrandGoogleDriveIcon(props: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
+            <path fill="currentColor" d="M7.67 3 1.5 13.67l3.1 5.36L10.77 8.36 7.67 3Zm14.83 10.67L16.33 3h-6.2l6.17 10.67h6.2ZM4.6 19.03h12.33l3.1-5.36H7.7l-3.1 5.36Z" />
+        </svg>
+    );
+}
+
+function safeCopy(text: string) {
+    try {
+        void navigator.clipboard.writeText(text);
+    } catch {
+        // noop
+    }
 }
 
 interface ChatThread {
     id: string;
-    title: string;
+    title: string | null;
+    last_scan_id: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export default function ChatHomePage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-screen bg-zinc-950 text-zinc-100" />}>
+            <ChatHomeInner />
+        </Suspense>
+    );
 }
 
 function ChatHomeInner() {
@@ -118,196 +147,290 @@ function ChatHomeInner() {
     const [plan, setPlan] = useState<"Vibe Coder" | "Developer" | "Teams" | "Enterprise">("Vibe Coder");
     const [isPlusOpen, setIsPlusOpen] = useState(false);
     const [isShareOpen, setIsShareOpen] = useState(false);
-    const [isScanSelectorOpen, setIsScanSelectorOpen] = useState(false);
-    const [availableScans, setAvailableScans] = useState<Array<{id: string; repo_url: string; score: number | null; created_at: string; status: string; title: string}>>([]);
-    const [currentScanId, setCurrentScanId] = useState<string | null>(() => scanIdFromUrl);
-
     const [streamingMessage, setStreamingMessage] = useState("");
     const [isStreaming, setIsStreaming] = useState(false);
     const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [editState, setEditState] = useState<EditState>(null);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-    // Load threads and messages
-    const load = useCallback(async () => {
-        if (!user) return;
+    const scanId = useMemo(() => scanIdFromUrl, [scanIdFromUrl]);
 
+    const isNearBottom = useCallback(() => {
+        const el = scrollerRef.current;
+        if (!el) return true;
+        const threshold = 140;
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        return distanceFromBottom < threshold;
+    }, []);
+
+    const shouldAutoScrollRef = useRef(true);
+    const didUserScrollAwayRef = useRef(false);
+
+    const scrollToBottom = useCallback(() => {
+        requestAnimationFrame(() => {
+            scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: "smooth" });
+        });
+    }, []);
+
+    const maybeAutoScroll = useCallback(() => {
+        if (!shouldAutoScrollRef.current) return;
+        if (didUserScrollAwayRef.current) return;
+        scrollToBottom();
+    }, [scrollToBottom]);
+
+    const typewriterEffect = useCallback((text: string, callback?: () => void) => {
+        const nearBottom = isNearBottom();
+        shouldAutoScrollRef.current = nearBottom;
+        didUserScrollAwayRef.current = !nearBottom;
+        setIsStreaming(true);
+        setStreamingMessage("");
+        let index = 0;
+        const interval = setInterval(() => {
+            if (index < text.length) {
+                setStreamingMessage((prev) => prev + text[index]);
+                index++;
+                maybeAutoScroll();
+            } else {
+                clearInterval(interval);
+                setIsStreaming(false);
+                if (callback) callback();
+            }
+        }, 12); // Adjust speed here (lower = faster)
+    }, [isNearBottom, maybeAutoScroll]);
+
+    useEffect(() => {
+        if (!sending || isStreaming) return;
+        const tick = setInterval(() => {
+            setThinkingDots((prev) => (prev === "..." ? "." : prev === ".." ? "..." : ".."));
+        }, 450);
+        return () => clearInterval(tick);
+    }, [sending, isStreaming]);
+
+    const load = useCallback(async (preferredThreadId?: string | null) => {
         setLoading(true);
         try {
-            const threadsRes = await fetch("/api/chat/threads");
-            if (threadsRes.ok) {
-                const threadsData = await threadsRes.json();
-                setThreads(threadsData.threads || []);
-            }
+            const qs = new URLSearchParams();
+            if (preferredThreadId) qs.set("threadId", preferredThreadId);
+            if (scanId) qs.set("scanId", scanId);
 
-            const messagesRes = await fetch("/api/chat/messages");
-            if (messagesRes.ok) {
-                const messagesData = await messagesRes.json();
-                setMessages(messagesData.messages || []);
+            const res = await fetch(`/api/chat?${qs.toString()}`, { method: "GET" });
+            const data = await res.json();
+            if (res.status === 401) {
+                setLoading(false);
+                setMessages((prev) =>
+                    prev.length
+                        ? prev
+                        : [{ role: "assistant", content: "Your session expired. Please refresh and sign in again." }]
+                );
+                return;
             }
-        } catch (error) {
-            console.error("Failed to load chat data:", error);
+            if (!res.ok) throw new Error(data?.message || data?.error || "Failed to load chat");
+
+            setThreads(data.threads || []);
+            setThreadId(data.threadId || null);
+            setMessages(data.messages || []);
+        } finally {
+            setLoading(false);
+            setTimeout(scrollToBottom, 50);
         }
-        setLoading(false);
-    }, [user]);
+    }, [scanId, scrollToBottom]);
 
-    // Load available scans
-    const loadAvailableScans = useCallback(async () => {
-        if (!user) return;
+    useEffect(() => {
+        load(null);
+    }, [load]);
 
-        try {
-            const res = await fetch("/api/scans");
-            if (res.ok) {
-                const data = await res.json();
-                setAvailableScans(data.scans || []);
-            }
-        } catch (error) {
-            console.error("Failed to load scans:", error);
-        }
-    }, [user]);
+    useEffect(() => {
+        setEditState(null);
+    }, [threadId]);
 
-    // Select scan and reload chat
-    const selectScan = useCallback((scanId: string) => {
-        setCurrentScanId(scanId);
-        setIsScanSelectorOpen(false);
-        window.location.href = `/chat?scanId=${scanId}`;
-    }, []);
+    const removeAttachment = (idx: number) => {
+        setAttachments((prev) => prev.filter((_, i) => i !== idx));
+    };
 
-    // Remove attachment
-    const removeAttachment = useCallback((index: number) => {
-        setAttachments((prev) => prev.filter((_, i) => i !== index));
-    }, []);
-
-    // Send message
-    const sendMessage = useCallback(async () => {
-        if (!input.trim() && attachments.length === 0) return;
-        if (!user) return;
-
-        setSending(true);
-        const messageToSend = input.trim();
-        const attachmentsToSend = [...attachments];
-
+    const startNewChat = async () => {
+        setThreadId(null);
+        setMessages([]);
+        setEditState(null);
         setInput("");
         setAttachments([]);
+        setTimeout(scrollToBottom, 10);
+    };
 
-        const optimisticMessage: ChatMessage = {
-            id: `pending-${Date.now()}`,
-            role: "user",
-            content: messageToSend,
-            created_at: new Date().toISOString()
-        };
+    const replayFromMessage = async (messageId: string, editedContent?: string) => {
+        if (!threadId) return;
+        const res = await fetch("/api/chat/message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                threadId,
+                messageId,
+                action: editedContent ? "edit" : "retry",
+                content: editedContent
+            })
+        });
+        const data = await res.json();
+        if (res.status === 401) {
+            throw new Error("Your session expired. Please refresh and sign in again.");
+        }
+        if (!res.ok) throw new Error(data?.message || data?.error || "Failed to replay message");
+        setMessages(data.messages || []);
+        if (data.threadId) setThreadId(data.threadId);
+    };
 
-        setMessages(prev => [...prev, optimisticMessage]);
+    const startEditMessage = (m: ChatMessage) => {
+        if (!m.id) return;
+        setEditState({ messageId: m.id, draft: m.content });
+    };
+
+    const cancelEdit = () => {
+        setEditState(null);
+    };
+
+    const saveEdit = async () => {
+        if (!editState) return;
+        const trimmed = editState.draft.trim();
+        if (!trimmed) return;
+        await replayFromMessage(editState.messageId, trimmed);
+        setEditState(null);
+    };
+
+    const sendMessageWithContent = async (content: string) => {
+        if (sending) return;
+        if (!content.trim() && attachments.length === 0) return;
+
+        setEditState(null);
+
+        const isNewThread = !threadId;
+        const optimisticThreadId = isNewThread ? `pending-${Date.now()}` : null;
+        if (optimisticThreadId) {
+            const words = content
+                .trim()
+                .replace(/\s+/g, " ")
+                .split(" ")
+                .filter(Boolean);
+            const title = words.slice(0, 4).join(" ") || "New chat";
+            setThreads((prev) => [
+                {
+                    id: optimisticThreadId,
+                    title,
+                    last_scan_id: scanId || null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                ...prev
+            ]);
+            setThreadId(optimisticThreadId);
+        }
+
+        setSending(true);
+        const optimisticUser: ChatMessage = { role: "user", content };
+        setMessages((prev) => [...prev, optimisticUser]);
+        scrollToBottom();
 
         try {
-            const formData = new FormData();
-            formData.append("message", messageToSend);
-            if (currentScanId) {
-                formData.append("scanId", currentScanId);
-            }
-            attachmentsToSend.forEach((file, index) => {
-                formData.append(`attachment-${index}`, file);
-            });
+            const realThreadId = threadId && !threadId.startsWith("pending-") ? threadId : null;
+            const payload = {
+                message: content,
+                threadId: isNewThread ? null : realThreadId,
+                scanId,
+                attachments: attachments.map((f) => ({ name: f.name, size: f.size, type: f.type }))
+            };
+
+            setInput("");
+            setAttachments([]);
 
             const res = await fetch("/api/chat", {
                 method: "POST",
-                body: formData
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             });
-
-            if (!res.ok) {
-                if (res.status === 503) {
-                    const errorData = await res.json().catch(() => ({}));
-                    setMessages(prev => [...prev, {
-                        role: "assistant",
-                        content: errorData.message || "AI service is currently unavailable. Please try again later.",
-                        created_at: new Date().toISOString()
-                    }]);
-                } else {
-                    setMessages(prev => [...prev, {
-                        role: "assistant",
-                        content: "Sorry, I encountered an error. Please try again.",
-                        created_at: new Date().toISOString()
-                    }]);
-                }
-                return;
-            }
 
             const data = await res.json();
 
-            // Replace optimistic message with real one
-            setMessages(prev => prev.map(msg =>
-                msg.id === optimisticMessage.id
-                    ? { ...data.userMessage, id: data.userMessage.id || msg.id }
-                    : msg
-            ));
-
-            // Add assistant message
-            if (data.assistantMessage) {
-                setMessages(prev => [...prev, data.assistantMessage]);
+            if (res.status === 401) {
+                throw new Error("Unauthorized. Please refresh and sign in again.");
             }
 
-            // Reload threads to get updated titles
-            load();
+            if (!res.ok) {
+                if (data.error === "AI_SERVICE_UNAVAILABLE") {
+                    const fallback = typeof data.fallbackResponse === "object" 
+                        ? JSON.stringify(data.fallbackResponse, null, 2)
+                        : data.fallbackResponse || "Cortex AI is temporarily unavailable. Please try again shortly.";
+                    const assistantMsg: ChatMessage = { role: "assistant", content: fallback };
+                    setMessages((prev) => [...prev, assistantMsg]);
+                    scrollToBottom();
+                    return;
+                }
+                throw new Error(data?.message || data?.error || "Failed to send message");
+            }
 
-        } catch (error) {
-            console.error("Failed to send message:", error);
-            setMessages(prev => [...prev, {
-                role: "assistant",
-                content: "Sorry, I encountered an error. Please try again.",
-                created_at: new Date().toISOString()
-            }]);
+            // Update thread ID if this was a new thread
+            if (optimisticThreadId && data.threadId) {
+                setThreadId(data.threadId);
+                // Replace optimistic thread with real one
+                setThreads((prev) => prev.map((t) => 
+                    t.id === optimisticThreadId 
+                        ? { ...t, id: data.threadId, title: data.threadTitle || t.title }
+                        : t
+                ));
+            }
+
+            // Use typewriter effect for the assistant response
+            const assistantText = data.response || "I'm here to help!";
+            typewriterEffect(assistantText, () => {
+                // After typewriter finishes, add the message to the list
+                const assistantMsg: ChatMessage = data.assistantMessage
+                    ? {
+                        id: data.assistantMessage.id,
+                        role: data.assistantMessage.role,
+                        content: data.assistantMessage.content,
+                        attachments: data.assistantMessage.attachments ?? null,
+                        created_at: data.assistantMessage.created_at
+                    }
+                    : { role: "assistant", content: assistantText };
+
+                setMessages((prev) => {
+                    // If we already appended the assistant msg earlier, avoid duplicates
+                    const alreadyHas = prev.some((m) => m.role === 'assistant' && m.content === assistantMsg.content);
+                    return alreadyHas ? prev : [...prev, assistantMsg];
+                });
+                setStreamingMessage("");
+            });
+
+        } catch (err) {
+            console.error("Send error:", err);
+            const errMsg = err instanceof Error ? err.message : "Something went wrong";
+            const assistantMsg: ChatMessage = { role: "assistant", content: errMsg };
+            setMessages((prev) => [...prev, assistantMsg]);
+            scrollToBottom();
+        } finally {
+            setSending(false);
+            setAttachments([]);
+            setInput("");
         }
-        setSending(false);
-    }, [input, attachments, user, currentScanId, load]);
+    };
 
-    // Auto-scroll handling
-    const didUserScrollAwayRef = useRef(false);
-    const shouldAutoScrollRef = useRef(true);
+    const sendMessage = async () => {
+        const content = input;
+        if (!content.trim() && attachments.length === 0) return;
+        setInput("");
+        setAttachments([]);
+        setIsPlusOpen(false);
+        await sendMessageWithContent(content);
+    };
 
-    const maybeAutoScroll = useCallback(() => {
-        if (!shouldAutoScrollRef.current || !scrollerRef.current) return;
-        scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
-    }, []);
-
-    // Thinking dots animation
-    useEffect(() => {
-        if (!isStreaming) return;
-
-        const interval = setInterval(() => {
-            setThinkingDots(prev => prev === "." ? ".." : prev === "..." ? "." : "...");
-        }, 500);
-
-        return () => clearInterval(interval);
-    }, [isStreaming]);
-
-    // Load data on mount
-    useEffect(() => {
-        load();
-        loadAvailableScans();
-    }, [load, loadAvailableScans]);
-
-    // Auto-scroll when new messages arrive
-    useEffect(() => {
-        if (messages.length > 0 && shouldAutoScrollRef.current) {
-            setTimeout(maybeAutoScroll, 100);
-        }
-    }, [messages, maybeAutoScroll]);
+    const shareChat = async () => {
+        setIsShareOpen(true);
+    };
 
     const filteredThreads = useMemo(() => {
         const q = searchThreads.trim().toLowerCase();
         if (!q) return threads;
         return threads.filter((t) => (t.title || "Cortex Chat").toLowerCase().includes(q));
     }, [threads, searchThreads]);
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-zinc-950 text-zinc-100">
-                <div className="text-sm text-zinc-500 font-medium">Loading…</div>
-            </div>
-        );
-    }
 
     return (
         <div className="h-screen w-screen bg-zinc-950 text-zinc-100 flex overflow-hidden">
@@ -343,7 +466,7 @@ function ChatHomeInner() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => window.location.href = '/chat'}
+                                        onClick={startNewChat}
                                         className="h-9 w-9 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]"
                                         aria-label="New chat"
                                     >
@@ -356,18 +479,18 @@ function ChatHomeInner() {
                         {!sidebarCollapsed && (
                             <>
                                 <div className="mt-3 grid grid-cols-2 gap-2">
-                                    <Link href="/" className="col-span-1">
+                                    <Link href="/dashboard" className="col-span-1">
                                         <Button
                                             variant="outline"
                                             className="w-full h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200"
                                         >
                                             <ArrowLeft className="h-4 w-4 mr-2" />
-                                            Home
+                                            EDR
                                         </Button>
                                     </Link>
                                     <Button
                                         variant="outline"
-                                        onClick={() => window.location.href = '/chat'}
+                                        onClick={startNewChat}
                                         className="col-span-1 h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200"
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
@@ -391,12 +514,12 @@ function ChatHomeInner() {
 
                         {sidebarCollapsed && (
                             <div className="mt-3 flex flex-col items-center gap-2">
-                                <Link href="/" className="w-full flex justify-center">
+                                <Link href="/dashboard" className="w-full flex justify-center">
                                     <Button
                                         variant="outline"
                                         size="icon"
                                         className="h-10 w-10 rounded-2xl border-white/10 bg-transparent hover:bg-white/5"
-                                        aria-label="Back to home"
+                                        aria-label="Back to EDR"
                                     >
                                         <ArrowLeft className="h-4 w-4 text-zinc-200" />
                                     </Button>
@@ -404,11 +527,20 @@ function ChatHomeInner() {
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    onClick={() => window.location.href = '/chat'}
+                                    onClick={startNewChat}
                                     className="h-10 w-10 rounded-2xl border-white/10 bg-transparent hover:bg-white/5"
                                     aria-label="New chat"
                                 >
                                     <SquarePen className="h-4 w-4 text-zinc-200" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setSidebarCollapsed(false)}
+                                    className="h-10 w-10 rounded-2xl border-white/10 bg-transparent hover:bg-white/5"
+                                    aria-label="Search chats"
+                                >
+                                    <Search className="h-4 w-4 text-zinc-200" />
                                 </Button>
                             </div>
                         )}
@@ -459,7 +591,7 @@ function ChatHomeInner() {
                                 {(filteredThreads || []).slice(0, 10).map((t) => (
                                     <button
                                         key={t.id}
-                                        onClick={() => window.location.href = `/chat?threadId=${t.id}`}
+                                        onClick={() => load(t.id)}
                                         className={cn(
                                             "w-full px-3 py-2 rounded-xl transition-all flex items-center justify-center",
                                             t.id === threadId ? "bg-white/[0.04]" : "hover:bg-white/[0.03]"
@@ -477,7 +609,7 @@ function ChatHomeInner() {
                                 {filteredThreads.map((t) => (
                                     <button
                                         key={t.id}
-                                        onClick={() => window.location.href = `/chat?threadId=${t.id}`}
+                                        onClick={() => load(t.id)}
                                         className={cn(
                                             "w-full text-left px-3 py-2 rounded-xl border transition-all",
                                             t.id === threadId
@@ -632,7 +764,7 @@ function ChatHomeInner() {
 
                     <Button
                         variant="ghost"
-                        onClick={() => setIsShareOpen(true)}
+                        onClick={shareChat}
                         className="h-9 px-3 rounded-xl border border-white/5 text-zinc-300 hover:text-white bg-white/[0.02] hover:bg-white/[0.05]"
                     >
                         <Share2 className="h-4 w-4 mr-2" />
@@ -784,6 +916,306 @@ function ChatHomeInner() {
                                                 "rounded-2xl px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap",
                                                 m.role === "user"
                                                     ? "max-w-[84%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
+                                                    : "w-full max-w-[92%] md:max-w-[82%] text-zinc-200"
+                                            )}
+                                        >
+                                            {m.role === "assistant" ? (
+                                                <div className="min-w-0">
+                                                    <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkGfm]}
+                                                            components={{
+                                                                p: (p) => <p className="leading-6 text-zinc-200 my-1.5" {...p} />,
+                                                                ul: (p) => <ul className="my-1 ml-5 list-disc space-y-0.5" {...p} />,
+                                                                ol: (p) => <ol className="my-1 ml-5 list-decimal space-y-0.5" {...p} />,
+                                                                li: (p) => <li className="leading-5 text-zinc-200" {...p} />,
+                                                                h1: (p) => <h1 className="text-lg font-semibold text-zinc-100 my-2" {...p} />,
+                                                                h2: (p) => <h2 className="text-base font-semibold text-zinc-100 my-2" {...p} />,
+                                                                h3: (p) => <h3 className="text-sm font-semibold text-zinc-100 my-1.5" {...p} />,
+                                                                h4: (p) => <h4 className="text-sm font-medium text-zinc-100 my-1.5" {...p} />,
+                                                                a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
+                                                                code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
+                                                                pre: (p) => <pre className="overflow-auto my-2" {...p} />
+                                                            }}
+                                                        >
+                                                            {m.content}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                m.content
+                                            )}
+                                        </div>
+
+                                        {m.role === "user" && !!editState?.messageId && editState.messageId === m.id && (
+                                            <div className="w-full mt-2 max-w-[84%] md:max-w-[72%]">
+                                                {(() => {
+                                                    const localDraft = editState?.draft ?? "";
+                                                    return (
+                                                        <textarea
+                                                            value={localDraft}
+                                                            onChange={(e) => {
+                                                                const next = e.target.value;
+                                                                setEditState((prev) => {
+                                                                    if (!prev) return prev;
+                                                                    return { ...prev, draft: next };
+                                                                });
+                                                            }}
+                                                            className="w-full min-h-[80px] resize-none rounded-xl bg-zinc-950/40 border border-white/10 px-4 py-3 text-[15px] leading-7 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                                                        />
+                                                    );
+                                                })()}
+                                                <div className="mt-2 flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={cancelEdit}
+                                                        className="h-8 px-3 rounded-lg border border-white/10 bg-transparent hover:bg-white/5 text-xs font-semibold text-zinc-300"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => void saveEdit()}
+                                                        className="h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {m.role === "user" && (
+                                            <div className="mt-2 h-8">
+                                                <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                                                    <button
+                                                        onClick={() => {
+                                                            safeCopy(m.content);
+                                                            const key = `user-${m.id || idx}`;
+                                                            setCopiedKey(key);
+                                                            setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
+                                                        }}
+                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
+                                                        aria-label="Copy message"
+                                                    >
+                                                        {copiedKey === `user-${m.id || idx}` ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                                        Copy
+                                                    </button>
+                                                    <button
+                                                        onClick={() => startEditMessage(m)}
+                                                        disabled={!m.id}
+                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 disabled:opacity-40"
+                                                        aria-label="Edit message"
+                                                        title={m.id ? "Edit" : "Save to enable editing"}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => (m.id ? void replayFromMessage(m.id) : undefined)}
+                                                        disabled={!m.id}
+                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1 disabled:opacity-40"
+                                                        aria-label="Retry"
+                                                        title={m.id ? "Retry" : "Save to enable retry"}
+                                                    >
+                                                        <RefreshCcw className="h-3 w-3" />
+                                                        Retry
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {m.role === "assistant" && (
+                                            <div className="mt-2 h-8">
+                                                <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                                                    <button
+                                                        onClick={() => {
+                                                            safeCopy(m.content);
+                                                            const key = `assistant-${m.id || idx}`;
+                                                            setCopiedKey(key);
+                                                            setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
+                                                        }}
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Copy"
+                                                        title="Copy"
+                                                    >
+                                                        {copiedKey === `assistant-${m.id || idx}` ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                                                    </button>
+                                                    <button
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Like"
+                                                        title="Like"
+                                                        onClick={() => {}}
+                                                    >
+                                                        <ThumbsUp className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Dislike"
+                                                        title="Dislike"
+                                                        onClick={() => {}}
+                                                    >
+                                                        <ThumbsDown className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsShareOpen(true)}
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Share"
+                                                        title="Share"
+                                                    >
+                                                        <Share2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                        aria-label="Retry"
+                                                        title="Retry"
+                                                        onClick={() => {}}
+                                                    >
+                                                        <RefreshCcw className="h-3.5 w-3.5" />
+                                                    </button>
+
+                                                    <div className="relative">
+                                                        <button
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="More"
+                                                            title="More"
+                                                            onClick={() => {}}
+                                                        >
+                                                            <MoreHorizontal className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <div className="hidden" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+
+                        {isStreaming && (
+                            <div className="flex justify-start">
+                                <div className="flex flex-col items-start max-w-[92%] md:max-w-[78%]">
+                                    <div className="rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap text-zinc-200">
+                                        {streamingMessage}
+                                        <span className="animate-pulse">|</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {sending && !isStreaming && (
+                            <div className="text-xs font-semibold tracking-wide">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-fuchsia-300 to-purple-300 animate-pulse">
+                                    Cortex is thinking{thinkingDots}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-zinc-950/70 backdrop-blur-xl">
+                    <div className="max-w-4xl mx-auto px-[20px] py-4">
+                        {attachments.length > 0 && (
+                            <div className="mb-3 flex flex-wrap gap-2">
+                                {attachments.map((f, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center gap-2 px-3 py-2 bg-white/[0.02] border border-white/5 rounded-xl text-xs text-zinc-300"
+                                    >
+                                        <span className="max-w-[240px] truncate">{f.name}</span>
+                                        <button
+                                            onClick={() => removeAttachment(i)}
+                                            className="text-zinc-500 hover:text-zinc-200 cursor-pointer"
+                                            aria-label="Remove attachment"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="flex items-end gap-3">
+                            <div className="relative">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-11 w-11 rounded-2xl border-white/10 hover:bg-white/5"
+                                    onClick={() => setIsPlusOpen((v) => !v)}
+                                    aria-label="Add"
+                                >
+                                    <Plus className="w-5 h-5 text-zinc-300" />
+                                </Button>
+
+                                {isPlusOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsPlusOpen(false)} />
+                                        <div className="absolute left-0 bottom-[52px] z-50 w-72 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+                                            <div className="p-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsPlusOpen(false);
+                                                        fileInputRef.current?.click();
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <Plus className="h-4 w-4 text-zinc-500" />
+                                                    Add files & photos
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <BrandGoogleDriveIcon className="h-4 w-4 text-zinc-500" />
+                                                    Add from Google Drive
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <Github className="h-4 w-4 text-zinc-500" />
+                                                    Add a GitHub repository
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <History className="h-4 w-4 text-zinc-500" />
+                                                    Add your recent scan
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <Globe className="h-4 w-4 text-zinc-500" />
+                                                    Web search
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <Bot className="h-4 w-4 text-zinc-500" />
+                                                    Research
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <BookOpen className="h-4 w-4 text-zinc-500" />
+                                                    Learn
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsPlusOpen(false)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left"
+                                                >
+                                                    <HelpCircle className="h-4 w-4 text-zinc-500" />
+                                                    Guide
+                                                </button>
+                                                <div className="mt-1 px-3 py-2 text-[11px] text-zinc-600 font-medium">
+                                                    Some actions will be enabled soon.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                             <input
                                 ref={fileInputRef}
                                 type="file"
