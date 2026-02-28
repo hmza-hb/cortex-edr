@@ -50,8 +50,6 @@ export default async function DashboardPage() {
         ? tierConfig.limits.maxScansPerMonth
         : 1000;
 
-    const scansRemaining = profile?.scans_remaining ?? scanLimit;
-    const scansUsed = Math.max(0, scanLimit - scansRemaining);
     const supabaseUserId = profile?.id;
 
 
@@ -68,6 +66,10 @@ export default async function DashboardPage() {
 
     const recentScans = scans?.slice(0, 5) || [];
     const totalScans = scans?.length || 0;
+
+    // Calculate actual scans used from database count (moved here after scans are fetched)
+    const scansUsed = Math.min(totalScans, scanLimit);
+    const scansRemaining = Math.max(0, scanLimit - scansUsed);
 
     // Calculate Average Score
     const avgScore = totalScans > 0

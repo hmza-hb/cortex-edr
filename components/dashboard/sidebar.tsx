@@ -45,7 +45,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
     const mainNavItems = [
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
         { icon: ScanLine, label: "New Scan", href: "/dashboard/new-scan", highlight: true },
-        { icon: MessageCircle, label: "Chat with Cortex", href: "/chat" },
+        { icon: MessageCircle, label: "Chat with Cortex", href: "/dashboard/chat" },
         { icon: History, label: "Scan History", href: "/dashboard/scans" },
         { icon: FolderGit2, label: "Repositories", href: "/dashboard/repositories" },
         {

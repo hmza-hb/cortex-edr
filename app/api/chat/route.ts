@@ -4,6 +4,7 @@ import { supabaseService } from '@/lib/supabase/service';
 import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
 import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
+import { loadUserScans, buildScanContextString } from '@/lib/chat/context-loader';
 
 const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
@@ -162,7 +163,10 @@ export async function POST(req: NextRequest) {
             console.error('[Chat] Failed to store user message:', insertUserError);
         }
 
-        const systemPrompt = FULL_SYSTEM_PROMPT;
+        const scanContext = await loadUserScans(userId, scanId);
+        const scanContextString = buildScanContextString(scanContext);
+
+        const systemPrompt = FULL_SYSTEM_PROMPT + '\n\n' + scanContextString;
 
         const contextBlock = JSON.stringify(mega);
         const historyBlock = history

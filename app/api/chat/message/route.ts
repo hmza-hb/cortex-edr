@@ -4,6 +4,7 @@ import { supabaseService } from '@/lib/supabase/service';
 import { buildMegaContext } from '@/lib/chat/mega-context';
 import { callAI } from '@/lib/agents/ai-router';
 import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
+import { loadUserScans, buildScanContextString } from '@/lib/chat/context-loader';
 
 const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
@@ -105,7 +106,10 @@ export async function POST(req: NextRequest) {
             .map((m) => `${String(m.role).toUpperCase()}: ${m.content}`)
             .join('\n');
 
-        const systemPrompt = FULL_SYSTEM_PROMPT;
+        const scanContext = await loadUserScans(userId, thread.last_scan_id ? String(thread.last_scan_id) : null);
+        const scanContextString = buildScanContextString(scanContext);
+
+        const systemPrompt = FULL_SYSTEM_PROMPT + '\n\n' + scanContextString;
 
         const userPrompt = `MEGA_CONTEXT_JSON:\n${JSON.stringify(mega)}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n`;
 
