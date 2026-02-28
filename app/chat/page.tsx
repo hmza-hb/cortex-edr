@@ -52,6 +52,11 @@ interface ChatMessage {
     attachments?: any;
 }
 
+type EditState = {
+    messageId: string;
+    draft: string;
+} | null;
+
 function BrandXIcon(props: { className?: string }) {
     return (
         <svg viewBox="0 0 24 24" className={props.className} aria-hidden="true">
@@ -146,6 +151,7 @@ function ChatHomeInner() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [editState, setEditState] = useState<EditState>(null);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -161,6 +167,7 @@ function ChatHomeInner() {
     }, []);
 
     const shouldAutoScrollRef = useRef(true);
+    const didUserScrollAwayRef = useRef(false);
 
     const scrollToBottom = useCallback(() => {
         requestAnimationFrame(() => {
@@ -170,11 +177,14 @@ function ChatHomeInner() {
 
     const maybeAutoScroll = useCallback(() => {
         if (!shouldAutoScrollRef.current) return;
+        if (didUserScrollAwayRef.current) return;
         scrollToBottom();
     }, [scrollToBottom]);
 
     const typewriterEffect = useCallback((text: string, callback?: () => void) => {
-        shouldAutoScrollRef.current = isNearBottom();
+        const nearBottom = isNearBottom();
+        shouldAutoScrollRef.current = nearBottom;
+        didUserScrollAwayRef.current = !nearBottom;
         setIsStreaming(true);
         setStreamingMessage("");
         let index = 0;
@@ -265,13 +275,21 @@ function ChatHomeInner() {
         if (data.threadId) setThreadId(data.threadId);
     };
 
-    const editMessage = async (m: ChatMessage) => {
+    const startEditMessage = (m: ChatMessage) => {
         if (!m.id) return;
-        const next = window.prompt("Edit your message", m.content);
-        if (typeof next !== "string") return;
-        const trimmed = next.trim();
+        setEditState({ messageId: m.id, draft: m.content });
+    };
+
+    const cancelEdit = () => {
+        setEditState(null);
+    };
+
+    const saveEdit = async () => {
+        if (!editState) return;
+        const trimmed = editState.draft.trim();
         if (!trimmed) return;
-        await replayFromMessage(m.id, trimmed);
+        await replayFromMessage(editState.messageId, trimmed);
+        setEditState(null);
     };
 
     const sendMessageWithContent = async (content: string) => {
@@ -858,20 +876,25 @@ function ChatHomeInner() {
                     ref={scrollerRef}
                     className="flex-1 overflow-auto custom-scrollbar"
                     onScroll={() => {
-                        shouldAutoScrollRef.current = isNearBottom();
+                        const nearBottom = isNearBottom();
+                        shouldAutoScrollRef.current = nearBottom;
+                        didUserScrollAwayRef.current = !nearBottom;
                     }}
                 >
-                    <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+                    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
                         {loading ? (
                             <div className="pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
                         ) : messages.length === 0 ? (
                             <div className="pt-24 text-center">
-                                <div className="mx-auto h-12 w-12 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center">
-                                    <Shield className="h-5 w-5 text-zinc-300" />
+                                <div className="mx-auto h-14 w-14 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center overflow-hidden">
+                                    <Image src="/assets/logo.png" alt="CortexEDR" width={56} height={56} />
                                 </div>
-                                <div className="mt-6 text-2xl font-bold tracking-tight text-white">How can I help?</div>
-                                <div className="mt-2 text-sm text-zinc-500 font-medium">
-                                    Ask anything. I’ll use your scans and context when available.
+                                <div className="mt-6 text-3xl font-bold tracking-tight text-white">Chat with Cortex</div>
+                                <div className="mt-3 text-sm text-zinc-400 font-medium leading-6 max-w-xl mx-auto">
+                                    Precision guidance for shipping safer code.
+                                </div>
+                                <div className="mt-2 text-sm text-zinc-500 font-medium leading-6 max-w-xl mx-auto">
+                                    Point-to-point, high-signal answers grounded in your scans when available.
                                 </div>
                             </div>
                         ) : (
@@ -883,30 +906,62 @@ function ChatHomeInner() {
                                     <div className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
                                         <div
                                             className={cn(
-                                                "max-w-[92%] md:max-w-[78%] rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap",
+                                                "w-full rounded-2xl px-6 py-5 text-[15px] leading-7 whitespace-pre-wrap",
                                                 m.role === "user"
                                                     ? "bg-zinc-900/80 border border-white/5 text-zinc-50"
                                                     : "text-zinc-200"
                                             )}
                                         >
-                                            {m.role === "assistant" ? (
-                                                <ReactMarkdown
-                                                    remarkPlugins={[remarkGfm]}
-                                                    components={{
-                                                        h1: (p) => <h1 className="text-[18px] font-bold tracking-tight mb-2" {...p} />,
-                                                        h2: (p) => <h2 className="text-[16px] font-bold tracking-tight mb-2" {...p} />,
-                                                        h3: (p) => <h3 className="text-[15px] font-semibold tracking-tight mb-2" {...p} />,
-                                                        p: (p) => <p className="mb-2 last:mb-0" {...p} />,
-                                                        ul: (p) => <ul className="list-disc pl-5 mb-2" {...p} />,
-                                                        ol: (p) => <ol className="list-decimal pl-5 mb-2" {...p} />,
-                                                        li: (p) => <li className="mb-1" {...p} />,
-                                                        code: (p) => <code className="px-1 py-0.5 rounded bg-white/5 border border-white/10" {...p} />,
-                                                        pre: (p) => <pre className="p-3 rounded-xl bg-white/5 border border-white/10 overflow-auto text-[13px]" {...p} />,
-                                                        a: (p) => <a className="underline text-zinc-100 hover:text-white" {...p} />
-                                                    }}
-                                                >
-                                                    {m.content}
-                                                </ReactMarkdown>
+                                            {m.role === "user" && editState?.messageId === m.id ? (
+                                                <div>
+                                                    {(() => {
+                                                        const localDraft = editState?.draft ?? "";
+                                                        return (
+                                                            <textarea
+                                                                value={localDraft}
+                                                        onChange={(e) => {
+                                                            const next = e.target.value;
+                                                            setEditState((prev) => {
+                                                                if (!prev) return prev;
+                                                                return { ...prev, draft: next };
+                                                            });
+                                                        }}
+                                                        className="w-full min-h-[96px] resize-none rounded-xl bg-zinc-950/60 border border-white/10 px-4 py-3 text-[15px] leading-7 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                                                            />
+                                                        );
+                                                    })()}
+                                                    <div className="mt-3 flex items-center justify-end gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            className="h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5"
+                                                            onClick={cancelEdit}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            className="h-9 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200"
+                                                            onClick={() => void saveEdit()}
+                                                        >
+                                                            Save & resend
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : m.role === "assistant" ? (
+                                                <div className="min-w-0">
+                                                    <div className="prose prose-invert max-w-none prose-p:my-3 prose-li:my-1 prose-ul:my-3 prose-ol:my-3 prose-pre:my-4 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-4 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkGfm]}
+                                                            components={{
+                                                                p: (p) => <p className="leading-7 text-zinc-200" {...p} />,
+                                                                a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
+                                                                code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
+                                                                pre: (p) => <pre className="overflow-auto" {...p} />
+                                                            }}
+                                                        >
+                                                            {m.content}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                </div>
                                             ) : (
                                                 m.content
                                             )}
@@ -929,7 +984,7 @@ function ChatHomeInner() {
                                                         Copy
                                                     </button>
                                                     <button
-                                                        onClick={() => void editMessage(m)}
+                                                        onClick={() => startEditMessage(m)}
                                                         disabled={!m.id}
                                                         className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 disabled:opacity-40"
                                                         aria-label="Edit message"
