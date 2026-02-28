@@ -79,14 +79,11 @@ export async function GET(req: NextRequest) {
                 .limit(200)
             : { data: [] };
 
-        const mega = await buildMegaContext({ userId, email, name, scanId });
-
         return NextResponse.json({
             planTier,
             threadId: resolvedThreadId,
             threads: threads || [],
-            messages: messages || [],
-            megaContext: mega
+            messages: messages || []
         });
     } catch (error) {
         console.error('[Chat GET Error]:', error);
@@ -169,12 +166,6 @@ export async function POST(req: NextRequest) {
 
         const systemPrompt = FULL_SYSTEM_PROMPT;
 
-        const contextBlock = JSON.stringify({
-            user: { userId, email, name },
-            scanCount: scans.length,
-            activeScanId: scanId,
-            hasScans: scans.length > 0
-        });
         const historyBlock = history
             .map(m => `${m.role.toUpperCase()}: ${m.content}`)
             .join('\n');
