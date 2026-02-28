@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function ScanningReposPage() {
     return (
         <div className="space-y-8">
@@ -152,15 +154,15 @@ export default function ScanningReposPage() {
                     <div className="bg-zinc-900/50 border border-white/5 rounded-lg p-4">
                         <h3 className="text-sm font-semibold text-white mb-3">Quick Actions</h3>
                         <div className="space-y-2">
-                            <a href="/" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            <Link href="/" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → Start New Scan
-                            </a>
-                            <a href="/dashboard" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/dashboard" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → View Scan History
-                            </a>
-                            <a href="/docs/api/endpoints" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/docs/api/endpoints" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → API Integration
-                            </a>
+                            </Link>
                         </div>
                     </div>
 
@@ -194,15 +196,15 @@ export default function ScanningReposPage() {
                     <div className="bg-zinc-900/50 border border-white/5 rounded-lg p-4">
                         <h3 className="text-sm font-semibold text-white mb-3">What's Next?</h3>
                         <div className="space-y-2">
-                            <a href="/docs/getting-started/reading-reports" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            <Link href="/docs/getting-started/reading-reports" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → Understanding Reports
-                            </a>
-                            <a href="/docs/guides/best-practices" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/docs/guides/best-practices" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → Security Best Practices
-                            </a>
-                            <a href="/docs/api/authentication" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/docs/api/authentication" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → API Authentication
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function QuickstartPage() {
     return (
         <div className="space-y-8">
@@ -113,9 +115,9 @@ export default function QuickstartPage() {
                     <div className="bg-zinc-900/50 border border-white/5 rounded-lg p-4">
                         <h3 className="text-sm font-semibold text-white mb-3">Need Help?</h3>
                         <div className="space-y-2 text-sm text-zinc-400">
-                            <p>💬 <a href="/docs/reference/support" className="text-indigo-400 hover:text-indigo-300">Contact Support</a></p>
-                            <p>📖 <a href="/docs/guides/best-practices" className="text-indigo-400 hover:text-indigo-300">Best Practices Guide</a></p>
-                            <p>🔧 <a href="/docs/api/endpoints" className="text-indigo-400 hover:text-indigo-300">API Documentation</a></p>
+                            <p>💬 <Link href="/docs/reference/support" className="text-indigo-400 hover:text-indigo-300">Contact Support</Link></p>
+                            <p>📖 <Link href="/docs/guides/best-practices" className="text-indigo-400 hover:text-indigo-300">Best Practices Guide</Link></p>
+                            <p>🔧 <Link href="/docs/api/endpoints" className="text-indigo-400 hover:text-indigo-300">API Documentation</Link></p>
                         </div>
                     </div>
 
@@ -129,15 +131,15 @@ export default function QuickstartPage() {
                     <div className="bg-zinc-900/50 border border-white/5 rounded-lg p-4">
                         <h3 className="text-sm font-semibold text-white mb-3">What's Next?</h3>
                         <div className="space-y-2">
-                            <a href="/docs/getting-started/scanning-repos" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            <Link href="/docs/getting-started/scanning-repos" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → Advanced Scanning Options
-                            </a>
-                            <a href="/docs/getting-started/reading-reports" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/docs/getting-started/reading-reports" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → Understanding Reports
-                            </a>
-                            <a href="/docs/guides/security/understanding-findings" className="block text-sm text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/docs/guides/security/understanding-findings" className="block text-sm text-indigo-400 hover:text-indigo-300">
                                 → Interpreting Security Findings
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -147,9 +149,9 @@ export default function QuickstartPage() {
             <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-lg p-6 text-center">
                 <h2 className="text-xl font-bold text-white mb-2">Ready to Secure Your Code?</h2>
                 <p className="text-zinc-400 mb-4">Join thousands of developers who trust CortexEDR for their security needs.</p>
-                <a href="/" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                <Link href="/" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                     Start Your First Scan →
-                </a>
+                </Link>
             </div>
         </div>
     )

@@ -1,10 +1,12 @@
+import Link from "next/link";
+
 export default function FAQPage() {
     return (
         <div className="space-y-8">
             <div className="space-y-4">
                 <h1 className="text-3xl font-bold tracking-tight text-white">Frequently Asked Questions</h1>
                 <p className="text-zinc-400 leading-relaxed">
-                    Common questions and answers about CortexEDR, security scanning, and platform features. Can't find what you're looking for? <a href="/docs/reference/support" className="text-indigo-400 hover:text-indigo-300">Contact our support team</a>.
+                    Common questions and answers about CortexEDR, security scanning, and platform features. Can't find what you're looking for? <Link href="/docs/reference/support" className="text-indigo-400 hover:text-indigo-300">Contact our support team</Link>.
                 </p>
             </div>
 
@@ -17,7 +19,7 @@ export default function FAQPage() {
                             <div className="border-l-2 border-indigo-500 pl-4">
                                 <h3 className="font-semibold text-white mb-2">How do I get started with CortexEDR?</h3>
                                 <p className="text-zinc-400 text-sm leading-relaxed">
-                                    Simply sign up for a free account at <a href="/" className="text-indigo-400 hover:text-indigo-300">cortex-edr.com</a>,
+                                    Simply sign up for a free account at <Link href="/" className="text-indigo-400 hover:text-indigo-300">cortex-edr.com</Link>,
                                     connect your GitHub repository, and run your first scan. Our getting started guide will walk you through the entire process.
                                 </p>
                             </div>
@@ -137,7 +139,7 @@ export default function FAQPage() {
                                 <h3 className="font-semibold text-white mb-2">How do I integrate CortexEDR into my CI/CD pipeline?</h3>
                                 <p className="text-zinc-400 text-sm leading-relaxed">
                                     We provide native integrations for GitHub Actions, GitLab CI, Jenkins, CircleCI, and more. Our API supports
-                                    webhook notifications and programmatic scanning. Check our <a href="/docs/api/webhooks" className="text-indigo-400 hover:text-indigo-300">webhooks documentation</a> for setup instructions.
+                                    webhook notifications and programmatic scanning. Check our <Link href="/docs/api/webhooks" className="text-indigo-400 hover:text-indigo-300">webhooks documentation</Link> for setup instructions.
                                 </p>
                             </div>
 
@@ -194,9 +196,9 @@ export default function FAQPage() {
                         <h2 className="text-xl font-bold text-white mb-2">Still Need Help?</h2>
                         <p className="text-zinc-400 mb-4">Can't find the answer you're looking for? Our support team is here to help.</p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <a href="/docs/reference/support" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            <Link href="/docs/reference/support" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                                 Contact Support →
-                            </a>
+                            </Link>
                             <a href="mailto:support@cortex-edr.com" className="inline-flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                                 Email Us
                             </a>
@@ -229,16 +231,16 @@ export default function FAQPage() {
 
                     <div className="bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg p-4">
                         <h3 className="text-sm font-semibold text-white mb-2">Quick Actions</h3>
-                        <div className="space-y-2 text-sm">
-                            <a href="/" className="block text-indigo-400 hover:text-indigo-300">
+                        <div className="space-y-2">
+                            <Link href="/" className="block text-indigo-400 hover:text-indigo-300">
                                 Start Free Scan
-                            </a>
-                            <a href="/pricing" className="block text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/pricing" className="block text-indigo-400 hover:text-indigo-300">
                                 View Pricing
-                            </a>
-                            <a href="/docs" className="block text-indigo-400 hover:text-indigo-300">
+                            </Link>
+                            <Link href="/docs" className="block text-indigo-400 hover:text-indigo-300">
                                 Browse Docs
-                            </a>
+                            </Link>
                         </div>
                     </div>
 
