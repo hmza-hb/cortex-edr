@@ -38,8 +38,8 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                 <div className="flex items-center gap-8 flex-1">
                     {/* Left: Logo */}
                     <Link href="/dashboard" className="flex items-center gap-2 group shrink-0">
-                        <div className="h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-indigo-500/50 transition-all duration-300">
-                            <Shield className="h-5 w-5 text-zinc-100 transition-all group-hover:text-indigo-400 group-hover:scale-110" />
+                        <div className="h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-indigo-500/50 transition-all duration-300 overflow-hidden">
+                            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-6 w-6 object-contain transition-all group-hover:scale-110" />
                         </div>
                         <span className="font-semibold text-lg tracking-tight hidden md:block text-zinc-100 ml-4">
                             CortexEDR

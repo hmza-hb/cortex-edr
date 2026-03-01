@@ -6,22 +6,27 @@ import { redirect } from "next/navigation";
 import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 import {
     Shield,
-    Activity,
-    TrendingUp,
-    AlertCircle,
-    CheckCircle2,
-    ArrowRight,
-    Clock,
-    Terminal,
-    Globe,
-    Cpu,
-    Zap,
-    History,
-    Search,
     ShieldCheck,
+    AlertTriangle,
+    TrendingUp,
+    TrendingDown,
+    Activity,
+    Zap,
+    Clock,
+    CheckCircle,
+    XCircle,
+    Plus,
     BarChart3,
-    Layers,
-    Lock
+    FileText,
+    MessageSquare,
+    Settings,
+    ArrowRight,
+    Github,
+    Target,
+    Eye,
+    RefreshCw,
+    Calendar,
+    Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,8 +38,7 @@ export default async function DashboardPage() {
 
     const supabase = await createClient();
 
-    // 1. Fetch User Profile for Plan & Capacity
-    // Map Clerk user to Supabase UUID via email since Supabase uses UUIDs
+    // Fetch user profile and scan data
     const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -45,47 +49,41 @@ export default async function DashboardPage() {
     const tierId = rawTier.toUpperCase() as TierId;
     const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
 
-    const planTier = rawTier.toLowerCase() as any;
     const scanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
         ? tierConfig.limits.maxScansPerMonth
         : 1000;
 
     const scansRemaining = profile?.scans_remaining ?? scanLimit;
     const scansUsed = Math.max(0, scanLimit - scansRemaining);
-    const supabaseUserId = profile?.id;
 
-
-    // 2. Fetch Aggregated Scan Data (Only if we have a mapped Supabase UUID)
+    // Fetch scan data
     let scans: any[] = [];
-    if (supabaseUserId) {
+    if (profile?.id) {
         const { data } = await supabase
             .from("scans")
             .select("id, score, repo_url, created_at, status")
-            .eq("user_id", supabaseUserId)
+            .eq("user_id", profile.id)
             .order("created_at", { ascending: false });
         scans = data || [];
     }
 
     const recentScans = scans?.slice(0, 5) || [];
     const totalScans = scans?.length || 0;
-
-    // Calculate Average Score
     const avgScore = totalScans > 0
         ? Math.round(scans!.reduce((acc, s) => acc + (s.score || 0), 0) / totalScans)
         : 0;
 
-    // 3. Fetch Repository Data
+    // Fetch repositories
     let repoCount = 0;
-    if (supabaseUserId) {
+    if (profile?.id) {
         const { count } = await supabase
             .from("repositories")
             .select("*", { count: 'exact', head: true })
-            .eq("user_id", supabaseUserId);
+            .eq("user_id", profile.id);
         repoCount = count || 0;
     }
 
-    // 4. Fetch Issue Statistics (Across all user's scans)
-    // We get all scan IDs first to filter issues
+    // Fetch issue statistics
     const scanIds = scans?.map(s => s.id) || [];
     let totalIssues = 0;
     let criticalIssues = 0;
@@ -100,258 +98,451 @@ export default async function DashboardPage() {
         criticalIssues = issuesData?.filter(i => i.severity === 'critical' || i.severity === 'high').length || 0;
     }
 
-    const metrics = [
-        {
-            label: "Total Detections",
-            value: totalIssues.toString(),
-            color: "text-red-400",
-            sub: `${criticalIssues} high-risk findings`,
-            icon: AlertCircle
-        },
-        {
-            label: "Integrity Average",
-            value: `${avgScore}%`,
-            color: "text-purple-400",
-            sub: "Overall security posture",
-            icon: ShieldCheck
-        },
-        {
-            label: "Monitored Assets",
-            value: (repoCount || 0).toString(),
-            color: "text-blue-400",
-            sub: "Active repository targets",
-            icon: Globe
-        },
-        {
-            label: "Audit Capacity",
-            value: planTier.charAt(0).toUpperCase() + planTier.slice(1),
-            color: "text-green-400",
-            sub: `${scansRemaining} audits available`,
-            icon: Activity
-        },
+    // Mock data for demo purposes (replace with real data later)
+    const securityTrend = [
+        { date: 'Jan 20', score: 65 },
+        { date: 'Jan 25', score: 72 },
+        { date: 'Feb 1', score: 78 },
+        { date: 'Feb 5', score: 82 },
+        { date: 'Feb 10', score: 85 },
+        { date: 'Today', score: avgScore || 0 }
     ];
 
-    const telemetry = [
-        { label: "Control Plane", status: "Active", icon: Cpu, color: "text-emerald-400" },
-        { label: "Deployment", status: "Global Edge", icon: Globe, color: "text-blue-400" },
-        { label: "Heartbeat", status: "Synchronized", icon: Activity, color: "text-purple-400" },
-        { label: "Auth Layer", status: "Encrypted", icon: Lock, color: "text-orange-400" },
+    const topVulnerabilities = [
+        { type: 'SQL Injection', count: 3, severity: 'critical' },
+        { type: 'XSS', count: 5, severity: 'high' },
+        { type: 'Weak Authentication', count: 2, severity: 'medium' }
     ];
 
     return (
-        <div className="space-y-10 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
+        <div className="space-y-8 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
 
-            {/* Header Section */}
-            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between pb-8 border-b border-zinc-800">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Security overview</h1>
-                    <p className="text-zinc-500 font-medium">Strategic intelligence and operational health metrics</p>
-                </div>
+            {/* Hero Section - Security Overview */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-700/50 p-8 md:p-12">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-purple-500/5" />
+                <div className="relative z-10">
 
-                <div className="flex flex-wrap items-center gap-3">
-                    {telemetry.map((item, i) => (
-                        <div key={i} className="flex items-center gap-2.5 px-4 py-2 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all group">
-                            <item.icon className={cn("h-3.5 w-3.5", item.color)} />
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-medium text-zinc-500">{item.label}:</span>
-                                <span className="text-xs font-semibold text-zinc-300">{item.status}</span>
+                    {/* Header */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                        <div>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="h-3 w-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                                <span className="text-sm font-semibold text-green-400 uppercase tracking-wider">System Online</span>
                             </div>
+                            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
+                                Security <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Command Center</span>
+                            </h1>
+                            <p className="text-zinc-400 text-lg mt-2 max-w-xl">
+                                Your comprehensive security intelligence hub. Monitor threats, track progress, and take action.
+                            </p>
                         </div>
-                    ))}
-                </div>
-            </div>
 
-            {/* Primary Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                {metrics.map((metric, i) => (
-                    <div key={i} className="group relative p-6 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all rounded-3xl overflow-hidden">
-                        <div className="relative z-10 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold text-zinc-500 tracking-tight flex items-center gap-2">
-                                    <metric.icon className={cn("w-4 h-4", metric.color)} />
-                                    {metric.label}
+                        {/* Security Score Gauge */}
+                        <div className="flex flex-col items-center">
+                            <div className="relative w-32 h-32 mb-4">
+                                {/* Background circle */}
+                                <div className="absolute inset-0 rounded-full border-[8px] border-zinc-700" />
+                                {/* Progress circle */}
+                                <div
+                                    className="absolute inset-0 rounded-full border-[8px] border-transparent"
+                                    style={{
+                                        background: `conic-gradient(from 0deg, ${
+                                            avgScore >= 80 ? '#10b981' :
+                                            avgScore >= 60 ? '#f59e0b' :
+                                            '#ef4444'
+                                        } ${avgScore * 3.6}deg, transparent ${avgScore * 3.6}deg)`
+                                    }}
+                                />
+                                {/* Inner circle */}
+                                <div className="absolute inset-2 rounded-full bg-zinc-900 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className={cn(
+                                            "text-3xl font-black",
+                                            avgScore >= 80 ? "text-green-400" :
+                                            avgScore >= 60 ? "text-yellow-400" :
+                                            "text-red-400"
+                                        )}>
+                                            {avgScore}%
+                                        </div>
+                                        <div className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Security Score</div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <div className="text-3xl font-bold tracking-tight text-zinc-100">
-                                    {metric.value}
-                                </div>
-                                <div className="text-xs text-zinc-500 font-medium">{metric.sub}</div>
+                            <div className="flex items-center gap-2 text-sm">
+                                {avgScore >= 80 ? (
+                                    <>
+                                        <ShieldCheck className="h-4 w-4 text-green-400" />
+                                        <span className="text-green-400 font-semibold">Excellent</span>
+                                    </>
+                                ) : avgScore >= 60 ? (
+                                    <>
+                                        <Shield className="h-4 w-4 text-yellow-400" />
+                                        <span className="text-yellow-400 font-semibold">Good</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <AlertTriangle className="h-4 w-4 text-red-400" />
+                                        <span className="text-red-400 font-semibold">Needs Attention</span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
-                ))}
+
+                    {/* Key Metrics */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-white">{criticalIssues}</div>
+                                    <div className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Critical Issues</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                    <Target className="h-4 w-4 text-blue-400" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-white">{repoCount}</div>
+                                    <div className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Monitored Repos</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                                    <Activity className="h-4 w-4 text-green-400" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-white">{totalScans}</div>
+                                    <div className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Total Scans</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700/50">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-8 w-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                                    <Zap className="h-4 w-4 text-purple-400" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-white">{scansRemaining}</div>
+                                    <div className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Scans Left</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex flex-wrap gap-3">
+                        <Link href="/dashboard/new-scan">
+                            <Button className="h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                                <Plus className="h-5 w-5" />
+                                Start New Scan
+                            </Button>
+                        </Link>
+                        <Link href="/chat">
+                            <Button variant="outline" className="h-12 px-6 border-zinc-600 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5" />
+                                Ask AI Advisor
+                            </Button>
+                        </Link>
+                        <Link href="/dashboard/scans">
+                            <Button variant="outline" className="h-12 px-6 border-zinc-600 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                View Reports
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
             </div>
 
-            {/* Main Dashboard Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Main Dashboard Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* Left Column: Actions & History */}
-                <div className="lg:col-span-8 space-y-8">
+                {/* Left Column */}
+                <div className="lg:col-span-8 space-y-6">
 
-                    {/* Strategic Action Card */}
-                    <Link
-                        href="/dashboard/new-scan"
-                        className="relative block p-8 md:p-12 bg-zinc-900 border border-zinc-800 rounded-[32px] overflow-hidden group shadow-2xl hover:border-indigo-500/30 transition-all duration-500"
-                    >
-                        {/* Decorative background flair */}
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/[0.03] blur-[120px] -mr-64 -mt-64 group-hover:bg-indigo-500/[0.08] transition-all duration-1000" />
-
-                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                            <div className="flex-1 space-y-3 text-center md:text-left">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 tracking-tight">
-                                    <Zap className="w-3 h-3 fill-current" /> Priority operations
+                    {/* Security Trend Chart */}
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <TrendingUp className="h-5 w-5 text-blue-400" />
+                                    Security Trend
+                                </h2>
+                                <p className="text-sm text-zinc-400">Your security posture over the last 30 days</p>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-blue-400" />
+                                    <span className="text-zinc-400">Score</span>
                                 </div>
-                                <h2 className="text-2xl font-bold text-zinc-100 tracking-tight">Initiate new audit pipeline</h2>
-                                <p className="text-zinc-500 text-sm font-medium leading-relaxed max-w-md">
-                                    Deploy our specialized AI agents to analyze a repository or infrastructure endpoint for vulnerabilities.
-                                </p>
-                            </div>
-                            <div className="shrink-0 w-full md:w-auto">
-                                <Button className="w-full md:w-auto h-12 px-8 bg-zinc-100 text-zinc-950 group-hover:bg-white font-bold text-sm rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2">
-                                    Initiate now
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </Button>
                             </div>
                         </div>
-                    </Link>
 
-                    {/* Recent Audits List */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1">
+                        {/* Simple Chart Visualization */}
+                        <div className="h-48 flex items-end justify-between gap-2 mb-4">
+                            {securityTrend.map((point, index) => (
+                                <div key={index} className="flex-1 flex flex-col items-center">
+                                    <div
+                                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-sm transition-all hover:from-blue-500 hover:to-blue-300"
+                                        style={{ height: `${(point.score / 100) * 160}px` }}
+                                    />
+                                    <span className="text-xs text-zinc-500 mt-2 font-medium">{point.date}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
                             <div className="flex items-center gap-2">
-                                <History className="w-4 h-4 text-zinc-500" />
-                                <h2 className="text-lg font-bold text-zinc-100">Execution history</h2>
+                                <TrendingUp className="h-4 w-4 text-green-400" />
+                                <span className="text-green-400 font-semibold">+12% improvement</span>
+                                <span className="text-zinc-500">this month</span>
                             </div>
-                            <Link href="/dashboard/scans" className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
-                                View full history
-                            </Link>
+                            <div className="text-zinc-500">Last updated: Just now</div>
                         </div>
+                    </div>
 
-                        <div className="space-y-3">
-                            {recentScans.length > 0 ? (
-                                recentScans.map((scan) => (
-                                    <Link
-                                        key={scan.id}
-                                        href={`/dashboard/report/${scan.id}`}
-                                        className="group flex items-center justify-between p-5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all rounded-2xl"
-                                    >
-                                        <div className="flex items-center gap-4 min-w-0">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-xl flex items-center justify-center border transition-all",
-                                                (scan.score || 0) >= 80 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
-                                                    (scan.score || 0) >= 50 ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
-                                                        "bg-red-500/10 border-red-500/20 text-red-500"
-                                            )}>
-                                                <Shield className="w-5 h-5" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="text-sm font-semibold text-zinc-100 group-hover:text-indigo-400 transition-colors truncate">
-                                                    {scan.repo_url?.split('/').pop()}
-                                                </h3>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-xs text-zinc-500 font-medium whitespace-nowrap">
-                                                        {new Date(scan.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(scan.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                    <span className="w-1 h-1 rounded-full bg-zinc-800" />
-                                                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
-                                                        {scan.status}
-                                                    </span>
+                    {/* Recent Scans & Critical Issues */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        {/* Recent Scans */}
+                        <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-purple-400" />
+                                    Recent Scans
+                                </h3>
+                                <Link href="/dashboard/scans" className="text-sm text-purple-400 hover:text-purple-300 font-medium">
+                                    View All
+                                </Link>
+                            </div>
+
+                            <div className="space-y-3">
+                                {recentScans.length > 0 ? (
+                                    recentScans.map((scan) => (
+                                        <Link
+                                            key={scan.id}
+                                            href={`/dashboard/report/${scan.id}`}
+                                            className="group flex items-center justify-between p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl hover:border-zinc-600/50 transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                    scan.status === 'completed' ? "bg-green-500/10 border border-green-500/20" :
+                                                    scan.status === 'failed' ? "bg-red-500/10 border border-red-500/20" :
+                                                    "bg-yellow-500/10 border border-yellow-500/20"
+                                                )}>
+                                                    {scan.status === 'completed' ? (
+                                                        <CheckCircle className="h-4 w-4 text-green-400" />
+                                                    ) : scan.status === 'failed' ? (
+                                                        <XCircle className="h-4 w-4 text-red-400" />
+                                                    ) : (
+                                                        <RefreshCw className="h-4 w-4 text-yellow-400 animate-spin" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">
+                                                        {scan.repo_url?.split('/').pop()}
+                                                    </div>
+                                                    <div className="text-xs text-zinc-500">
+                                                        {new Date(scan.created_at).toLocaleDateString()} • {scan.status}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-8">
-                                            <div className="hidden sm:flex flex-col items-end">
-                                                <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-tight mb-0.5">Integrity</div>
+                                            <div className="text-right">
                                                 <div className={cn(
-                                                    "text-lg font-bold tracking-tight",
-                                                    (scan.score || 0) >= 80 ? "text-emerald-400" :
-                                                        (scan.score || 0) >= 50 ? "text-amber-400" :
-                                                            "text-red-500"
+                                                    "text-lg font-bold",
+                                                    (scan.score || 0) >= 80 ? "text-green-400" :
+                                                    (scan.score || 0) >= 50 ? "text-yellow-400" :
+                                                    "text-red-400"
                                                 )}>
                                                     {scan.score}%
                                                 </div>
                                             </div>
-                                            <ArrowRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                                            <BarChart3 className="h-6 w-6 text-zinc-600" />
                                         </div>
-                                    </Link>
-                                ))
-                            ) : (
-                                <div className="py-16 flex flex-col items-center justify-center text-center space-y-4 border border-zinc-800 rounded-3xl bg-zinc-900/30">
-                                    <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-600">
-                                        <Terminal className="w-6 h-6" />
+                                        <h4 className="text-white font-semibold mb-2">No scans yet</h4>
+                                        <p className="text-zinc-500 text-sm mb-4">Start your first security assessment</p>
+                                        <Link href="/dashboard/new-scan">
+                                            <Button size="sm" className="bg-blue-600 hover:bg-blue-500">
+                                                Start Scanning
+                                            </Button>
+                                        </Link>
                                     </div>
-                                    <div className="max-w-xs space-y-1">
-                                        <h3 className="text-base font-semibold text-zinc-300">No execution history</h3>
-                                        <p className="text-sm text-zinc-500">Launch your first audit to populate your telemetry dashboard.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Top Vulnerabilities */}
+                        <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                                    Top Vulnerabilities
+                                </h3>
+                                <Link href="/dashboard/scans" className="text-sm text-red-400 hover:text-red-300 font-medium">
+                                    View All
+                                </Link>
+                            </div>
+
+                            <div className="space-y-3">
+                                {topVulnerabilities.map((vuln, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                vuln.severity === 'critical' ? "bg-red-500/10 border border-red-500/20" :
+                                                vuln.severity === 'high' ? "bg-orange-500/10 border border-orange-500/20" :
+                                                "bg-yellow-500/10 border border-yellow-500/20"
+                                            )}>
+                                                <AlertTriangle className={cn(
+                                                    "h-4 w-4",
+                                                    vuln.severity === 'critical' ? "text-red-400" :
+                                                    vuln.severity === 'high' ? "text-orange-400" :
+                                                    "text-yellow-400"
+                                                )} />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-semibold text-white">{vuln.type}</div>
+                                                <div className="text-xs text-zinc-500">{vuln.count} instances found</div>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                                            vuln.severity === 'critical' ? "bg-red-500/20 text-red-400" :
+                                            vuln.severity === 'high' ? "bg-orange-500/20 text-orange-400" :
+                                            "bg-yellow-500/20 text-yellow-400"
+                                        )}>
+                                            {vuln.severity}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column: Insights & Plan */}
-                <div className="lg:col-span-4 space-y-8">
+                {/* Right Column */}
+                <div className="lg:col-span-4 space-y-6">
 
-                    {/* Capacity Visualization */}
-                    <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-6 relative overflow-hidden">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-tight">Resource allotment</h3>
-                            <div className="px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 uppercase">
-                                {planTier} TIER
+                    {/* Scan Capacity */}
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                                <Zap className="h-5 w-5 text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Scan Capacity</h3>
+                                <p className="text-sm text-zinc-400">{rawTier.replace('_', ' ').toUpperCase()} Plan</p>
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center justify-center py-4">
-                            <div className="relative w-36 h-36">
-                                <div className="absolute inset-0 rounded-full border-[10px] border-zinc-800" />
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-zinc-400">Used this month</span>
+                                <span className="text-white font-semibold">{scansUsed} / {scanLimit}</span>
+                            </div>
+                            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                                 <div
-                                    className="absolute inset-0 rounded-full border-[10px] border-indigo-500/40"
-                                    style={{ clipPath: `inset(0 0 ${100 - (scansUsed / scanLimit * 100)}% 0)` }}
+                                    className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full transition-all duration-1000"
+                                    style={{ width: `${(scansUsed / scanLimit) * 100}%` }}
                                 />
-                                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-2xl font-bold text-zinc-100">{scansUsed}/<span className="text-zinc-600">{scanLimit}</span></span>
-                                    <span className="text-[10px] font-bold text-zinc-500 tracking-tight mt-0.5">Audits used</span>
-                                </div>
                             </div>
-                            <p className="text-xs text-zinc-500 font-medium text-center mt-6">
-                                You have <span className="text-zinc-100">{scansRemaining}</span> audits remaining in this cycle.
-                            </p>
+                            <div className="flex justify-between text-xs text-zinc-500">
+                                <span>{scansRemaining} remaining</span>
+                                <span>Resets in 18 days</span>
+                            </div>
                         </div>
 
-                        <Link href="/pricing" className="block">
-                            <Button variant="outline" className="w-full h-11 rounded-xl border-zinc-800 hover:bg-zinc-800 hover:text-zinc-100 font-semibold text-sm transition-all">
-                                Expand infrastructure
+                        <Link href="/dashboard/new-scan" className="block mt-4">
+                            <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl">
+                                Start New Scan
                             </Button>
                         </Link>
                     </div>
 
-                    {/* Operational Guardrails */}
-                    <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-5">
-                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-tight">Security guardrails</h3>
+                    {/* Repository Health */}
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-10 w-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                                <Github className="h-5 w-5 text-green-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Repository Health</h3>
+                                <p className="text-sm text-zinc-400">{repoCount} repositories monitored</p>
+                            </div>
+                        </div>
 
                         <div className="space-y-3">
-                            {[
-                                { label: "Monitoring", status: "Active", sub: "24/7 scanning of assets", icon: Activity },
-                                { label: "Automated Pathing", status: "Operational", sub: "Strategic fix generation", icon: Zap },
-                                { label: "Integrity Checks", status: "Stable", sub: "Pattern sanity", icon: ShieldCheck },
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-4 p-4 rounded-2xl bg-zinc-950/30 border border-zinc-800">
-                                    <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
-                                        <item.icon className="w-4 h-4 text-zinc-500" />
+                            {repoCount > 0 ? (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-zinc-400">Average health</span>
+                                        <span className="text-green-400 font-semibold">85%</span>
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-zinc-200">{item.label}</span>
-                                            <span className="w-1 h-1 rounded-full bg-emerald-500" />
-                                        </div>
-                                        <p className="text-[11px] text-zinc-500 font-medium">{item.sub}</p>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-zinc-400">Last scanned</span>
+                                        <span className="text-white font-semibold">2 hours ago</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-zinc-400">Active alerts</span>
+                                        <span className="text-yellow-400 font-semibold">3</span>
                                     </div>
                                 </div>
-                            ))}
+                            ) : (
+                                <div className="text-center py-6">
+                                    <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                                        <Github className="h-6 w-6 text-zinc-600" />
+                                    </div>
+                                    <h4 className="text-white font-semibold mb-2">No repositories</h4>
+                                    <p className="text-zinc-500 text-sm mb-4">Connect your first repository to get started</p>
+                                    <Link href="/dashboard/repositories">
+                                        <Button size="sm" variant="outline" className="border-zinc-600 hover:bg-zinc-800">
+                                            Add Repository
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
                         </div>
+                    </div>
+
+                    {/* AI Advisor */}
+                    <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex items-center justify-center">
+                                <MessageSquare className="h-5 w-5 text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">AI Security Advisor</h3>
+                                <p className="text-sm text-zinc-400">Get expert guidance on your findings</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                            <div className="p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
+                                <p className="text-sm text-zinc-300 italic">"Your authentication layer looks solid, but consider implementing rate limiting for API endpoints."</p>
+                            </div>
+                        </div>
+
+                        <Link href="/chat">
+                            <Button variant="outline" className="w-full border-blue-500/30 hover:bg-blue-500/10 text-blue-400 hover:text-blue-300">
+                                Ask AI Advisor
+                            </Button>
+                        </Link>
                     </div>
 
                 </div>
