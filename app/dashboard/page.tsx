@@ -83,36 +83,132 @@ export default async function DashboardPage() {
         repoCount = count || 0;
     }
 
-    // Fetch issue statistics
+    // Fetch issue statistics with time-based data for trend analysis
     const scanIds = scans?.map(s => s.id) || [];
     let totalIssues = 0;
     let criticalIssues = 0;
+    let securityTrendData: any[] = [];
+    let vulnerabilityStats: any[] = [];
 
     if (scanIds.length > 0) {
-        const { data: issuesData } = await supabase
+        // Get all issues with their creation dates for trend analysis
+        const { data: allIssues } = await supabase
             .from("issues")
-            .select("severity")
+            .select("severity, created_at, type, scan_id")
             .in("scan_id", scanIds);
 
-        totalIssues = issuesData?.length || 0;
-        criticalIssues = issuesData?.filter(i => i.severity === 'critical' || i.severity === 'high').length || 0;
+        totalIssues = allIssues?.length || 0;
+        criticalIssues = allIssues?.filter(i => i.severity === 'critical' || i.severity === 'high').length || 0;
+
+        // Calculate security trend data (last 30 days, grouped by day)
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        // Get all scans in the last 30 days
+        const { data: recentScans } = await supabase
+            .from("scans")
+            .select("id, created_at, score")
+            .eq("user_id", profile.id)
+            .gte("created_at", thirtyDaysAgo.toISOString())
+            .order("created_at", { ascending: true });
+
+        // Create daily buckets for the last 30 days
+        const dailyData: { [key: string]: { issues: number, score: number, scans: number } } = {};
+
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+            const dateKey = date.toISOString().split('T')[0];
+            dailyData[dateKey] = { issues: 0, score: 0, scans: 0 };
+        }
+
+        // Populate daily data with scan information
+        recentScans?.forEach(scan => {
+            const dateKey = new Date(scan.created_at).toISOString().split('T')[0];
+            if (dailyData[dateKey]) {
+                dailyData[dateKey].scans += 1;
+                if (scan.score) {
+                    dailyData[dateKey].score = Math.max(dailyData[dateKey].score, scan.score);
+                }
+            }
+        });
+
+        // Get issues per day
+        allIssues?.forEach(issue => {
+            const dateKey = new Date(issue.created_at).toISOString().split('T')[0];
+            if (dailyData[dateKey]) {
+                dailyData[dateKey].issues += 1;
+            }
+        });
+
+        // Convert to array format for the graph
+        securityTrendData = Object.entries(dailyData).map(([date, data]) => ({
+            date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            issues: data.issues,
+            score: data.score,
+            scans: data.scans,
+            level: Math.min(4, Math.floor(data.issues / 2) + (data.scans > 0 ? 1 : 0))
+        }));
+
+        // Calculate vulnerability statistics (top vulnerabilities)
+        const vulnCount: { [key: string]: { count: number, severity: string } } = {};
+        allIssues?.forEach(issue => {
+            const type = issue.type || 'Unknown';
+            if (!vulnCount[type]) {
+                vulnCount[type] = { count: 0, severity: issue.severity };
+            }
+            vulnCount[type].count += 1;
+        });
+
+        vulnerabilityStats = Object.entries(vulnCount)
+            .map(([type, data]) => ({
+                type,
+                count: data.count,
+                severity: data.severity
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5); // Top 5 vulnerabilities
     }
 
-    // Mock data for demo purposes (replace with real data later)
-    const securityTrend = [
-        { date: 'Jan 20', score: 65 },
-        { date: 'Jan 25', score: 72 },
-        { date: 'Feb 1', score: 78 },
-        { date: 'Feb 5', score: 82 },
-        { date: 'Feb 10', score: 85 },
-        { date: 'Today', score: avgScore || 0 }
-    ];
+    // Generate dynamic AI advisor insights based on real data
+    const generateAIInsights = (stats: any) => {
+        const insights = [];
 
-    const topVulnerabilities = [
-        { type: 'SQL Injection', count: 3, severity: 'critical' },
-        { type: 'XSS', count: 5, severity: 'high' },
-        { type: 'Weak Authentication', count: 2, severity: 'medium' }
-    ];
+        if (criticalIssues > 5) {
+            insights.push("🚨 Critical security issues detected. Immediate attention required for high-risk vulnerabilities.");
+        } else if (criticalIssues > 0) {
+            insights.push("⚠️ Several high-risk vulnerabilities found. Consider prioritizing these fixes in your next sprint.");
+        }
+
+        if (totalIssues === 0) {
+            insights.push("🎉 Excellent! No security issues detected in recent scans. Keep up the great work!");
+        }
+
+        if (scansUsed > scanLimit * 0.8) {
+            insights.push("📊 You're approaching your monthly scan limit. Consider upgrading your plan for more capacity.");
+        }
+
+        if (repoCount === 0) {
+            insights.push("🔗 Start by connecting your repositories to enable comprehensive security monitoring.");
+        } else if (repoCount < 3) {
+            insights.push("📈 Consider adding more repositories to your monitoring scope for better security coverage.");
+        }
+
+        if (avgScore < 50) {
+            insights.push("📈 Your security posture needs improvement. Focus on addressing high-severity vulnerabilities first.");
+        } else if (avgScore >= 80) {
+            insights.push("🏆 Outstanding security posture! Your proactive approach is paying off.");
+        }
+
+        // Default insights if no specific conditions met
+        if (insights.length === 0) {
+            insights.push("🔍 Regular security scans are crucial. Consider scheduling automated scans for critical repositories.");
+            insights.push("📚 Security best practices: Keep dependencies updated and implement proper input validation.");
+        }
+
+        return insights[Math.floor(Math.random() * insights.length)]; // Return random insight for variety
+    };
+
+    const aiInsight = generateAIInsights({ criticalIssues, totalIssues, scansUsed, scanLimit, repoCount, avgScore });
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
@@ -270,44 +366,87 @@ export default async function DashboardPage() {
                 {/* Left Column */}
                 <div className="lg:col-span-8 space-y-6">
 
-                    {/* Security Trend Chart */}
+                    {/* Security Trend Chart - GitHub-like Contribution Graph */}
                     <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                     <TrendingUp className="h-5 w-5 text-blue-400" />
-                                    Security Trend
+                                    Security Activity
                                 </h2>
-                                <p className="text-sm text-zinc-400">Your security posture over the last 30 days</p>
+                                <p className="text-sm text-zinc-400">Issues found and scans completed over the last 30 days</p>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <div className="flex items-center gap-1">
-                                    <div className="w-2 h-2 rounded-full bg-blue-400" />
-                                    <span className="text-zinc-400">Score</span>
+                            <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                                    <span className="text-zinc-400">Issues Found</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                                    <span className="text-zinc-400">Scans Completed</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Simple Chart Visualization */}
-                        <div className="h-48 flex items-end justify-between gap-2 mb-4">
-                            {securityTrend.map((point, index) => (
-                                <div key={index} className="flex-1 flex flex-col items-center">
-                                    <div
-                                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-sm transition-all hover:from-blue-500 hover:to-blue-300"
-                                        style={{ height: `${(point.score / 100) * 160}px` }}
-                                    />
-                                    <span className="text-xs text-zinc-500 mt-2 font-medium">{point.date}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-green-400" />
-                                <span className="text-green-400 font-semibold">+12% improvement</span>
-                                <span className="text-zinc-500">this month</span>
+                        {/* GitHub-like Contribution Graph */}
+                        <div className="space-y-4">
+                            {/* Month labels */}
+                            <div className="flex justify-between text-xs text-zinc-500 mb-2">
+                                <span>30 days ago</span>
+                                <span>Today</span>
                             </div>
-                            <div className="text-zinc-500">Last updated: Just now</div>
+
+                            {/* Contribution grid - 5 rows x 30 columns like GitHub */}
+                            <div className="grid grid-rows-5 grid-cols-30 gap-1">
+                                {Array.from({ length: 150 }, (_, index) => {
+                                    const dayIndex = index % 30;
+                                    const weekIndex = Math.floor(index / 30);
+                                    const dataPoint = securityTrendData[dayIndex];
+
+                                    if (!dataPoint) return (
+                                        <div
+                                            key={index}
+                                            className="w-3 h-3 rounded-sm bg-zinc-800"
+                                            title="No data"
+                                        />
+                                    );
+
+                                    // Calculate intensity based on issues found (0-4 levels)
+                                    const issuesLevel = Math.min(4, Math.floor(dataPoint.issues / 2));
+                                    const scanLevel = dataPoint.scans > 0 ? 1 : 0;
+                                    const totalLevel = Math.min(4, issuesLevel + scanLevel);
+
+                                    const intensityClasses = [
+                                        'bg-zinc-800', // 0 - no activity
+                                        'bg-blue-900', // 1 - low activity
+                                        'bg-blue-700', // 2 - medium activity
+                                        'bg-blue-500', // 3 - high activity
+                                        'bg-blue-400'  // 4 - very high activity
+                                    ];
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`w-3 h-3 rounded-sm ${intensityClasses[totalLevel]} hover:ring-1 hover:ring-blue-300 transition-all cursor-pointer`}
+                                            title={`${dataPoint.date}: ${dataPoint.issues} issues, ${dataPoint.scans} scans`}
+                                        />
+                                    );
+                                })}
+                            </div>
+
+                            {/* Legend */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-xs text-zinc-500">
+                                    <span>Less</span>
+                                    {['bg-zinc-800', 'bg-blue-900', 'bg-blue-700', 'bg-blue-500', 'bg-blue-400'].map((color, i) => (
+                                        <div key={i} className={`w-3 h-3 rounded-sm ${color}`} />
+                                    ))}
+                                    <span>More</span>
+                                </div>
+                                <div className="text-xs text-zinc-500">
+                                    Total: {securityTrendData.reduce((sum, day) => sum + day.issues, 0)} issues, {securityTrendData.reduce((sum, day) => sum + day.scans, 0)} scans
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -400,37 +539,50 @@ export default async function DashboardPage() {
                             </div>
 
                             <div className="space-y-3">
-                                {topVulnerabilities.map((vuln, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
-                                        <div className="flex items-center gap-3">
+                                {vulnerabilityStats.length > 0 ? (
+                                    vulnerabilityStats.map((vuln, index) => (
+                                        <div key={index} className="flex items-center justify-between p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                    vuln.severity === 'critical' ? "bg-red-500/10 border border-red-500/20" :
+                                                    vuln.severity === 'high' ? "bg-orange-500/10 border border-orange-500/20" :
+                                                    vuln.severity === 'medium' ? "bg-yellow-500/10 border border-yellow-500/20" :
+                                                    "bg-blue-500/10 border border-blue-500/20"
+                                                )}>
+                                                    <AlertTriangle className={cn(
+                                                        "h-4 w-4",
+                                                        vuln.severity === 'critical' ? "text-red-400" :
+                                                        vuln.severity === 'high' ? "text-orange-400" :
+                                                        vuln.severity === 'medium' ? "text-yellow-400" :
+                                                        "text-blue-400"
+                                                    )} />
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-semibold text-white">{vuln.type}</div>
+                                                    <div className="text-xs text-zinc-500">{vuln.count} instances found</div>
+                                                </div>
+                                            </div>
                                             <div className={cn(
-                                                "w-8 h-8 rounded-lg flex items-center justify-center",
-                                                vuln.severity === 'critical' ? "bg-red-500/10 border border-red-500/20" :
-                                                vuln.severity === 'high' ? "bg-orange-500/10 border border-orange-500/20" :
-                                                "bg-yellow-500/10 border border-yellow-500/20"
+                                                "px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                                                vuln.severity === 'critical' ? "bg-red-500/20 text-red-400" :
+                                                vuln.severity === 'high' ? "bg-orange-500/20 text-orange-400" :
+                                                vuln.severity === 'medium' ? "bg-yellow-500/20 text-yellow-400" :
+                                                "bg-blue-500/20 text-blue-400"
                                             )}>
-                                                <AlertTriangle className={cn(
-                                                    "h-4 w-4",
-                                                    vuln.severity === 'critical' ? "text-red-400" :
-                                                    vuln.severity === 'high' ? "text-orange-400" :
-                                                    "text-yellow-400"
-                                                )} />
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-semibold text-white">{vuln.type}</div>
-                                                <div className="text-xs text-zinc-500">{vuln.count} instances found</div>
+                                                {vuln.severity}
                                             </div>
                                         </div>
-                                        <div className={cn(
-                                            "px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                                            vuln.severity === 'critical' ? "bg-red-500/20 text-red-400" :
-                                            vuln.severity === 'high' ? "bg-orange-500/20 text-orange-400" :
-                                            "bg-yellow-500/20 text-yellow-400"
-                                        )}>
-                                            {vuln.severity}
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                                            <CheckCircle className="h-6 w-6 text-green-600" />
                                         </div>
+                                        <h4 className="text-white font-semibold mb-2">No vulnerabilities found</h4>
+                                        <p className="text-zinc-500 text-sm">Your recent scans are clean!</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
                     </div>
@@ -528,13 +680,13 @@ export default async function DashboardPage() {
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-white">AI Security Advisor</h3>
-                                <p className="text-sm text-zinc-400">Get expert guidance on your findings</p>
+                                <p className="text-sm text-zinc-400">Intelligent insights based on your security data</p>
                             </div>
                         </div>
 
                         <div className="space-y-3 mb-4">
                             <div className="p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
-                                <p className="text-sm text-zinc-300 italic">"Your authentication layer looks solid, but consider implementing rate limiting for API endpoints."</p>
+                                <p className="text-sm text-zinc-300 italic">"{aiInsight}"</p>
                             </div>
                         </div>
 
