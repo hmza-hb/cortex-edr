@@ -37,11 +37,11 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
             <div className="flex items-center justify-between px-6 h-16">
                 <div className="flex items-center gap-8 flex-1">
                     {/* Left: Logo */}
-                    <Link href="/dashboard" className="flex items-center gap-2 group shrink-0">
-                        <div className="h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-indigo-500/50 transition-all duration-300 overflow-hidden">
-                            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-6 w-6 object-contain transition-all group-hover:scale-110" />
+                    <Link href="/dashboard" className="flex items-center gap-1.5 group shrink-0">
+                        <div className="h-10 w-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-indigo-500/50 transition-all duration-300 overflow-hidden">
+                            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-7 w-7 object-contain transition-all group-hover:scale-110" />
                         </div>
-                        <span className="font-semibold text-lg tracking-tight hidden md:block text-zinc-100 ml-4">
+                        <span className="font-semibold text-lg tracking-tight hidden md:block text-zinc-100 ml-2">
                             CortexEDR
                         </span>
                     </Link>
@@ -102,9 +102,9 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
 
                                             <div className="space-y-1">
                                                 {[
-                                                    { name: "GitHub", icon: Github, color: "hover:bg-zinc-100/10 hover:border-zinc-100/20", iconColor: "text-zinc-100" },
-                                                    { name: "Slack", icon: Slack, color: "hover:bg-[#E01E5A]/10 hover:border-[#E01E5A]/20", iconColor: "text-[#E01E5A]" },
-                                                    { name: "Figma", icon: Figma, color: "hover:bg-[#F24E1E]/10 hover:border-[#F24E1E]/20", iconColor: "text-[#F24E1E]" }
+                                                    { name: "GitHub", logo: "https://github.githubassets.com/images/modules/site/copilot/copilot.png", color: "hover:bg-zinc-100/10 hover:border-zinc-100/20" },
+                                                    { name: "Slack", logo: "https://cdn.brandfolder.io/5H442O3W/as/pl546j-7le8zk-ex8w8s/Slack_RGB_White.png", color: "hover:bg-[#E01E5A]/10 hover:border-[#E01E5A]/20" },
+                                                    { name: "Figma", logo: "https://cdn.sanity.io/images/599r6htc/localized/46a76c802176eb17b04e12108de7e7e0f3736dc6-1024x1024.png", color: "hover:bg-[#F24E1E]/10 hover:border-[#F24E1E]/20" }
                                                 ].map((integration, idx) => (
                                                     <motion.div
                                                         key={integration.name}
@@ -117,8 +117,12 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                                                         )}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                                                <integration.icon className={cn("w-4 h-4", integration.iconColor)} />
+                                                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+                                                                <img 
+                                                                    src={integration.logo} 
+                                                                    alt={`${integration.name} logo`}
+                                                                    className="w-5 h-5 object-contain"
+                                                                />
                                                             </div>
                                                             <span className="text-sm font-semibold text-zinc-300 group-hover:text-white transition-colors">
                                                                 {integration.name}
@@ -170,8 +174,10 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
 
                                             <div className="p-2 space-y-0.5">
                                                 <Link href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
-                                                    <Bot className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
-                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Cortex Assistant</span>
+                                                    <div className="w-4 h-4 flex items-center justify-center">
+                                                        <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-3.5 h-3.5 object-contain" />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Cortex Advisor</span>
                                                 </Link>
                                                 <Link href="/docs" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
                                                     <FileText className="h-4 w-4 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
