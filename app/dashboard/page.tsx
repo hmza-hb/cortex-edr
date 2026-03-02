@@ -905,7 +905,7 @@ export default async function DashboardPage() {
                     <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 lg:p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                                <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub logo" className="w-4 h-4 lg:w-5 lg:h-5 object-contain" />
+                                <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub logo" className="w-4 h-4 lg:w-5 lg:h-5 object-contain filter brightness-0 invert" />
                             </div>
                             <div>
                                 <h3 className="text-base lg:text-lg font-bold text-white">Repository Health</h3>

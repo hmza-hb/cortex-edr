@@ -42,6 +42,7 @@ import {
 import { useClerk, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 type ChatRole = "user" | "assistant" | "system";
 
@@ -152,7 +153,38 @@ function ChatHomeInner() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [longPressedMessageId, setLongPressedMessageId] = useState<string | null>(null);
     const [editState, setEditState] = useState<EditState>(null);
+
+    // Long press detection for mobile user messages
+    const useLongPress = (callback: () => void, delay: number = 500) => {
+        const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+        const isLongPress = useRef(false);
+
+        const start = useCallback(() => {
+            isLongPress.current = false;
+            timeoutRef.current = setTimeout(() => {
+                isLongPress.current = true;
+                callback();
+            }, delay);
+        }, [callback, delay]);
+
+        const clear = useCallback(() => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+        }, []);
+
+        return {
+            onTouchStart: start,
+            onTouchEnd: clear,
+            onTouchMove: clear,
+            onMouseDown: start,
+            onMouseUp: clear,
+            onMouseLeave: clear,
+        };
+    };
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -437,89 +469,256 @@ function ChatHomeInner() {
     return (
         <div className="h-screen w-screen bg-zinc-950 text-zinc-100 flex overflow-hidden">
             {/* Mobile Sidebar Overlay */}
-            {isMobileMenuOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                    />
-                    <div className="fixed left-0 top-0 bottom-0 w-80 bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-800/70 z-50 md:hidden flex flex-col">
-                        <div className="h-full flex flex-col">
-                            {/* Mobile Sidebar Header */}
-                            <div className="px-4 pt-4 pb-3 border-b border-zinc-800/70">
-                                <div className="flex items-center justify-between">
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <>
+                        {/* Enhanced Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{
+                                opacity: 1,
+                                transition: { duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }
+                            }}
+                            exit={{
+                                opacity: 0,
+                                transition: { duration: 0.2, ease: [0.4, 0.0, 0.2, 1] }
+                            }}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 md:hidden"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        />
+
+                        {/* Enhanced Mobile Sidebar */}
+                        <motion.div
+                            initial={{
+                                x: "-100%",
+                                scale: 0.95
+                            }}
+                            animate={{
+                                x: 0,
+                                scale: 1,
+                                transition: {
+                                    x: {
+                                        type: "spring",
+                                        damping: 25,
+                                        stiffness: 300,
+                                        mass: 0.8,
+                                        velocity: 0
+                                    },
+                                    scale: {
+                                        type: "spring",
+                                        damping: 30,
+                                        stiffness: 400,
+                                        delay: 0.05
+                                    }
+                                }
+                            }}
+                            exit={{
+                                x: "-100%",
+                                scale: 0.95,
+                                transition: {
+                                    x: {
+                                        type: "spring",
+                                        damping: 30,
+                                        stiffness: 350,
+                                        mass: 0.8
+                                    },
+                                    scale: {
+                                        type: "spring",
+                                        damping: 35,
+                                        stiffness: 450,
+                                        delay: 0.02
+                                    }
+                                }
+                            }}
+                            className="fixed left-0 top-0 h-full w-80 bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-800/70 z-50 md:hidden flex flex-col shadow-2xl"
+                            style={{
+                                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)"
+                            }}
+                        >
+                            <div className="flex items-center justify-between p-4 border-b border-zinc-800/70">
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{
+                                        opacity: 1,
+                                        x: 0,
+                                        transition: { delay: 0.2, duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }
+                                    }}
+                                    className="flex items-center gap-2"
+                                >
                                     <div className="rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center h-11 w-11">
                                         <Image src="/assets/logo.png" alt="Cortex" width={32} height={32} className="h-8 w-8" />
                                     </div>
-                                    <button
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className="h-9 w-9 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center"
-                                        aria-label="Close sidebar"
-                                    >
-                                        <X className="h-4 w-4 text-zinc-200" />
-                                    </button>
-                                </div>
-
-                                <div className="mt-3 grid grid-cols-2 gap-2">
-                                    <Link href="/dashboard" className="col-span-1" onClick={() => setIsMobileMenuOpen(false)}>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200"
-                                        >
-                                            <ArrowLeft className="h-4 w-4 mr-2" />
-                                            EDR
-                                        </Button>
-                                    </Link>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            startNewChat();
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        className="col-span-1 h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200"
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        New
-                                    </Button>
-                                </div>
+                                    <span className="font-bold text-lg">Cortex</span>
+                                </motion.div>
+                                <motion.button
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{
+                                        opacity: 1,
+                                        scale: 1,
+                                        transition: { delay: 0.25, duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }
+                                    }}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="h-9 w-9 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center transition-colors"
+                                    aria-label="Close sidebar"
+                                >
+                                    <X className="h-4 w-4 text-zinc-200" />
+                                </motion.button>
                             </div>
 
-                            {/* Mobile Sidebar Content - Simplified for mobile */}
-                            <div className="flex-1 overflow-auto">
-                                <div className="px-4 py-3 border-b border-zinc-800/70">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    transition: { delay: 0.15, duration: 0.5, ease: [0.4, 0.0, 0.2, 1] }
+                                }}
+                                className="p-4 border-b border-zinc-800/70"
+                            >
+                                <div className="grid grid-cols-2 gap-2">
+                                    <motion.div
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        transition={{ type: "spring", damping: 20, stiffness: 400 }}
+                                    >
+                                        <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200 transition-all duration-200"
+                                            >
+                                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                                EDR
+                                            </Button>
+                                        </Link>
+                                    </motion.div>
+                                    <motion.div
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        transition={{ type: "spring", damping: 20, stiffness: 400 }}
+                                    >
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                startNewChat();
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                            className="w-full h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200 transition-all duration-200"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            New
+                                        </Button>
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+
+                            {/* Search Bar */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    transition: { delay: 0.2, duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }
+                                }}
+                                className="px-4 pb-4"
+                            >
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                                        <Search className="h-4 w-4" />
+                                    </div>
+                                    <input
+                                        value={searchThreads}
+                                        onChange={(e) => setSearchThreads(e.target.value)}
+                                        placeholder="Search chats"
+                                        className="w-full h-10 pl-10 pr-3 rounded-xl bg-white/[0.02] border border-white/5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/40 transition-colors"
+                                    />
+                                </div>
+                            </motion.div>
+
+                            {/* Enhanced Content with Staggered Animation */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{
+                                    opacity: 1,
+                                    transition: { delay: 0.1, duration: 0.4 }
+                                }}
+                                className="flex-1 overflow-auto"
+                            >
+                                <motion.div
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{
+                                        opacity: 1,
+                                        y: 0,
+                                        transition: { delay: 0.2, duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }
+                                    }}
+                                    className="p-4 border-b border-zinc-800/70"
+                                >
                                     <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Workspace</div>
                                     <div className="space-y-1">
-                                        <Link
-                                            href="/dashboard/repositories"
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-300"
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                        >
-                                            <FolderGit2 className="h-4 w-4 text-zinc-500" />
-                                            Saved repos
-                                        </Link>
-                                        <Link
-                                            href="/dashboard/scan-history"
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-300"
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                        >
-                                            <Sparkles className="h-4 w-4 text-zinc-500" />
-                                            Artifacts
-                                        </Link>
+                                        {[
+                                            { href: "/dashboard/repositories", icon: FolderGit2, label: "Saved repos" },
+                                            { href: "/dashboard/scan-history", icon: Sparkles, label: "Artifacts" }
+                                        ].map((item, index) => (
+                                            <motion.div
+                                                key={item.href}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{
+                                                    opacity: 1,
+                                                    x: 0,
+                                                    transition: {
+                                                        delay: 0.25 + (index * 0.05),
+                                                        duration: 0.4,
+                                                        ease: [0.4, 0.0, 0.2, 1]
+                                                    }
+                                                }}
+                                                whileHover={{ scale: 1.02, x: 2 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                transition={{ type: "spring", damping: 20, stiffness: 400 }}
+                                            >
+                                                <Link
+                                                    href={item.href}
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-300 transition-all duration-200"
+                                                >
+                                                    <item.icon className="h-4 w-4 text-zinc-500" />
+                                                    {item.label}
+                                                </Link>
+                                            </motion.div>
+                                        ))}
                                     </div>
-                                </div>
+                                </motion.div>
 
-                                <div className="px-4 py-3">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{
+                                        opacity: 1,
+                                        y: 0,
+                                        transition: { delay: 0.3, duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }
+                                    }}
+                                    className="p-4"
+                                >
                                     <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Recent chats</div>
                                     <div className="space-y-1">
-                                        {filteredThreads.slice(0, 8).map((t) => (
-                                            <button
+                                        {filteredThreads.slice(0, 8).map((t, index) => (
+                                            <motion.button
                                                 key={t.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{
+                                                    opacity: 1,
+                                                    x: 0,
+                                                    transition: {
+                                                        delay: 0.35 + (index * 0.03),
+                                                        duration: 0.4,
+                                                        ease: [0.4, 0.0, 0.2, 1]
+                                                    }
+                                                }}
+                                                whileHover={{ scale: 1.01, x: 1 }}
+                                                whileTap={{ scale: 0.99 }}
+                                                transition={{ type: "spring", damping: 20, stiffness: 400 }}
                                                 onClick={() => {
                                                     load(t.id);
                                                     setIsMobileMenuOpen(false);
                                                 }}
                                                 className={cn(
-                                                    "w-full text-left px-3 py-2 rounded-xl border transition-all",
+                                                    "w-full text-left px-3 py-2 rounded-xl border transition-all duration-200",
                                                     t.id === threadId
                                                         ? "bg-white/[0.04] border-white/10 text-white"
                                                         : "bg-transparent border-transparent hover:bg-white/[0.03] text-zinc-300"
@@ -529,22 +728,164 @@ function ChatHomeInner() {
                                                 <div className="text-[10px] text-zinc-600 font-medium truncate mt-0.5">
                                                     {t.updated_at ? new Date(t.updated_at).toLocaleDateString() : ""}
                                                 </div>
-                                            </button>
+                                            </motion.button>
                                         ))}
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                                </motion.div>
+                            </motion.div>
 
-            {/* Desktop Sidebar */}
+                            {/* Account Section */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    transition: { delay: 0.4, duration: 0.5, ease: [0.4, 0.0, 0.2, 1] }
+                                }}
+                                className="relative border-t border-zinc-800/70 p-3 mt-auto"
+                            >
+                                <button
+                                    onClick={() => setIsProfileOpen((v) => !v)}
+                                    className="w-full flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] px-3 py-2 transition-all duration-200"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="h-9 w-9 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+                                            {user?.imageUrl ? (
+                                                <img src={user.imageUrl} alt="Profile" className="h-9 w-9 object-cover" />
+                                            ) : (
+                                                <User className="h-4 w-4 text-zinc-300" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 text-left">
+                                            <div className="text-sm font-semibold truncate">
+                                                {user?.fullName || user?.primaryEmailAddress?.emailAddress || "Your profile"}
+                                            </div>
+                                            <div className="text-[11px] text-zinc-600 font-medium truncate">Manage your account</div>
+                                        </div>
+                                    </div>
+                                    <ChevronDown className={cn("h-4 w-4 text-zinc-500 transition-transform duration-200", isProfileOpen && "rotate-180")} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isProfileOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            animate={{
+                                                opacity: 1,
+                                                scale: 1,
+                                                y: 0,
+                                                transition: { duration: 0.2, ease: [0.4, 0.0, 0.2, 1] }
+                                            }}
+                                            exit={{
+                                                opacity: 0,
+                                                scale: 0.95,
+                                                y: -10,
+                                                transition: { duration: 0.15, ease: [0.4, 0.0, 0.2, 1] }
+                                            }}
+                                            className="absolute left-3 right-3 bottom-[68px] z-50 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+                                        >
+                                            <div className="p-2">
+                                                <Link
+                                                    href="/dashboard/settings"
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 transition-all duration-200"
+                                                >
+                                                    <Settings className="h-4 w-4 text-zinc-500" />
+                                                    Settings
+                                                </Link>
+                                                <button
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left transition-all duration-200"
+                                                >
+                                                    <Bot className="h-4 w-4 text-zinc-500" />
+                                                    Personalization
+                                                </button>
+                                                <Link
+                                                    href="/pricing"
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 transition-all duration-200"
+                                                >
+                                                    <Sparkles className="h-4 w-4 text-zinc-500" />
+                                                    Upgrade plan
+                                                </Link>
+
+                                                <div className="my-2 h-px bg-zinc-800" />
+
+                                                <button
+                                                    onMouseEnter={() => setIsLearnDrawerOpen(true)}
+                                                    onClick={() => {
+                                                        setIsLearnDrawerOpen(true);
+                                                        setIsProfileOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 text-left transition-all duration-200"
+                                                >
+                                                    <BookOpen className="h-4 w-4 text-zinc-500" />
+                                                    Learn more
+                                                </button>
+                                                <Link
+                                                    href="/support"
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-200 transition-all duration-200"
+                                                >
+                                                    <HelpCircle className="h-4 w-4 text-zinc-500" />
+                                                    Get help
+                                                </Link>
+
+                                                <div className="my-2 h-px bg-zinc-800" />
+
+                                                <button
+                                                    onClick={() => {
+                                                        signOut();
+                                                        setIsProfileOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-red-500/10 text-sm text-red-400 text-left transition-all duration-200"
+                                                >
+                                                    <LogOut className="h-4 w-4 text-red-400" />
+                                                    Logout
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Backdrop for profile dropdown */}
+                                <AnimatePresence>
+                                    {isProfileOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setIsProfileOpen(false)}
+                                        />
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
             <div
                 className={cn(
                     "hidden md:flex shrink-0 border-r border-zinc-800/70 bg-zinc-950/70 transition-[width] duration-300 ease-out",
                     sidebarCollapsed ? "w-[72px]" : "w-[320px]"
                 )}
+                // ... rest of the code remains the same ...
             >
                 <div className="h-full flex flex-col">
                     <div className="px-4 pt-4 pb-3">
@@ -840,6 +1181,9 @@ function ChatHomeInner() {
                     </button>
 
                     <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
+                            <img src="/assets/logo.png" alt="CortexEDR" className="h-5 w-5 object-contain" />
+                        </div>
                         <div className="text-sm font-bold text-zinc-100">Cortex Chat</div>
                     </div>
 
@@ -1017,6 +1361,12 @@ function ChatHomeInner() {
                         shouldAutoScrollRef.current = nearBottom;
                         didUserScrollAwayRef.current = !nearBottom;
                     }}
+                    onTouchStart={() => {
+                        // Clear long pressed message on any touch
+                        if (longPressedMessageId) {
+                            setLongPressedMessageId(null);
+                        }
+                    }}
                 >
                     <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-4 md:space-y-6">
                         {loading ? (
@@ -1035,188 +1385,242 @@ function ChatHomeInner() {
                                 </div>
                             </div>
                         ) : (
-                            messages.map((m, idx) => (
-                                <div
-                                    key={m.id || idx}
-                                    className={cn("group", m.role === "user" ? "flex justify-end" : "flex justify-start")}
-                                >
-                                    <div className={cn("flex flex-col max-w-[90%] md:max-w-[85%]", m.role === "user" ? "items-end" : "items-start")}>
-                                        <div
-                                            className={cn(
-                                                "rounded-2xl px-4 py-3 md:px-5 md:py-4 text-sm md:text-[15px] leading-6 md:leading-7 whitespace-pre-wrap",
-                                                m.role === "user"
-                                                    ? "max-w-[85%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
-                                                    : "w-full max-w-[90%] md:max-w-[82%] text-zinc-200"
-                                            )}
-                                        >
-                                            {m.role === "assistant" ? (
-                                                <div className="min-w-0">
-                                                    <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
-                                                        <ReactMarkdown
-                                                            remarkPlugins={[remarkGfm]}
-                                                            components={{
-                                                                p: (p) => <p className="leading-6 text-zinc-200 my-1.5" {...p} />,
-                                                                ul: (p) => <ul className="my-1 ml-5 list-disc space-y-0.5" {...p} />,
-                                                                ol: (p) => <ol className="my-1 ml-5 list-decimal space-y-0.5" {...p} />,
-                                                                li: (p) => <li className="leading-5 text-zinc-200" {...p} />,
-                                                                h1: (p) => <h1 className="text-lg font-semibold text-zinc-100 my-2" {...p} />,
-                                                                h2: (p) => <h2 className="text-base font-semibold text-zinc-100 my-2" {...p} />,
-                                                                h3: (p) => <h3 className="text-sm font-semibold text-zinc-100 my-1.5" {...p} />,
-                                                                h4: (p) => <h4 className="text-sm font-medium text-zinc-100 my-1.5" {...p} />,
-                                                                a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
-                                                                code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
-                                                                pre: (p) => <pre className="overflow-auto my-2" {...p} />
-                                                            }}
+                            messages.map((m, idx) => {
+                                const userLongPressHandlers = useLongPress(() => {
+                                    setLongPressedMessageId(m.id || `user-${idx}`);
+                                });
+
+                                return (
+                                    <div
+                                        key={m.id || idx}
+                                        className={cn("group", m.role === "user" ? "flex justify-end" : "flex justify-start")}
+                                    >
+                                        <div className={cn("flex flex-col max-w-[90%] md:max-w-[85%]", m.role === "user" ? "items-end" : "items-start")}>
+                                            <div
+                                                className={cn(
+                                                    "rounded-2xl px-4 py-3 md:px-5 md:py-4 text-sm md:text-[15px] leading-6 md:leading-7 whitespace-pre-wrap",
+                                                    m.role === "user"
+                                                        ? "max-w-[85%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
+                                                        : "w-full max-w-[90%] md:max-w-[82%] text-zinc-200"
+                                                )}
+                                                {...(m.role === "user" ? userLongPressHandlers : {})}
+                                            >
+                                                {m.role === "assistant" ? (
+                                                    <div className="min-w-0">
+                                                        <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                            <ReactMarkdown
+                                                                remarkPlugins={[remarkGfm]}
+                                                                components={{
+                                                                    p: (p) => <p className="leading-6 text-zinc-200 my-1.5" {...p} />,
+                                                                    ul: (p) => <ul className="my-1 ml-5 list-disc space-y-0.5" {...p} />,
+                                                                    ol: (p) => <ol className="my-1 ml-5 list-decimal space-y-0.5" {...p} />,
+                                                                    li: (p) => <li className="leading-5 text-zinc-200" {...p} />,
+                                                                    h1: (p) => <h1 className="text-lg font-semibold text-zinc-100 my-2" {...p} />,
+                                                                    h2: (p) => <h2 className="text-base font-semibold text-zinc-100 my-2" {...p} />,
+                                                                    h3: (p) => <h3 className="text-sm font-semibold text-zinc-100 my-1.5" {...p} />,
+                                                                    h4: (p) => <h4 className="text-sm font-medium text-zinc-100 my-1.5" {...p} />,
+                                                                    a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
+                                                                    code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
+                                                                    pre: (p) => <pre className="overflow-auto my-2" {...p} />
+                                                                }}
+                                                            >
+                                                                {m.content}
+                                                            </ReactMarkdown>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    m.content
+                                                )}
+                                            </div>
+
+                                            {m.role === "user" && !!editState?.messageId && editState.messageId === m.id && (
+                                                <div className="w-full mt-2 max-w-[84%] md:max-w-[72%]">
+                                                    {(() => {
+                                                        const localDraft = editState?.draft ?? "";
+                                                        return (
+                                                            <textarea
+                                                                value={localDraft}
+                                                                onChange={(e) => {
+                                                                    const next = e.target.value;
+                                                                    setEditState((prev: EditState) => {
+                                                                        if (!prev) return prev;
+                                                                        return { ...prev, draft: next };
+                                                                    });
+                                                                }}
+                                                                className="w-full min-h-[80px] resize-none rounded-xl bg-zinc-950/40 border border-white/10 px-4 py-3 text-[15px] leading-7 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                                                            />
+                                                        );
+                                                    })()}
+                                                    <div className="mt-2 flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={cancelEdit}
+                                                            className="h-8 px-3 rounded-lg border border-white/10 bg-transparent hover:bg-white/5 text-xs font-semibold text-zinc-300"
                                                         >
-                                                            {m.content}
-                                                        </ReactMarkdown>
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            onClick={() => void saveEdit()}
+                                                            className="h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold"
+                                                        >
+                                                            Save
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            ) : (
-                                                m.content
                                             )}
-                                        </div>
 
-                                        {m.role === "user" && !!editState?.messageId && editState.messageId === m.id && (
-                                            <div className="w-full mt-2 max-w-[84%] md:max-w-[72%]">
-                                                {(() => {
-                                                    const localDraft = editState?.draft ?? "";
-                                                    return (
-                                                        <textarea
-                                                            value={localDraft}
-                                                            onChange={(e) => {
-                                                                const next = e.target.value;
-                                                                setEditState((prev) => {
-                                                                    if (!prev) return prev;
-                                                                    return { ...prev, draft: next };
-                                                                });
+                                            {m.role === "user" && (
+                                                <div className="mt-2 h-8">
+                                                    <div className={cn(
+                                                        "flex items-center gap-2 transition-all duration-200 ease-out",
+                                                        // Desktop: hover behavior
+                                                        "md:opacity-0 md:translate-y-1 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto",
+                                                        // Mobile: long press behavior
+                                                        "opacity-0 translate-y-1 pointer-events-none md:hidden",
+                                                        longPressedMessageId === (m.id || `user-${idx}`) && "opacity-100 translate-y-0 pointer-events-auto"
+                                                    )}>
+                                                        <button
+                                                            onClick={() => {
+                                                                safeCopy(m.content);
+                                                                const key = `user-${m.id || idx}`;
+                                                                setCopiedKey(key);
+                                                                setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
                                                             }}
-                                                            className="w-full min-h-[80px] resize-none rounded-xl bg-zinc-950/40 border border-white/10 px-4 py-3 text-[15px] leading-7 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
-                                                        />
-                                                    );
-                                                })()}
-                                                <div className="mt-2 flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={cancelEdit}
-                                                        className="h-8 px-3 rounded-lg border border-white/10 bg-transparent hover:bg-white/5 text-xs font-semibold text-zinc-300"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={() => void saveEdit()}
-                                                        className="h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-semibold"
-                                                    >
-                                                        Save
-                                                    </button>
+                                                            className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
+                                                            aria-label="Copy message"
+                                                        >
+                                                            {copiedKey === `user-${m.id || idx}` ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                                            Copy
+                                                        </button>
+                                                        <button
+                                                            onClick={() => startEditMessage(m)}
+                                                            disabled={!m.id}
+                                                            className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 disabled:opacity-40"
+                                                            aria-label="Edit message"
+                                                            title={m.id ? "Edit" : "Save to enable editing"}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => (m.id ? void replayFromMessage(m.id) : undefined)}
+                                                            disabled={!m.id}
+                                                            className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1 disabled:opacity-40"
+                                                            aria-label="Retry"
+                                                            title={m.id ? "Retry" : "Save to enable retry"}
+                                                        >
+                                                            <RefreshCcw className="h-3 w-3" />
+                                                            Retry
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {m.role === "user" && (
-                                            <div className="mt-2 h-8">
-                                                <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
-                                                    <button
-                                                        onClick={() => {
-                                                            safeCopy(m.content);
-                                                            const key = `user-${m.id || idx}`;
-                                                            setCopiedKey(key);
-                                                            setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
-                                                        }}
-                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1"
-                                                        aria-label="Copy message"
-                                                    >
-                                                        {copiedKey === `user-${m.id || idx}` ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                                                        Copy
-                                                    </button>
-                                                    <button
-                                                        onClick={() => startEditMessage(m)}
-                                                        disabled={!m.id}
-                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 disabled:opacity-40"
-                                                        aria-label="Edit message"
-                                                        title={m.id ? "Edit" : "Save to enable editing"}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => (m.id ? void replayFromMessage(m.id) : undefined)}
-                                                        disabled={!m.id}
-                                                        className="h-7 px-2 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 text-[11px] text-zinc-300 flex items-center gap-1 disabled:opacity-40"
-                                                        aria-label="Retry"
-                                                        title={m.id ? "Retry" : "Save to enable retry"}
-                                                    >
-                                                        <RefreshCcw className="h-3 w-3" />
-                                                        Retry
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {m.role === "assistant" && (
-                                            <div className="mt-2 h-8">
-                                                <div className="flex items-center gap-2 opacity-0 translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
-                                                    <button
-                                                        onClick={() => {
-                                                            safeCopy(m.content);
-                                                            const key = `assistant-${m.id || idx}`;
-                                                            setCopiedKey(key);
-                                                            setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
-                                                        }}
-                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
-                                                        aria-label="Copy"
-                                                        title="Copy"
-                                                    >
-                                                        {copiedKey === `assistant-${m.id || idx}` ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                                                    </button>
-                                                    <button
-                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
-                                                        aria-label="Like"
-                                                        title="Like"
-                                                        onClick={() => {}}
-                                                    >
-                                                        <ThumbsUp className="h-3.5 w-3.5" />
-                                                    </button>
-                                                    <button
-                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
-                                                        aria-label="Dislike"
-                                                        title="Dislike"
-                                                        onClick={() => {}}
-                                                    >
-                                                        <ThumbsDown className="h-3.5 w-3.5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setIsShareOpen(true)}
-                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
-                                                        aria-label="Share"
-                                                        title="Share"
-                                                    >
-                                                        <Share2 className="h-3.5 w-3.5" />
-                                                    </button>
-                                                    <button
-                                                        className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
-                                                        aria-label="Retry"
-                                                        title="Retry"
-                                                        onClick={() => {}}
-                                                    >
-                                                        <RefreshCcw className="h-3.5 w-3.5" />
-                                                    </button>
-
-                                                    <div className="relative">
+                                            {m.role === "assistant" && (
+                                                <div className="mt-2 h-8">
+                                                    <div className={cn(
+                                                        "flex items-center gap-2 transition-all duration-200 ease-out",
+                                                        // Desktop: hover behavior
+                                                        "md:opacity-0 md:translate-y-1 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto",
+                                                        // Mobile: always visible
+                                                        "md:hidden"
+                                                    )}>
+                                                        <button
+                                                            onClick={() => {
+                                                                safeCopy(m.content);
+                                                                const key = `assistant-${m.id || idx}`;
+                                                                setCopiedKey(key);
+                                                                setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
+                                                            }}
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Copy"
+                                                            title="Copy"
+                                                        >
+                                                            {copiedKey === `assistant-${m.id || idx}` ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                                                        </button>
                                                         <button
                                                             className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
-                                                            aria-label="More"
-                                                            title="More"
+                                                            aria-label="Like"
+                                                            title="Like"
                                                             onClick={() => {}}
                                                         >
-                                                            <MoreHorizontal className="h-3.5 w-3.5" />
+                                                            <ThumbsUp className="h-3.5 w-3.5" />
                                                         </button>
-                                                        <div className="hidden" />
+                                                        <button
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Dislike"
+                                                            title="Dislike"
+                                                            onClick={() => {}}
+                                                        >
+                                                            <ThumbsDown className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setIsShareOpen(true)}
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Share"
+                                                            title="Share"
+                                                        >
+                                                            <Share2 className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Retry"
+                                                            title="Retry"
+                                                            onClick={() => {}}
+                                                        >
+                                                            <RefreshCcw className="h-3.5 w-3.5" />
+                                                        </button>
+
+                                                        <div className="relative">
+                                                            <button
+                                                                className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                                aria-label="More"
+                                                                title="More"
+                                                                onClick={() => {}}
+                                                            >
+                                                                <MoreHorizontal className="h-3.5 w-3.5" />
+                                                            </button>
+                                                            <div className="hidden" />
+                                                        </div>
+                                                    </div>
+                                                    {/* Mobile: Always visible assistant actions */}
+                                                    <div className="md:hidden flex items-center gap-2 opacity-100 translate-y-0 pointer-events-auto">
+                                                        <button
+                                                            onClick={() => {
+                                                                safeCopy(m.content);
+                                                                const key = `assistant-${m.id || idx}`;
+                                                                setCopiedKey(key);
+                                                                setTimeout(() => setCopiedKey((v) => (v === key ? null : v)), 900);
+                                                            }}
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Copy"
+                                                        >
+                                                            {copiedKey === `assistant-${m.id || idx}` ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                                                        </button>
+                                                        <button
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Like"
+                                                        >
+                                                            <ThumbsUp className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Dislike"
+                                                        >
+                                                            <ThumbsDown className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setIsShareOpen(true)}
+                                                            className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
+                                                            aria-label="Share"
+                                                        >
+                                                            <Share2 className="h-3.5 w-3.5" />
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
 
                         {isStreaming && (

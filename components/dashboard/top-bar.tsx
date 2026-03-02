@@ -174,8 +174,8 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
 
                                             <div className="p-2 space-y-0.5">
                                                 <Link href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
-                                                    <div className="w-5 h-5 flex items-center justify-center">
-                                                        <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-4 h-4 object-contain" />
+                                                    <div className="w-6 h-6 flex items-center justify-center">
+                                                        <img src="/assets/logo.png" alt="CortexEDR Logo" className={cn("w-5 h-5 object-contain", "filter brightness-0 invert")} />
                                                     </div>
                                                     <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Cortex Advisor</span>
                                                 </Link>
