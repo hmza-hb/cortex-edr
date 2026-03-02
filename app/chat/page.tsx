@@ -1386,9 +1386,30 @@ function ChatHomeInner() {
                             </div>
                         ) : (
                             messages.map((m, idx) => {
-                                const userLongPressHandlers = useLongPress(() => {
-                                    setLongPressedMessageId(m.id || `user-${idx}`);
-                                });
+                                const messageId = m.id || `user-${idx}`;
+                                const userLongPressHandlers = m.role === "user" ? {
+                                    onTouchStart: () => {
+                                        const timeoutId = setTimeout(() => {
+                                            setLongPressedMessageId(messageId);
+                                        }, 500);
+                                        // Store timeout ID for cleanup
+                                        (window as any)[`timeout_${messageId}`] = timeoutId;
+                                    },
+                                    onTouchEnd: () => {
+                                        const timeoutId = (window as any)[`timeout_${messageId}`];
+                                        if (timeoutId) {
+                                            clearTimeout(timeoutId);
+                                            delete (window as any)[`timeout_${messageId}`];
+                                        }
+                                    },
+                                    onTouchMove: () => {
+                                        const timeoutId = (window as any)[`timeout_${messageId}`];
+                                        if (timeoutId) {
+                                            clearTimeout(timeoutId);
+                                            delete (window as any)[`timeout_${messageId}`];
+                                        }
+                                    }
+                                } : {};
 
                                 return (
                                     <div
