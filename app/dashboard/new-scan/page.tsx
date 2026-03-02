@@ -152,7 +152,7 @@ export default function NewScanPage() {
                             "w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors",
                             scanMode === "managed" ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400" : "bg-zinc-900 border-zinc-800 text-zinc-500"
                         )}>
-                            <img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub logo" className="w-6 h-6 object-contain" />
+                            <img src="https://github.githubassets.com/assets/GitHub-Mark-32px.png" alt="GitHub logo" className="w-6 h-6 object-contain" />
                         </div>
                         {scanMode === "managed" && <CheckCircle2 className="w-6 h-6 text-indigo-400 animate-in zoom-in duration-300" />}
                     </div>
@@ -228,7 +228,7 @@ export default function NewScanPage() {
                 ) : (
                     <div className="py-12 flex flex-col items-center text-center space-y-8 animate-in zoom-in-95 duration-500">
                         <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2">
-                            <img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub logo" className="w-8 h-8 object-contain" />
+                            <img src="https://github.githubassets.com/assets/GitHub-Mark-32px.png" alt="GitHub logo" className="w-8 h-8 object-contain" />
                         </div>
                         <div className="max-w-md space-y-2">
                             <h3 className="text-2xl font-bold text-zinc-100">Connect your GitHub account</h3>

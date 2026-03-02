@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
+import { MobileHeader } from "@/components/dashboard/mobile-header";
 import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface DashboardLayoutWrapperProps {
     children: React.ReactNode;
@@ -23,35 +26,105 @@ export const DashboardLayoutWrapper = ({
 }: DashboardLayoutWrapperProps) => {
     const pathname = usePathname();
     const isImmersive = pathname?.includes("/dashboard/scan/");
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
         <div className="flex h-screen bg-black text-white overflow-hidden">
-            {/* Sidebar - Hidden in immersive mode */}
+            {/* Mobile Sidebar Overlay */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        />
+
+                        {/* Mobile Sidebar */}
+                        <motion.div
+                            initial={{ x: "-100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "-100%" }}
+                            transition={{
+                                type: "spring",
+                                damping: 30,
+                                stiffness: 300,
+                                duration: 0.3
+                            }}
+                            className="fixed left-0 top-0 h-full w-80 bg-zinc-950 border-r border-zinc-800 z-50 lg:hidden shadow-2xl"
+                        >
+                            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                                        <img src="/assets/logo.png" alt="CortexEDR" className="h-5 w-5 object-contain" />
+                                    </div>
+                                    <span className="font-bold text-lg">CortexEDR</span>
+                                </div>
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-4">
+                                <Sidebar
+                                    user={user}
+                                    planTier={planTier}
+                                    scanCount={scanCount}
+                                    scanLimit={scanLimit}
+                                    isMobile={true}
+                                    onNavigate={() => setIsMobileMenuOpen(false)}
+                                />
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Desktop Sidebar - Hidden on mobile */}
             {!isImmersive && (
-                <Sidebar
-                    user={user}
-                    planTier={planTier}
-                    scanCount={scanCount}
-                    scanLimit={scanLimit}
-                />
+                <div className="hidden lg:block">
+                    <Sidebar
+                        user={user}
+                        planTier={planTier}
+                        scanCount={scanCount}
+                        scanLimit={scanLimit}
+                    />
+                </div>
             )}
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Top Bar - Hidden in immersive mode */}
-                {!isImmersive && (
-                    <TopBar
+                {/* Mobile Header */}
+                <div className="lg:hidden">
+                    <MobileHeader
+                        onMenuClick={() => setIsMobileMenuOpen(true)}
                         user={user}
-                        scanCount={scanCount}
-                        scanLimit={scanLimit}
-                        planTier={planTier}
                     />
+                </div>
+
+                {/* Desktop Top Bar - Hidden on mobile */}
+                {!isImmersive && (
+                    <div className="hidden lg:block">
+                        <TopBar
+                            user={user}
+                            scanCount={scanCount}
+                            scanLimit={scanLimit}
+                            planTier={planTier}
+                        />
+                    </div>
                 )}
 
                 {/* Page Content */}
                 <main className={cn(
                     "flex-1 overflow-y-auto bg-black",
-                    isImmersive ? "p-0" : "p-8"
+                    isImmersive ? "p-0" : "p-4 lg:p-8"
                 )}>
                     <div className={cn(
                         "h-full",

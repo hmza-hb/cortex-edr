@@ -102,7 +102,7 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
 
                                             <div className="space-y-1">
                                                 {[
-                                                    { name: "GitHub", logo: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png", color: "hover:bg-zinc-100/10 hover:border-zinc-100/20" },
+                                                    { name: "GitHub", logo: "https://github.githubassets.com/assets/GitHub-Mark-32px.png", color: "hover:bg-zinc-100/10 hover:border-zinc-100/20" },
                                                     { name: "Slack", logo: "https://slack.com/x-avatars/mono.png", color: "hover:bg-[#E01E5A]/10 hover:border-[#E01E5A]/20" },
                                                     { name: "Figma", logo: "https://cdn.sanity.io/images/599r6htc/localized/46a76c802176eb17b04e12108de7e7e0f3736dc6-1024x1024.png", color: "hover:bg-[#F24E1E]/10 hover:border-[#F24E1E]/20" }
                                                 ].map((integration, idx) => (

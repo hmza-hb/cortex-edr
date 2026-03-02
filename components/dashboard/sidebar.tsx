@@ -35,12 +35,13 @@ interface SidebarProps {
     planTier?: "vibe_coder" | "developer" | "teams" | "enterprise" | string;
     scanCount?: number;
     scanLimit?: number;
+    isMobile?: boolean;
+    onNavigate?: () => void;
 }
 
-export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 }: SidebarProps) => {
+export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1, isMobile = false, onNavigate }: SidebarProps) => {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const mainNavItems = [
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -118,6 +119,16 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
     const NavLink = ({ item }: { item: any }) => {
         const isActive = pathname === item.href;
 
+        const handleClick = (e: React.MouseEvent) => {
+            if (item.locked) {
+                e.preventDefault();
+                return;
+            }
+            if (isMobile && onNavigate) {
+                onNavigate();
+            }
+        };
+
         return (
             <Link
                 href={item.locked ? "#" : item.href}
@@ -131,7 +142,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                             : "text-zinc-400 hover:text-white hover:bg-white/[0.03] cursor-pointer",
                     item.highlight && !isActive && "bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border border-indigo-500/20 text-indigo-100 hover:border-indigo-500/40 cursor-pointer"
                 )}
-                onClick={(e) => item.locked && e.preventDefault()}
+                onClick={handleClick}
                 title={isCollapsed ? item.label : undefined}
             >
                 {isActive && !item.locked && (
@@ -176,28 +187,39 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
-            {/* Topbar Placeholder / Collapse Toggle */}
-            <div className={cn(
-                "p-4 border-b border-zinc-800/50 flex items-center transition-all h-16",
-                isCollapsed ? "justify-center" : "justify-between"
-            )}>
-                {!isCollapsed && (
-                    <div className="text-xs font-medium text-zinc-500 tracking-tight">
-                        CortexEDR, Leave the TERROR behind
-                    </div>
-                )}
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center transition-all group cursor-pointer"
-                    title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                >
-                    {isCollapsed ? (
-                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300" />
-                    ) : (
-                        <ChevronLeft className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300" />
+            {/* Topbar Placeholder / Collapse Toggle - Only for desktop */}
+            {!isMobile && (
+                <div className={cn(
+                    "p-4 border-b border-zinc-800/50 flex items-center transition-all h-16",
+                    isCollapsed ? "justify-center" : "justify-between"
+                )}>
+                    {!isCollapsed && (
+                        <div className="text-xs font-medium text-zinc-500 tracking-tight">
+                            CortexEDR, Leave the TERROR behind
+                        </div>
                     )}
-                </button>
-            </div>
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center transition-all group cursor-pointer"
+                        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    >
+                        {isCollapsed ? (
+                            <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300" />
+                        ) : (
+                            <ChevronLeft className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300" />
+                        )}
+                    </button>
+                </div>
+            )}
+
+            {/* Mobile Header - Only for mobile */}
+            {isMobile && (
+                <div className="p-4 border-b border-zinc-800/50">
+                    <div className="text-xs font-medium text-zinc-500 tracking-tight">
+                        Navigation
+                    </div>
+                </div>
+            )}
 
             {/* Main Navigation */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-none">
@@ -207,12 +229,12 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
 
                 {/* Account Section */}
                 <div className="pt-8">
-                    {!isCollapsed && (
+                    {!isCollapsed && !isMobile && (
                         <h3 className="px-4 text-xs font-medium text-zinc-500 tracking-tight mb-3">
                             Account and billing
                         </h3>
                     )}
-                    {isCollapsed && (
+                    {(isCollapsed || isMobile) && (
                         <div className="h-px bg-zinc-800/50 my-4 mx-2" />
                     )}
                     <div className="space-y-1">
@@ -224,12 +246,12 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
 
                 {/* Resources Section */}
                 <div className="pt-8">
-                    {!isCollapsed && (
+                    {!isCollapsed && !isMobile && (
                         <h3 className="px-4 text-xs font-medium text-zinc-500 tracking-tight mb-3">
                             Resources and support
                         </h3>
                     )}
-                    {isCollapsed && (
+                    {(isCollapsed || isMobile) && (
                         <div className="h-px bg-zinc-800/50 my-4 mx-2" />
                     )}
                     <div className="space-y-1">
@@ -243,9 +265,9 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
             {/* Plan Badge at Bottom */}
             <div className={cn(
                 "p-4 border-t border-zinc-800/50 bg-zinc-900/30",
-                isCollapsed && "flex justify-center"
+                isCollapsed && !isMobile && "flex justify-center"
             )}>
-                {isCollapsed ? (
+                {isCollapsed && !isMobile ? (
                     <div className="h-10 w-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center" title={`${currentPlan.name} Tier`}>
                         {getPlanIcon(currentPlan.icon)}
                     </div>
@@ -268,7 +290,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
                             </div>
                         </div>
                         {currentPlan.showUpgrade && currentPlan.upgradeHref && (
-                            <Link href={currentPlan.upgradeHref}>
+                            <Link href={currentPlan.upgradeHref} onClick={() => isMobile && onNavigate && onNavigate()}>
                                 <Button
                                     size="sm"
                                     className="w-full bg-zinc-100 text-zinc-950 hover:bg-zinc-300 font-semibold text-sm h-10 rounded-xl transition-all active:scale-[0.98]"
@@ -285,42 +307,16 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1 
     );
 
     return (
-        <>
-            {/* Mobile Menu Button */}
-            <button
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 bg-zinc-950 border border-zinc-800 rounded-lg flex items-center justify-center text-zinc-100 hover:bg-zinc-900 transition-all cursor-pointer"
-            >
-                {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-
-            {/* Mobile Overlay */}
-            {isMobileOpen && (
-                <div
-                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-                    onClick={() => setIsMobileOpen(false)}
-                />
+        <motion.aside
+            initial={false}
+            animate={{ width: isMobile ? 'auto' : (isCollapsed ? 80 : 280) }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            className={cn(
+                "flex flex-col border-r border-zinc-800 bg-zinc-950",
+                isMobile ? "w-full" : "h-screen"
             )}
-
-            {/* Sidebar - Desktop */}
-            <motion.aside
-                initial={false}
-                animate={{ width: isCollapsed ? 80 : 280 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className="hidden lg:flex flex-col h-screen border-r border-zinc-800 bg-zinc-950"
-            >
-                <SidebarContent />
-            </motion.aside>
-
-            {/* Sidebar - Mobile */}
-            <motion.aside
-                initial={{ x: -280 }}
-                animate={{ x: isMobileOpen ? 0 : -280 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col"
-            >
-                <SidebarContent />
-            </motion.aside>
-        </>
+        >
+            <SidebarContent />
+        </motion.aside>
     );
 };

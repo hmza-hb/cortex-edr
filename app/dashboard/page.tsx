@@ -421,13 +421,13 @@ export default async function DashboardPage() {
 
             {/* Security Command Center - Clean & Professional */}
             <div className="bg-transparent">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
 
-                    {/* Security Score - Left Side */}
+                    {/* Security Score - Full width on mobile, left side on desktop */}
                     <div className="lg:col-span-4 flex flex-col items-center lg:items-start">
-                        <div className="relative mb-6">
+                        <div className="relative mb-4 lg:mb-6">
                             {/* Outer Ring */}
-                            <div className="w-32 h-32 rounded-full border-4 border-zinc-700/60 relative">
+                            <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full border-4 border-zinc-700/60 relative mx-auto lg:mx-0">
                                 {/* Progress Ring */}
                                 <div className="absolute inset-0 rounded-full border-4 border-transparent"
                                      style={{
@@ -443,7 +443,7 @@ export default async function DashboardPage() {
                                     {/* Score Text */}
                                     <div className="text-center">
                                         <div className={cn(
-                                            "text-3xl font-black",
+                                            "text-2xl lg:text-3xl font-black",
                                             avgScore >= 80 ? "text-emerald-400" :
                                             avgScore >= 60 ? "text-amber-400" :
                                             "text-red-400"
@@ -457,75 +457,75 @@ export default async function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* Metrics Grid - Center */}
+                    {/* Metrics Grid - Center on desktop, below score on mobile */}
                     <div className="lg:col-span-5">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 lg:gap-4">
 
                             {/* Critical Issues */}
-                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
-                                <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                            <div className="flex items-center gap-3 p-3 lg:p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle className="h-4 w-4 lg:h-5 lg:w-5 text-red-400" />
                                 </div>
                                 <div>
-                                    <div className="text-xl font-black text-white">{criticalIssues}</div>
+                                    <div className="text-lg lg:text-xl font-black text-white">{criticalIssues}</div>
                                     <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Critical</div>
                                 </div>
                             </div>
 
                             {/* Monitored Assets */}
-                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
-                                <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                                    <Target className="h-5 w-5 text-blue-400" />
+                            <div className="flex items-center gap-3 p-3 lg:p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                    <Target className="h-4 w-4 lg:h-5 lg:w-5 text-blue-400" />
                                 </div>
                                 <div>
-                                    <div className="text-xl font-black text-white">{repoCount}</div>
+                                    <div className="text-lg lg:text-xl font-black text-white">{repoCount}</div>
                                     <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Assets</div>
                                 </div>
                             </div>
 
                             {/* Total Scans */}
-                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
-                                <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                                    <Activity className="h-5 w-5 text-indigo-400" />
+                            <div className="flex items-center gap-3 p-3 lg:p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                                    <Activity className="h-4 w-4 lg:h-5 lg:w-5 text-indigo-400" />
                                 </div>
                                 <div>
-                                    <div className="text-xl font-black text-white">{totalScans}</div>
+                                    <div className="text-lg lg:text-xl font-black text-white">{totalScans}</div>
                                     <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Scans</div>
                                 </div>
                             </div>
 
                             {/* Scan Capacity */}
-                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
-                                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                    <Zap className="h-5 w-5 text-emerald-400" />
+                            <div className="flex items-center gap-3 p-3 lg:p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                                    <Zap className="h-4 w-4 lg:h-5 lg:w-5 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <div className="text-xl font-black text-white">{scansRemaining}</div>
+                                    <div className="text-lg lg:text-xl font-black text-white">{scansRemaining}</div>
                                     <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Remaining</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Action Buttons - Right Side */}
+                    {/* Action Buttons - Right side on desktop, below metrics on mobile */}
                     <div className="lg:col-span-3 flex flex-col gap-3">
                         <Link href="/dashboard/new-scan">
-                            <Button className="w-full h-12 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
-                                <Plus className="h-4 w-4" />
+                            <Button className="w-full h-10 lg:h-12 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
+                                <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
                                 New Scan
                             </Button>
                         </Link>
 
                         <Link href="/chat">
-                            <Button variant="outline" className="w-full h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
-                                <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-5 h-5 object-contain" />
+                            <Button variant="outline" className="w-full h-10 lg:h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+                                <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-4 h-4 lg:w-5 lg:h-5 object-contain" />
                                 AI Advisor
                             </Button>
                         </Link>
 
                         <Link href="/dashboard/scans">
-                            <Button variant="outline" className="w-full h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
-                                <FileText className="h-4 w-4" />
+                            <Button variant="outline" className="w-full h-10 lg:h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+                                <FileText className="h-3 w-3 lg:h-4 lg:w-4" />
                                 Reports
                             </Button>
                         </Link>
@@ -534,22 +534,22 @@ export default async function DashboardPage() {
             </div>
 
             {/* Main Dashboard Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
 
-                {/* Left Column */}
-                <div className="lg:col-span-8 space-y-6">
+                {/* Left Column - Full width on mobile */}
+                <div className="lg:col-span-8 space-y-4 lg:space-y-6">
 
                     {/* Security Trend Chart - Advanced GitHub-Style Contribution Graph */}
-                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 lg:p-6">
+                        <div className="flex items-center justify-between mb-4 lg:mb-6">
                             <div>
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-blue-400" />
+                                <h2 className="text-lg lg:text-xl font-bold text-white flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4 lg:h-5 lg:w-5 text-blue-400" />
                                     Security Activity Map
                                 </h2>
-                                <p className="text-sm text-zinc-400">91 days of security scanning and vulnerability detection</p>
+                                <p className="text-xs lg:text-sm text-zinc-400">91 days of security scanning and vulnerability detection</p>
                             </div>
-                            <div className="flex items-center gap-4 text-sm">
+                            <div className="hidden lg:flex items-center gap-4 text-sm">
                                 <div className="flex items-center gap-2">
                                     <div className="w-3 h-3 rounded-full bg-red-500" />
                                     <span className="text-zinc-400">Issues Found</span>
@@ -561,6 +561,21 @@ export default async function DashboardPage() {
                                 <div className="flex items-center gap-2">
                                     <div className="w-3 h-3 rounded-full bg-yellow-500" />
                                     <span className="text-zinc-400">Critical Issues</span>
+                                </div>
+                            </div>
+                            {/* Mobile legend */}
+                            <div className="flex lg:hidden items-center gap-2 text-xs">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span className="text-zinc-400">Issues</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                    <span className="text-zinc-400">Scans</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                    <span className="text-zinc-400">Critical</span>
                                 </div>
                             </div>
                         </div>
@@ -668,16 +683,16 @@ export default async function DashboardPage() {
                     </div>
 
                     {/* Recent Scans & Critical Issues */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
 
                         {/* Recent Scans */}
-                        <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                        <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Search className="h-5 w-5 text-purple-400" />
+                                <h3 className="text-base lg:text-lg font-bold text-white flex items-center gap-2">
+                                    <Search className="h-4 w-4 lg:h-5 lg:w-5 text-purple-400" />
                                     Recent Scans
                                 </h3>
-                                <Link href="/dashboard/scans" className="text-sm text-purple-400 hover:text-purple-300 font-medium">
+                                <Link href="/dashboard/scans" className="text-xs lg:text-sm text-purple-400 hover:text-purple-300 font-medium">
                                     View All
                                 </Link>
                             </div>
@@ -688,35 +703,35 @@ export default async function DashboardPage() {
                                         <Link
                                             key={scan.id}
                                             href={`/dashboard/report/${scan.id}`}
-                                            className="group flex items-center justify-between p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl hover:border-zinc-600/50 transition-all"
+                                            className="group flex items-center justify-between p-3 lg:p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl hover:border-zinc-600/50 transition-all"
                                         >
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <div className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                    "w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0",
                                                     scan.status === 'completed' ? "bg-green-500/10 border border-green-500/20" :
                                                     scan.status === 'failed' ? "bg-red-500/10 border border-red-500/20" :
                                                     "bg-yellow-500/10 border border-yellow-500/20"
                                                 )}>
                                                     {scan.status === 'completed' ? (
-                                                        <CheckCircle className="h-4 w-4 text-green-400" />
+                                                        <CheckCircle className="h-3 w-3 lg:h-4 lg:w-4 text-green-400" />
                                                     ) : scan.status === 'failed' ? (
-                                                        <XCircle className="h-4 w-4 text-red-400" />
+                                                        <XCircle className="h-3 w-3 lg:h-4 lg:w-4 text-red-400" />
                                                     ) : (
-                                                        <RefreshCw className="h-4 w-4 text-yellow-400 animate-spin" />
+                                                        <RefreshCw className="h-3 w-3 lg:h-4 lg:w-4 text-yellow-400 animate-spin" />
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <div className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-xs lg:text-sm font-semibold text-white group-hover:text-blue-400 transition-colors truncate">
                                                         {scan.repo_url?.split('/').pop()}
                                                     </div>
-                                                    <div className="text-xs text-zinc-500">
+                                                    <div className="text-[10px] lg:text-xs text-zinc-500">
                                                         {new Date(scan.created_at).toLocaleDateString()} • {scan.status}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-right ml-2 lg:ml-4 flex-shrink-0">
                                                 <div className={cn(
-                                                    "text-lg font-bold",
+                                                    "text-base lg:text-lg font-bold",
                                                     (scan.score || 0) >= 80 ? "text-green-400" :
                                                     (scan.score || 0) >= 50 ? "text-yellow-400" :
                                                     "text-red-400"
@@ -727,14 +742,14 @@ export default async function DashboardPage() {
                                         </Link>
                                     ))
                                 ) : (
-                                    <div className="text-center py-8">
-                                        <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                                            <Search className="h-6 w-6 text-zinc-600" />
+                                    <div className="text-center py-6 lg:py-8">
+                                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                                            <Search className="h-5 w-5 lg:h-6 lg:w-6 text-zinc-600" />
                                         </div>
-                                        <h4 className="text-white font-semibold mb-2">No scans yet</h4>
-                                        <p className="text-zinc-500 text-sm mb-4">Start your first security assessment</p>
+                                        <h4 className="text-sm lg:text-base font-semibold mb-2 text-white">No scans yet</h4>
+                                        <p className="text-xs lg:text-sm text-zinc-500 mb-3 lg:mb-4">Start your first security assessment</p>
                                         <Link href="/dashboard/new-scan">
-                                            <Button size="sm" className="bg-blue-600 hover:bg-blue-500">
+                                            <Button size="sm" className="bg-blue-600 hover:bg-blue-500 text-xs lg:text-sm px-3 lg:px-4 h-8 lg:h-9">
                                                 Start Scanning
                                             </Button>
                                         </Link>
@@ -744,13 +759,13 @@ export default async function DashboardPage() {
                         </div>
 
                         {/* Top Vulnerabilities - Advanced Analysis */}
-                        <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                        <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Shield className="h-5 w-5 text-red-400" />
+                                <h3 className="text-base lg:text-lg font-bold text-white flex items-center gap-2">
+                                    <Shield className="h-4 w-4 lg:h-5 lg:w-5 text-red-400" />
                                     Vulnerability Intelligence
                                 </h3>
-                                <Link href="/dashboard/scans" className="text-sm text-red-400 hover:text-red-300 font-medium">
+                                <Link href="/dashboard/scans" className="text-xs lg:text-sm text-red-400 hover:text-red-300 font-medium">
                                     View All Reports
                                 </Link>
                             </div>
@@ -758,17 +773,17 @@ export default async function DashboardPage() {
                             <div className="space-y-3">
                                 {vulnerabilityStats.length > 0 ? (
                                     vulnerabilityStats.map((vuln, index) => (
-                                        <div key={index} className="group flex items-center justify-between p-4 bg-zinc-800/30 border border-zinc-700/30 rounded-xl hover:border-zinc-600/50 transition-all">
-                                            <div className="flex items-center gap-4">
+                                        <div key={index} className="group flex items-center justify-between p-3 lg:p-4 bg-zinc-800/30 border border-zinc-700/30 rounded-xl hover:border-zinc-600/50 transition-all">
+                                            <div className="flex items-center gap-3 lg:gap-4 min-w-0 flex-1">
                                                 <div className={cn(
-                                                    "w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300",
+                                                    "w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0",
                                                     vuln.severity === 'critical' ? "bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30" :
                                                     vuln.severity === 'high' ? "bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30" :
                                                     vuln.severity === 'medium' ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30" :
                                                     "bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30"
                                                 )}>
                                                     <AlertTriangle className={cn(
-                                                        "h-6 w-6",
+                                                        "h-4 w-4 lg:h-6 lg:w-6",
                                                         vuln.severity === 'critical' ? "text-red-400" :
                                                         vuln.severity === 'high' ? "text-orange-400" :
                                                         vuln.severity === 'medium' ? "text-yellow-400" :
@@ -777,9 +792,9 @@ export default async function DashboardPage() {
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <div className="text-sm font-semibold text-white truncate">{vuln.type}</div>
+                                                        <div className="text-xs lg:text-sm font-semibold text-white truncate">{vuln.type}</div>
                                                         <div className={cn(
-                                                            "px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider",
+                                                            "px-1.5 lg:px-2 py-0.5 rounded-full text-[10px] lg:text-xs font-bold uppercase tracking-wider flex-shrink-0",
                                                             vuln.severity === 'critical' ? "bg-red-500/20 text-red-400" :
                                                             vuln.severity === 'high' ? "bg-orange-500/20 text-orange-400" :
                                                             vuln.severity === 'medium' ? "bg-yellow-500/20 text-yellow-400" :
@@ -788,7 +803,7 @@ export default async function DashboardPage() {
                                                             {vuln.severity}
                                                         </div>
                                                         <div className={cn(
-                                                            "px-2 py-0.5 rounded text-xs font-medium",
+                                                            "px-1.5 lg:px-2 py-0.5 rounded text-[10px] lg:text-xs font-medium flex-shrink-0",
                                                             vuln.trend === 'increasing' ? "bg-red-500/10 text-red-400 border border-red-500/20" :
                                                             vuln.trend === 'decreasing' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
                                                             "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
@@ -796,16 +811,16 @@ export default async function DashboardPage() {
                                                             {vuln.trend === 'increasing' ? '↗️ Rising' : vuln.trend === 'decreasing' ? '↘️ Falling' : '➡️ Stable'}
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-zinc-500">
+                                                    <div className="text-[10px] lg:text-xs text-zinc-500">
                                                         {vuln.count} instances • Last seen {new Date(vuln.lastSeen).toLocaleDateString()}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-lg font-black text-white mb-1">
+                                            <div className="text-right ml-2 lg:ml-4 flex-shrink-0">
+                                                <div className="text-sm lg:text-lg font-black text-white mb-1">
                                                     {Math.round((vuln.severityScore * vuln.count) / vulnerabilityStats.length * 100) / 10}
                                                 </div>
-                                                <div className="text-xs text-zinc-500">Risk Score</div>
+                                                <div className="text-[10px] lg:text-xs text-zinc-500">Risk Score</div>
                                             </div>
                                         </div>
                                     ))
@@ -847,18 +862,18 @@ export default async function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="lg:col-span-4 space-y-6">
+                {/* Right Column - Full width on mobile */}
+                <div className="lg:col-span-4 space-y-4 lg:space-y-6">
 
                     {/* Scan Capacity */}
-                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 lg:p-6">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                                <Zap className="h-5 w-5 text-purple-400" />
+                            <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                                <Zap className="h-4 w-4 lg:h-5 lg:w-5 text-purple-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">Scan Capacity</h3>
-                                <p className="text-sm text-zinc-400">{rawTier.replace('_', ' ').toUpperCase()} Plan</p>
+                                <h3 className="text-base lg:text-lg font-bold text-white">Scan Capacity</h3>
+                                <p className="text-xs lg:text-sm text-zinc-400">{rawTier.replace('_', ' ').toUpperCase()} Plan</p>
                             </div>
                         </div>
 
@@ -880,21 +895,21 @@ export default async function DashboardPage() {
                         </div>
 
                         <Link href="/dashboard/new-scan" className="block mt-4">
-                            <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl">
+                            <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-sm h-10">
                                 Start New Scan
                             </Button>
                         </Link>
                     </div>
 
                     {/* Repository Health */}
-                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 lg:p-6">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                                <img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub logo" className="w-5 h-5 object-contain" />
+                            <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                                <img src="https://github.githubassets.com/assets/GitHub-Mark-32px.png" alt="GitHub logo" className="w-4 h-4 lg:w-5 lg:h-5 object-contain" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">Repository Health</h3>
-                                <p className="text-sm text-zinc-400">{repoCount} repositories monitored</p>
+                                <h3 className="text-base lg:text-lg font-bold text-white">Repository Health</h3>
+                                <p className="text-xs lg:text-sm text-zinc-400">{repoCount} repositories monitored</p>
                             </div>
                         </div>
 
@@ -932,30 +947,30 @@ export default async function DashboardPage() {
                     </div>
 
                     {/* Cortex Chat */}
-                    <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-2xl p-6">
+                    <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-2xl p-4 lg:p-6">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex items-center justify-center overflow-hidden">
-                                <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-6 h-6 object-contain" />
+                            <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex items-center justify-center overflow-hidden">
+                                <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-5 h-5 lg:w-6 lg:h-6 object-contain" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">Chat with Cortex</h3>
-                                <p className="text-sm text-zinc-400">Intelligent security insights and mentorship</p>
+                                <h3 className="text-base lg:text-lg font-bold text-white">Chat with Cortex</h3>
+                                <p className="text-xs lg:text-sm text-zinc-400">Intelligent security insights and mentorship</p>
                             </div>
                         </div>
 
-                        <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                        <div className="space-y-3 mb-4 max-h-40 lg:max-h-48 overflow-y-auto">
                             {recentChatMessages.length > 0 ? (
                                 recentChatMessages.slice(0, 3).reverse().map((message, index) => (
                                     <div key={message.id || index} className="flex gap-3">
-                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                        <div className={`flex-shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${
                                             message.role === 'assistant'
                                                 ? 'bg-blue-500/20 border border-blue-500/30'
                                                 : 'bg-zinc-700/50 border border-zinc-600/50'
                                         }`}>
                                             {message.role === 'assistant' ? (
-                                                <img src="/assets/logo.png" alt="Cortex" className="w-4 h-4 object-contain" />
+                                                <img src="/assets/logo.png" alt="Cortex" className="w-3 h-3 lg:w-4 lg:h-4 object-contain" />
                                             ) : (
-                                                <User className="w-4 h-4 text-zinc-400" />
+                                                <User className="w-3 h-3 lg:w-4 lg:h-4 text-zinc-400" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -967,25 +982,25 @@ export default async function DashboardPage() {
                                                     {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            <div className="p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
-                                                <p className="text-sm text-zinc-300 leading-relaxed">{message.content}</p>
+                                            <div className="p-2 lg:p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
+                                                <p className="text-xs lg:text-sm text-zinc-300 leading-relaxed">{message.content}</p>
                                             </div>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center py-6">
-                                    <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                                        <img src="/assets/logo.png" alt="Cortex" className="w-6 h-6 object-contain" />
+                                <div className="text-center py-4 lg:py-6">
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                                        <img src="/assets/logo.png" alt="Cortex" className="w-5 h-5 lg:w-6 lg:h-6 object-contain" />
                                     </div>
-                                    <h4 className="text-white font-semibold mb-2">Start a conversation</h4>
-                                    <p className="text-zinc-500 text-sm">Ask Cortex about your security posture</p>
+                                    <h4 className="text-sm lg:text-base font-semibold mb-2 text-white">Start a conversation</h4>
+                                    <p className="text-xs lg:text-sm text-zinc-500">Ask Cortex about your security posture</p>
                                 </div>
                             )}
                         </div>
 
                         <Link href="/chat">
-                            <Button variant="outline" className="w-full border-blue-500/30 hover:bg-blue-500/10 text-blue-400 hover:text-blue-300">
+                            <Button variant="outline" className="w-full border-blue-500/30 hover:bg-blue-500/10 text-blue-400 hover:text-blue-300 text-sm">
                                 Ask AI Advisor
                             </Button>
                         </Link>
