@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
     ArrowLeft,
-    Github,
     GitBranch,
     Folder,
     Loader2,
@@ -98,13 +97,12 @@ export default function NewScanPage() {
                 </div>
             </div>
 
-            {/* Strategic Intro */}
             <header className="space-y-1">
                 <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">
-                    Configure new security audit
+                    Start a security scan
                 </h1>
                 <p className="text-zinc-500 font-medium">
-                    Deploy autonomous intelligence agents to audit your infrastructure and codebase.
+                    Choose how you want to scan your code repository for security vulnerabilities.
                 </p>
             </header>
 
@@ -130,12 +128,12 @@ export default function NewScanPage() {
                         </div>
                         {scanMode === "quick" && <CheckCircle2 className="w-6 h-6 text-indigo-400 animate-in zoom-in duration-300" />}
                     </div>
-                    <h3 className="text-xl font-bold text-zinc-100 mb-2">Quick scan entry</h3>
+                    <h3 className="text-xl font-bold text-zinc-100 mb-2">Quick scan</h3>
                     <p className="text-zinc-500 text-sm leading-relaxed mb-4 font-medium">
-                        Perform a rapid deep-scan on any public or private repository via URL endpoint.
+                        Scan any public or private repository by entering its URL. Get instant security results.
                     </p>
                     <div className="flex items-center gap-2 text-xs font-bold text-indigo-400/80 tracking-tight">
-                        Instant deployment <ArrowRight className="w-3 h-3" />
+                        Start scanning now <ArrowRight className="w-3 h-3" />
                     </div>
                 </button>
 
@@ -154,16 +152,16 @@ export default function NewScanPage() {
                             "w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors",
                             scanMode === "managed" ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400" : "bg-zinc-900 border-zinc-800 text-zinc-500"
                         )}>
-                            <Github className="w-6 h-6" />
+                            <img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub logo" className="w-6 h-6 object-contain" />
                         </div>
                         {scanMode === "managed" && <CheckCircle2 className="w-6 h-6 text-indigo-400 animate-in zoom-in duration-300" />}
                     </div>
-                    <h3 className="text-xl font-bold text-zinc-100 mb-2">Managed workspace</h3>
+                    <h3 className="text-xl font-bold text-zinc-100 mb-2">Connect GitHub</h3>
                     <p className="text-zinc-500 text-sm leading-relaxed mb-4 font-medium">
-                        Direct GitHub integration with Cortex for automated, team-wide oversight and monitoring.
+                        Link your GitHub account to automatically scan all your repositories. Perfect for teams and organizations.
                     </p>
                     <div className="flex items-center gap-2 text-xs font-bold text-indigo-400/80 tracking-tight">
-                        GitHub app integration <ArrowRight className="w-3 h-3" />
+                        Connect account <ArrowRight className="w-3 h-3" />
                     </div>
                 </button>
             </div>
@@ -177,7 +175,7 @@ export default function NewScanPage() {
                         <div className="flex flex-col gap-6">
                             <div className="space-y-2.5">
                                 <label className="text-sm font-semibold text-zinc-500 ml-1">
-                                    Project repository URL
+                                    Repository URL
                                 </label>
                                 <div className="relative group/input">
                                     <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-zinc-600 group-focus-within/input:text-indigo-400 transition-colors">
@@ -186,7 +184,7 @@ export default function NewScanPage() {
                                     <input
                                         type="url"
                                         name="repo_url"
-                                        placeholder="https://github.com/organization/repository"
+                                        placeholder="https://github.com/username/repository"
                                         className="w-full h-14 pl-14 pr-6 bg-zinc-950/50 border border-zinc-800 rounded-2xl text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-zinc-950 transition-all font-medium"
                                         required
                                         disabled={isLoading}
@@ -211,11 +209,11 @@ export default function NewScanPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Marshalling intelligence agents...
+                                        Starting security scan...
                                     </>
                                 ) : (
                                     <>
-                                        Initiate full audit
+                                        Start security scan
                                         <ArrowRight className="w-4 h-4" />
                                     </>
                                 )}
@@ -230,12 +228,12 @@ export default function NewScanPage() {
                 ) : (
                     <div className="py-12 flex flex-col items-center text-center space-y-8 animate-in zoom-in-95 duration-500">
                         <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2">
-                            <Github className="w-8 h-8" />
+                            <img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub logo" className="w-8 h-8 object-contain" />
                         </div>
                         <div className="max-w-md space-y-2">
-                            <h3 className="text-2xl font-bold text-zinc-100">GitHub integration</h3>
+                            <h3 className="text-2xl font-bold text-zinc-100">Connect your GitHub account</h3>
                             <p className="text-zinc-500 font-medium">
-                                Sync all your repositories instantly by authorizing the Cortex GitHub App. Perfect for team collaboration and institutional audits.
+                                Automatically scan all your repositories by connecting your GitHub account. Perfect for teams and continuous monitoring.
                             </p>
                         </div>
                         <Button className="h-12 px-10 bg-indigo-600 text-white hover:bg-indigo-700 font-bold text-sm rounded-xl transition-all shadow-lg active:scale-[0.98]">
@@ -251,10 +249,10 @@ export default function NewScanPage() {
                     <div className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
                             <History className="w-4 h-4 text-zinc-500" />
-                            <h2 className="text-lg font-bold text-zinc-100">Audit manifest history</h2>
+                            <h2 className="text-lg font-bold text-zinc-100">Recent repositories</h2>
                         </div>
                         <Link href="/dashboard/scans" className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
-                            View all history
+                            View all scans
                         </Link>
                     </div>
 
@@ -284,9 +282,9 @@ export default function NewScanPage() {
                                     </div>
                                 </div>
                                 <div className="text-right ml-4">
-                                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-tight mb-0.5">Load manifest</div>
+                                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-tight mb-0.5">Use this repo</div>
                                     <div className="text-[10px] text-zinc-600 font-medium">
-                                        {repo.last_scanned_at ? new Date(repo.last_scanned_at).toLocaleDateString() : 'Never audited'}
+                                        {repo.last_scanned_at ? new Date(repo.last_scanned_at).toLocaleDateString() : 'Never scanned'}
                                     </div>
                                 </div>
                             </button>
