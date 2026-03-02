@@ -19,7 +19,9 @@ import {
     MessageSquare,
     Github,
     Target,
-    RefreshCw
+    RefreshCw,
+    Search,
+    User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -353,6 +355,68 @@ export default async function DashboardPage() {
         securityTrendData
     });
 
+    // Fetch recent chat messages for Cortex Chat
+    let recentChatMessages: any[] = [];
+    if (profile?.id) {
+        try {
+            // Try to fetch real chat messages - if none exist, use default initialization
+            const { data: chatData } = await supabase
+                .from("chat_messages")
+                .select("*")
+                .eq("user_id", profile.id)
+                .order("created_at", { ascending: false })
+                .limit(3);
+
+            if (chatData && chatData.length > 0) {
+                recentChatMessages = chatData;
+            } else {
+                // Initialize with default chat messages if none exist
+                recentChatMessages = [
+                    {
+                        id: 'default-1',
+                        role: 'assistant',
+                        content: `Welcome to Cortex Chat! I've analyzed your security data and found ${criticalIssues} critical vulnerabilities that need attention. Your current security score is ${avgScore}%.`,
+                        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+                    },
+                    {
+                        id: 'default-2',
+                        role: 'user',
+                        content: 'What are the main security risks in my codebase?',
+                        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() // 1 hour ago
+                    },
+                    {
+                        id: 'default-3',
+                        role: 'assistant',
+                        content: `Based on your recent scans, the primary risks are in ${vulnerabilityStats.length > 0 ? vulnerabilityStats.slice(0, 2).map(v => v.type).join(' and ') : 'dependency management and authentication'}. I recommend prioritizing fixes for ${vulnerabilityStats.filter(v => v.severity === 'critical').length} critical issues first.`,
+                        created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30 minutes ago
+                    }
+                ];
+            }
+        } catch (error) {
+            // If table doesn't exist or error, use default messages
+            recentChatMessages = [
+                {
+                    id: 'default-1',
+                    role: 'assistant',
+                    content: `Welcome to Cortex Chat! I've analyzed your security data and found ${criticalIssues} critical vulnerabilities that need attention. Your current security score is ${avgScore}%.`,
+                    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'default-2',
+                    role: 'user',
+                    content: 'What are the main security risks in my codebase?',
+                    created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'default-3',
+                    role: 'assistant',
+                    content: `Based on your recent scans, the primary risks are in ${vulnerabilityStats.length > 0 ? vulnerabilityStats.slice(0, 2).map(v => v.type).join(' and ') : 'dependency management and authentication'}. I recommend prioritizing fixes for ${vulnerabilityStats.filter(v => v.severity === 'critical').length} critical issues first.`,
+                    created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+                }
+            ];
+        }
+    }
+
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
 
@@ -447,7 +511,7 @@ export default async function DashboardPage() {
                     {/* Action Buttons - Right Side */}
                     <div className="lg:col-span-3 flex flex-col gap-3">
                         <Link href="/dashboard/new-scan">
-                            <Button className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
+                            <Button className="w-full h-12 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
                                 <Plus className="h-4 w-4" />
                                 New Scan
                             </Button>
@@ -611,7 +675,7 @@ export default async function DashboardPage() {
                         <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Clock className="h-5 w-5 text-purple-400" />
+                                    <Search className="h-5 w-5 text-purple-400" />
                                     Recent Scans
                                 </h3>
                                 <Link href="/dashboard/scans" className="text-sm text-purple-400 hover:text-purple-300 font-medium">
@@ -666,7 +730,7 @@ export default async function DashboardPage() {
                                 ) : (
                                     <div className="text-center py-8">
                                         <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                                            <BarChart3 className="h-6 w-6 text-zinc-600" />
+                                            <Search className="h-6 w-6 text-zinc-600" />
                                         </div>
                                         <h4 className="text-white font-semibold mb-2">No scans yet</h4>
                                         <p className="text-zinc-500 text-sm mb-4">Start your first security assessment</p>
@@ -684,7 +748,7 @@ export default async function DashboardPage() {
                         <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                                    <Shield className="h-5 w-5 text-red-400" />
                                     Vulnerability Intelligence
                                 </h3>
                                 <Link href="/dashboard/scans" className="text-sm text-red-400 hover:text-red-300 font-medium">
@@ -827,7 +891,7 @@ export default async function DashboardPage() {
                     <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="h-10 w-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                                <Github className="h-5 w-5 text-green-400" />
+                                <img src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png" alt="GitHub logo" className="w-5 h-5 object-contain" />
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-white">Repository Health</h3>
@@ -868,22 +932,57 @@ export default async function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* AI Advisor */}
+                    {/* Cortex Chat */}
                     <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-2xl p-6">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex items-center justify-center">
-                                <MessageSquare className="h-5 w-5 text-blue-400" />
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex items-center justify-center overflow-hidden">
+                                <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-6 h-6 object-contain" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">AI Security Advisor</h3>
-                                <p className="text-sm text-zinc-400">Intelligent insights based on your security data</p>
+                                <h3 className="text-lg font-bold text-white">Chat with Cortex</h3>
+                                <p className="text-sm text-zinc-400">Intelligent security insights and mentorship</p>
                             </div>
                         </div>
 
-                        <div className="space-y-3 mb-4">
-                            <div className="p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
-                                <p className="text-sm text-zinc-300 italic">"{aiInsight}"</p>
-                            </div>
+                        <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                            {recentChatMessages.length > 0 ? (
+                                recentChatMessages.slice(0, 3).reverse().map((message, index) => (
+                                    <div key={message.id || index} className="flex gap-3">
+                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                            message.role === 'assistant'
+                                                ? 'bg-blue-500/20 border border-blue-500/30'
+                                                : 'bg-zinc-700/50 border border-zinc-600/50'
+                                        }`}>
+                                            {message.role === 'assistant' ? (
+                                                <img src="/assets/logo.png" alt="Cortex" className="w-4 h-4 object-contain" />
+                                            ) : (
+                                                <User className="w-4 h-4 text-zinc-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-semibold text-zinc-400">
+                                                    {message.role === 'assistant' ? 'Cortex' : 'You'}
+                                                </span>
+                                                <span className="text-xs text-zinc-500">
+                                                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <div className="p-3 bg-zinc-800/30 border border-zinc-700/30 rounded-xl">
+                                                <p className="text-sm text-zinc-300 leading-relaxed">{message.content}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-6">
+                                    <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                                        <img src="/assets/logo.png" alt="Cortex" className="w-6 h-6 object-contain" />
+                                    </div>
+                                    <h4 className="text-white font-semibold mb-2">Start a conversation</h4>
+                                    <p className="text-zinc-500 text-sm">Ask Cortex about your security posture</p>
+                                </div>
+                            )}
                         </div>
 
                         <Link href="/chat">
