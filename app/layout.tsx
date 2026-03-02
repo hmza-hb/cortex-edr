@@ -81,8 +81,16 @@ export const metadata: Metadata = {
     images: ['/assets/logo.png'],
   },
   icons: {
-    icon: '/assets/logo.png',
-    apple: '/assets/logo.png',
+    icon: [
+      { url: '/assets/logo.png', sizes: '16x16', type: 'image/png' },
+      { url: '/assets/logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/assets/logo.png', sizes: '192x192', type: 'image/png' },
+      { url: '/assets/logo.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/assets/logo.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/assets/logo.png',
   },
 }
 
