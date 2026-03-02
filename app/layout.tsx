@@ -21,8 +21,8 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Cortex EDR — Clean Code & Secure Apps Made Easy',
-    template: '%s | Cortex EDR'
+    default: 'CortexEDR',
+    template: '%s | CortexEDR'
   },
   description: 'The easiest way to audit your code and find security bugs. Project Cortex helps everyone from solo creators to enterprise teams build better, more secure apps. Made with love by Hamza Hafeez.',
   keywords: [
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     images: ['/assets/logo.png'],
   },
   icons: {
-    icon: '/favicon.png',
+    icon: '/assets/logo.png',
     apple: '/assets/logo.png',
   },
 }

@@ -19,6 +19,7 @@ import {
     HelpCircle,
     History,
     LogOut,
+    Menu,
     Plus,
     RefreshCcw,
     Search,
@@ -152,6 +153,7 @@ function ChatHomeInner() {
     const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [editState, setEditState] = useState<EditState>(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -434,9 +436,113 @@ function ChatHomeInner() {
 
     return (
         <div className="h-screen w-screen bg-zinc-950 text-zinc-100 flex overflow-hidden">
+            {/* Mobile Sidebar Overlay */}
+            {isMobileMenuOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                    />
+                    <div className="fixed left-0 top-0 bottom-0 w-80 bg-zinc-950/95 backdrop-blur-xl border-r border-zinc-800/70 z-50 md:hidden flex flex-col">
+                        <div className="h-full flex flex-col">
+                            {/* Mobile Sidebar Header */}
+                            <div className="px-4 pt-4 pb-3 border-b border-zinc-800/70">
+                                <div className="flex items-center justify-between">
+                                    <div className="rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center h-11 w-11">
+                                        <Image src="/assets/logo.png" alt="Cortex" width={32} height={32} className="h-8 w-8" />
+                                    </div>
+                                    <button
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="h-9 w-9 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center"
+                                        aria-label="Close sidebar"
+                                    >
+                                        <X className="h-4 w-4 text-zinc-200" />
+                                    </button>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <Link href="/dashboard" className="col-span-1" onClick={() => setIsMobileMenuOpen(false)}>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200"
+                                        >
+                                            <ArrowLeft className="h-4 w-4 mr-2" />
+                                            EDR
+                                        </Button>
+                                    </Link>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            startNewChat();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="col-span-1 h-9 rounded-xl border-white/10 bg-transparent hover:bg-white/5 text-zinc-200"
+                                    >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        New
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Mobile Sidebar Content - Simplified for mobile */}
+                            <div className="flex-1 overflow-auto">
+                                <div className="px-4 py-3 border-b border-zinc-800/70">
+                                    <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Workspace</div>
+                                    <div className="space-y-1">
+                                        <Link
+                                            href="/dashboard/repositories"
+                                            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-300"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            <FolderGit2 className="h-4 w-4 text-zinc-500" />
+                                            Saved repos
+                                        </Link>
+                                        <Link
+                                            href="/dashboard/scan-history"
+                                            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] text-sm text-zinc-300"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            <Sparkles className="h-4 w-4 text-zinc-500" />
+                                            Artifacts
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                <div className="px-4 py-3">
+                                    <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Recent chats</div>
+                                    <div className="space-y-1">
+                                        {filteredThreads.slice(0, 8).map((t) => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => {
+                                                    load(t.id);
+                                                    setIsMobileMenuOpen(false);
+                                                }}
+                                                className={cn(
+                                                    "w-full text-left px-3 py-2 rounded-xl border transition-all",
+                                                    t.id === threadId
+                                                        ? "bg-white/[0.04] border-white/10 text-white"
+                                                        : "bg-transparent border-transparent hover:bg-white/[0.03] text-zinc-300"
+                                                )}
+                                            >
+                                                <div className="text-sm font-semibold truncate">{t.title || "Cortex Chat"}</div>
+                                                <div className="text-[10px] text-zinc-600 font-medium truncate mt-0.5">
+                                                    {t.updated_at ? new Date(t.updated_at).toLocaleDateString() : ""}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Desktop Sidebar */}
             <div
                 className={cn(
-                    "shrink-0 border-r border-zinc-800/70 bg-zinc-950/70 transition-[width] duration-300 ease-out",
+                    "hidden md:flex shrink-0 border-r border-zinc-800/70 bg-zinc-950/70 transition-[width] duration-300 ease-out",
                     sidebarCollapsed ? "w-[72px]" : "w-[320px]"
                 )}
             >
@@ -723,7 +829,31 @@ function ChatHomeInner() {
             </div>
 
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="h-14 px-6 flex items-center justify-between bg-zinc-950/60 backdrop-blur-xl">
+                {/* Mobile Header */}
+                <div className="md:hidden h-14 px-4 flex items-center justify-between bg-zinc-950/60 backdrop-blur-xl border-b border-zinc-800/50">
+                    <button
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="h-9 w-9 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center"
+                        aria-label="Open menu"
+                    >
+                        <Menu className="h-4 w-4 text-zinc-200" />
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                        <div className="text-sm font-bold text-zinc-100">Cortex Chat</div>
+                    </div>
+
+                    <Button
+                        variant="ghost"
+                        onClick={shareChat}
+                        className="h-9 px-3 rounded-xl border border-white/5 text-zinc-300 hover:text-white bg-white/[0.02] hover:bg-white/[0.05]"
+                    >
+                        <Share2 className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                {/* Desktop Header */}
+                <div className="hidden md:flex h-14 px-6 items-center justify-between bg-zinc-950/60 backdrop-blur-xl">
                     <div className="relative">
                         <button
                             onClick={() => setIsPlanOpen((v) => !v)}
@@ -888,19 +1018,19 @@ function ChatHomeInner() {
                         didUserScrollAwayRef.current = !nearBottom;
                     }}
                 >
-                    <div className="max-w-4xl mx-auto px-[20px] py-8 space-y-6">
+                    <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-4 md:space-y-6">
                         {loading ? (
-                            <div className="pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
+                            <div className="pt-20 md:pt-24 text-center text-sm text-zinc-500 font-medium">Loading…</div>
                         ) : messages.length === 0 ? (
-                            <div className="pt-24 text-center">
-                                <div className="mx-auto h-14 w-14 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center overflow-hidden">
-                                    <Image src="/assets/logo.png" alt="CortexEDR" width={56} height={56} />
+                            <div className="pt-16 md:pt-24 text-center">
+                                <div className="mx-auto h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-center overflow-hidden mb-4 md:mb-6">
+                                    <Image src="/assets/logo.png" alt="CortexEDR" width={48} height={48} className="h-10 w-10 md:h-12 md:w-12" />
                                 </div>
-                                <div className="mt-6 text-3xl font-bold tracking-tight text-white">Chat with Cortex</div>
-                                <div className="mt-3 text-sm text-zinc-300 font-semibold leading-6 max-w-xl mx-auto">
+                                <div className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-3">Chat with Cortex</div>
+                                <div className="text-sm md:text-base text-zinc-300 font-semibold leading-6 max-w-xl mx-auto mb-2">
                                     Ship with clarity. Fix what matters. Leave the rest.
                                 </div>
-                                <div className="mt-2 text-sm text-zinc-500 font-medium leading-6 max-w-xl mx-auto">
+                                <div className="text-sm text-zinc-500 font-medium leading-6 max-w-xl mx-auto">
                                     Direct, point-to-point guidance grounded in your scans, your architecture, and your priorities.
                                 </div>
                             </div>
@@ -910,13 +1040,13 @@ function ChatHomeInner() {
                                     key={m.id || idx}
                                     className={cn("group", m.role === "user" ? "flex justify-end" : "flex justify-start")}
                                 >
-                                    <div className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
+                                    <div className={cn("flex flex-col max-w-[90%] md:max-w-[85%]", m.role === "user" ? "items-end" : "items-start")}>
                                         <div
                                             className={cn(
-                                                "rounded-2xl px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap",
+                                                "rounded-2xl px-4 py-3 md:px-5 md:py-4 text-sm md:text-[15px] leading-6 md:leading-7 whitespace-pre-wrap",
                                                 m.role === "user"
-                                                    ? "max-w-[84%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
-                                                    : "w-full max-w-[92%] md:max-w-[82%] text-zinc-200"
+                                                    ? "max-w-[85%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
+                                                    : "w-full max-w-[90%] md:max-w-[82%] text-zinc-200"
                                             )}
                                         >
                                             {m.role === "assistant" ? (
@@ -1091,8 +1221,8 @@ function ChatHomeInner() {
 
                         {isStreaming && (
                             <div className="flex justify-start">
-                                <div className="flex flex-col items-start max-w-[92%] md:max-w-[78%]">
-                                    <div className="rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap text-zinc-200">
+                                <div className="flex flex-col items-start max-w-[85%] md:max-w-[78%]">
+                                    <div className="rounded-2xl px-4 py-3 md:px-5 md:py-4 text-sm md:text-[15px] leading-6 md:leading-relaxed whitespace-pre-wrap text-zinc-200">
                                         {streamingMessage}
                                         <span className="animate-pulse">|</span>
                                     </div>
@@ -1110,8 +1240,8 @@ function ChatHomeInner() {
                     </div>
                 </div>
 
-                <div className="bg-zinc-950/70 backdrop-blur-xl">
-                    <div className="max-w-4xl mx-auto px-[20px] py-4">
+                <div className="bg-zinc-950/70 backdrop-blur-xl border-t border-zinc-800/50">
+                    <div className="max-w-4xl mx-auto px-4 md:px-6 py-3 md:py-4">
                         {attachments.length > 0 && (
                             <div className="mb-3 flex flex-wrap gap-2">
                                 {attachments.map((f, i) => (
@@ -1119,13 +1249,13 @@ function ChatHomeInner() {
                                         key={i}
                                         className="flex items-center gap-2 px-3 py-2 bg-white/[0.02] border border-white/5 rounded-xl text-xs text-zinc-300"
                                     >
-                                        <span className="max-w-[240px] truncate">{f.name}</span>
+                                        <span className="max-w-[200px] md:max-w-[240px] truncate">{f.name}</span>
                                         <button
                                             onClick={() => removeAttachment(i)}
                                             className="text-zinc-500 hover:text-zinc-200 cursor-pointer"
                                             aria-label="Remove attachment"
                                         >
-                                            <X className="w-4 h-4" />
+                                            <X className="w-3 h-3 md:w-4 md:h-4" />
                                         </button>
                                     </div>
                                 ))}
@@ -1137,11 +1267,11 @@ function ChatHomeInner() {
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="h-11 w-11 rounded-2xl border-white/10 hover:bg-white/5"
+                                    className="h-10 w-10 md:h-11 md:w-11 rounded-2xl border-white/10 hover:bg-white/5"
                                     onClick={() => setIsPlusOpen((v) => !v)}
                                     aria-label="Add"
                                 >
-                                    <Plus className="w-5 h-5 text-zinc-300" />
+                                    <Plus className="w-4 h-4 md:w-5 md:h-5 text-zinc-300" />
                                 </Button>
 
                                 {isPlusOpen && (
@@ -1239,19 +1369,19 @@ function ChatHomeInner() {
                                 }}
                                 rows={1}
                                 placeholder="Message Cortex…"
-                                className="flex-1 min-h-11 max-h-40 px-4 py-3 bg-white/[0.02] border border-white/5 rounded-2xl text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/40 resize-none"
+                                className="flex-1 min-h-10 md:min-h-11 max-h-32 md:max-h-40 px-4 py-3 bg-white/[0.02] border border-white/5 rounded-2xl text-sm md:text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/40 resize-none leading-5 md:leading-6"
                             />
 
                             <Button
                                 onClick={sendMessage}
                                 disabled={sending || (!input.trim() && attachments.length === 0)}
-                                className="h-11 px-4 rounded-2xl bg-zinc-100 text-zinc-950 hover:bg-white font-bold disabled:opacity-50"
+                                className="h-10 w-10 md:h-11 md:w-11 rounded-2xl bg-zinc-100 text-zinc-950 hover:bg-white font-bold disabled:opacity-50 flex items-center justify-center"
                                 aria-label="Send message"
                             >
-                                <Send className="w-4 h-4" />
+                                <Send className="w-4 h-4 md:w-4 md:h-4" />
                             </Button>
                         </div>
-                        <div className="mt-2 text-[11px] text-zinc-600 font-medium text-center">
+                        <div className="mt-2 md:mt-3 text-[10px] md:text-[11px] text-zinc-600 font-medium text-center">
                             Cortex can make mistakes. Verify security-critical details.
                         </div>
                     </div>
