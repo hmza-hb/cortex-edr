@@ -356,50 +356,15 @@ export default async function DashboardPage() {
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
 
-            {/* Hero Section - Security Command Center */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 shadow-2xl shadow-slate-900/50">
-                {/* Sophisticated Background Effects */}
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-slate-900/80 to-emerald-600/10" />
-                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 blur-3xl -mr-48 -mt-48" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-emerald-500/5 to-slate-500/5 blur-3xl -ml-48 -mb-48" />
+            {/* Security Command Center - Clean & Professional */}
+            <div className="bg-transparent">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
-                {/* Subtle Grid Pattern */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#64748b_1px,transparent_1px),linear-gradient(to_bottom,#64748b_1px,transparent_1px)] bg-[size:32px_32px]" />
-                </div>
-
-                <div className="relative z-10 p-12 lg:p-16">
-
-                    {/* Status Indicator */}
-                    <div className="flex items-center justify-center mb-8">
-                        <div className="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border border-slate-600/60 rounded-full backdrop-blur-sm">
-                            <div className="relative">
-                                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                                <div className="absolute inset-0 w-2 h-2 bg-emerald-400 rounded-full animate-ping opacity-75" />
-                            </div>
-                            <span className="text-sm font-semibold text-slate-200 uppercase tracking-wider">System Operational</span>
-                        </div>
-                    </div>
-
-                    {/* Main Header */}
-                    <div className="text-center mb-12">
-                        <h1 className="text-5xl lg:text-6xl font-black text-white mb-6 leading-tight tracking-tight">
-                            Security
-                            <span className="block bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent">
-                                Command Center
-                            </span>
-                        </h1>
-                        <p className="text-xl text-slate-300 font-medium max-w-3xl mx-auto leading-relaxed">
-                            Advanced threat intelligence and security orchestration platform.
-                            Monitor, analyze, and respond to security events with precision.
-                        </p>
-                    </div>
-
-                    {/* Security Score Display */}
-                    <div className="flex justify-center mb-12">
-                        <div className="relative">
+                    {/* Security Score - Left Side */}
+                    <div className="lg:col-span-4 flex flex-col items-center lg:items-start">
+                        <div className="relative mb-6">
                             {/* Outer Ring */}
-                            <div className="w-48 h-48 rounded-full border-4 border-slate-700/60 relative">
+                            <div className="w-32 h-32 rounded-full border-4 border-zinc-700/60 relative">
                                 {/* Progress Ring */}
                                 <div className="absolute inset-0 rounded-full border-4 border-transparent"
                                      style={{
@@ -411,122 +376,94 @@ export default async function DashboardPage() {
                                      }} />
 
                                 {/* Inner Background */}
-                                <div className="absolute inset-4 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/60 flex items-center justify-center">
-
+                                <div className="absolute inset-2 rounded-full bg-zinc-900 border border-zinc-700/60 flex items-center justify-center">
                                     {/* Score Text */}
                                     <div className="text-center">
                                         <div className={cn(
-                                            "text-5xl font-black mb-1",
+                                            "text-3xl font-black",
                                             avgScore >= 80 ? "text-emerald-400" :
                                             avgScore >= 60 ? "text-amber-400" :
                                             "text-red-400"
                                         )}>
                                             {avgScore}
                                         </div>
-                                        <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">Security Score</div>
-                                        <div className="mt-2">
-                                            {avgScore >= 80 ? (
-                                                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Excellent</span>
-                                            ) : avgScore >= 60 ? (
-                                                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Good</span>
-                                            ) : (
-                                                <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Critical</span>
-                                            )}
-                                        </div>
+                                        <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Security Score</div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            {/* Floating Indicators */}
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center border-2 border-slate-800">
-                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    {/* Metrics Grid - Center */}
+                    <div className="lg:col-span-5">
+                        <div className="grid grid-cols-2 gap-4">
+
+                            {/* Critical Issues */}
+                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-black text-white">{criticalIssues}</div>
+                                    <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Critical</div>
+                                </div>
                             </div>
-                            <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-slate-800">
-                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+
+                            {/* Monitored Assets */}
+                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                    <Target className="h-5 w-5 text-blue-400" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-black text-white">{repoCount}</div>
+                                    <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Assets</div>
+                                </div>
+                            </div>
+
+                            {/* Total Scans */}
+                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                                    <Activity className="h-5 w-5 text-indigo-400" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-black text-white">{totalScans}</div>
+                                    <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Scans</div>
+                                </div>
+                            </div>
+
+                            {/* Scan Capacity */}
+                            <div className="flex items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-xl">
+                                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                    <Zap className="h-5 w-5 text-emerald-400" />
+                                </div>
+                                <div>
+                                    <div className="text-xl font-black text-white">{scansRemaining}</div>
+                                    <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Remaining</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Key Metrics Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-
-                        {/* Critical Issues */}
-                        <div className="group bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 rounded-2xl p-6 hover:border-red-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                    <AlertTriangle className="h-6 w-6 text-red-400" />
-                                </div>
-                                <div>
-                                    <div className="text-3xl font-black text-white">{criticalIssues}</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Critical</div>
-                                </div>
-                            </div>
-                            <div className="text-sm text-slate-300 font-medium">High-risk vulnerabilities</div>
-                        </div>
-
-                        {/* Monitored Assets */}
-                        <div className="group bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-2xl p-6 hover:border-blue-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                    <Target className="h-6 w-6 text-blue-400" />
-                                </div>
-                                <div>
-                                    <div className="text-3xl font-black text-white">{repoCount}</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Assets</div>
-                                </div>
-                            </div>
-                            <div className="text-sm text-slate-300 font-medium">Monitored repositories</div>
-                        </div>
-
-                        {/* Scan Count */}
-                        <div className="group bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border border-indigo-500/20 rounded-2xl p-6 hover:border-indigo-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 border border-indigo-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                    <Activity className="h-6 w-6 text-indigo-400" />
-                                </div>
-                                <div>
-                                    <div className="text-3xl font-black text-white">{totalScans}</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Scans</div>
-                                </div>
-                            </div>
-                            <div className="text-sm text-slate-300 font-medium">Total security assessments</div>
-                        </div>
-
-                        {/* Scan Capacity */}
-                        <div className="group bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-2xl p-6 hover:border-emerald-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                    <Zap className="h-6 w-6 text-emerald-400" />
-                                </div>
-                                <div>
-                                    <div className="text-3xl font-black text-white">{scansRemaining}</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Remaining</div>
-                                </div>
-                            </div>
-                            <div className="text-sm text-slate-300 font-medium">Monthly scan capacity</div>
-                        </div>
-                    </div>
-
-                    {/* Action Bar */}
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    {/* Action Buttons - Right Side */}
+                    <div className="lg:col-span-3 flex flex-col gap-3">
                         <Link href="/dashboard/new-scan">
-                            <Button className="w-full sm:w-auto h-14 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center gap-3 text-lg">
-                                <Plus className="h-6 w-6" />
-                                Initiate Security Scan
+                            <Button className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
+                                <Plus className="h-4 w-4" />
+                                New Scan
                             </Button>
                         </Link>
 
                         <Link href="/chat">
-                            <Button variant="outline" className="w-full sm:w-auto h-14 px-8 border-slate-600/60 hover:bg-slate-800/60 text-slate-200 hover:text-white font-bold rounded-2xl transition-all backdrop-blur-sm flex items-center gap-3 text-lg">
-                                <MessageSquare className="h-6 w-6" />
-                                AI Security Advisor
+                            <Button variant="outline" className="w-full h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                AI Advisor
                             </Button>
                         </Link>
 
                         <Link href="/dashboard/scans">
-                            <Button variant="outline" className="w-full sm:w-auto h-14 px-8 border-slate-600/60 hover:bg-slate-800/60 text-slate-200 hover:text-white font-bold rounded-2xl transition-all backdrop-blur-sm flex items-center gap-3 text-lg">
-                                <FileText className="h-6 w-6" />
-                                Security Reports
+                            <Button variant="outline" className="w-full h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Reports
                             </Button>
                         </Link>
                     </div>
