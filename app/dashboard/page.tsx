@@ -51,6 +51,16 @@ export default async function DashboardPage() {
     const scansRemaining = profile?.scans_remaining ?? scanLimit;
     const scansUsed = Math.max(0, scanLimit - scansRemaining);
 
+    // Fetch repositories
+    let repoCount = 0;
+    if (profile?.id) {
+        const { count } = await supabase
+            .from("repositories")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", profile.id);
+        repoCount = count || 0;
+    }
+
     // Fetch scan data
     let scans: any[] = [];
     if (profile?.id) {
@@ -60,22 +70,6 @@ export default async function DashboardPage() {
             .eq("user_id", profile.id)
             .order("created_at", { ascending: false });
         scans = data || [];
-    }
-
-    const recentScans = scans?.slice(0, 5) || [];
-    const totalScans = scans?.length || 0;
-    const avgScore = totalScans > 0
-        ? Math.round(scans!.reduce((acc, s) => acc + (s.score || 0), 0) / totalScans)
-        : 0;
-
-    // Fetch repositories
-    let repoCount = 0;
-    if (profile?.id) {
-        const { count } = await supabase
-            .from("repositories")
-            .select("*", { count: 'exact', head: true })
-            .eq("user_id", profile.id);
-        repoCount = count || 0;
     }
 
     // Fetch comprehensive security analytics data
@@ -134,7 +128,7 @@ export default async function DashboardPage() {
         }
 
         // Populate daily data with sophisticated metrics
-        recentScans?.forEach(scan => {
+        recentScans?.forEach((scan: any) => {
             const dateKey = new Date(scan.created_at).toISOString().split('T')[0];
             if (dailyData[dateKey]) {
                 dailyData[dateKey].scans += 1;
@@ -151,7 +145,7 @@ export default async function DashboardPage() {
         });
 
         // Add issue data to daily metrics
-        allIssues?.forEach(issue => {
+        allIssues?.forEach((issue: any) => {
             const dateKey = new Date(issue.created_at).toISOString().split('T')[0];
             if (dailyData[dateKey]) {
                 dailyData[dateKey].issues += 1;
@@ -184,7 +178,7 @@ export default async function DashboardPage() {
             trend: 'increasing' | 'stable' | 'decreasing'
         } } = {};
 
-        allIssues?.forEach(issue => {
+        allIssues?.forEach((issue: any) => {
             const type = issue.type || issue.description?.split(' ')[0] || 'Unknown';
             const date = new Date(issue.created_at).toISOString().split('T')[0];
 
@@ -223,7 +217,7 @@ export default async function DashboardPage() {
             .slice(0, 6); // Top 6 vulnerabilities
 
         // Recent security activity (last 10 items)
-        recentSecurityActivity = recentScans?.slice(-10).reverse().map(scan => ({
+        recentSecurityActivity = recentScans?.slice(-10).reverse().map((scan: any) => ({
             id: scan.id,
             type: 'scan',
             title: `${scan.repo_url?.split('/').pop()} scan`,
@@ -234,7 +228,7 @@ export default async function DashboardPage() {
         })) || [];
 
         // Add recent issues to activity
-        const recentIssues = allIssues?.slice(-5).reverse().map(issue => ({
+        const recentIssues = allIssues?.slice(-5).reverse().map((issue: any) => ({
             id: `issue-${issue.scan_id}-${Math.random()}`,
             type: 'issue',
             title: `${issue.type || 'Security issue'} detected`,
@@ -246,8 +240,13 @@ export default async function DashboardPage() {
         recentSecurityActivity = [...recentSecurityActivity, ...recentIssues]
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .slice(0, 15);
-
     }
+
+    const recentScans = scans?.slice(0, 5) || [];
+    const totalScans = scans?.length || 0;
+    const avgScore = totalScans > 0
+        ? Math.round(scans!.reduce((acc: number, s: any) => acc + (s.score || 0), 0) / totalScans)
+        : 0;
 
     // Generate sophisticated AI advisor insights based on comprehensive data analysis
     const generateAIInsights = (stats: any) => {
@@ -519,7 +518,7 @@ export default async function DashboardPage() {
 
                         <Link href="/chat">
                             <Button variant="outline" className="w-full h-12 border-zinc-700 hover:bg-zinc-800/50 text-zinc-300 hover:text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
-                                <MessageSquare className="h-4 w-4" />
+                                <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-5 h-5 object-contain" />
                                 AI Advisor
                             </Button>
                         </Link>
@@ -876,7 +875,7 @@ export default async function DashboardPage() {
                             </div>
                             <div className="flex justify-between text-xs text-zinc-500">
                                 <span>{scansRemaining} remaining</span>
-                                <span>Resets in 18 days</span>
+                                <span>Resets in one month</span>
                             </div>
                         </div>
 

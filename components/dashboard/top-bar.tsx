@@ -102,8 +102,8 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
 
                                             <div className="space-y-1">
                                                 {[
-                                                    { name: "GitHub", logo: "https://github.githubassets.com/images/modules/site/copilot/copilot.png", color: "hover:bg-zinc-100/10 hover:border-zinc-100/20" },
-                                                    { name: "Slack", logo: "https://cdn.brandfolder.io/5H442O3W/as/pl546j-7le8zk-ex8w8s/Slack_RGB_White.png", color: "hover:bg-[#E01E5A]/10 hover:border-[#E01E5A]/20" },
+                                                    { name: "GitHub", logo: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png", color: "hover:bg-zinc-100/10 hover:border-zinc-100/20" },
+                                                    { name: "Slack", logo: "https://slack.com/x-avatars/mono.png", color: "hover:bg-[#E01E5A]/10 hover:border-[#E01E5A]/20" },
                                                     { name: "Figma", logo: "https://cdn.sanity.io/images/599r6htc/localized/46a76c802176eb17b04e12108de7e7e0f3736dc6-1024x1024.png", color: "hover:bg-[#F24E1E]/10 hover:border-[#F24E1E]/20" }
                                                 ].map((integration, idx) => (
                                                     <motion.div
@@ -174,8 +174,8 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
 
                                             <div className="p-2 space-y-0.5">
                                                 <Link href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-900 transition-colors group">
-                                                    <div className="w-4 h-4 flex items-center justify-center">
-                                                        <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-3.5 h-3.5 object-contain" />
+                                                    <div className="w-5 h-5 flex items-center justify-center">
+                                                        <img src="/assets/logo.png" alt="CortexEDR Logo" className="w-4 h-4 object-contain" />
                                                     </div>
                                                     <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Cortex Advisor</span>
                                                 </Link>
