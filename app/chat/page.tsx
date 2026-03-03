@@ -154,6 +154,7 @@ function ChatHomeInner() {
     const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [longPressedMessageId, setLongPressedMessageId] = useState<string | null>(null);
+    const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
     const [editState, setEditState] = useState<EditState>(null);
 
     // Long press detection for mobile user messages
@@ -1415,6 +1416,8 @@ function ChatHomeInner() {
                                     <div
                                         key={m.id || idx}
                                         className={cn("group", m.role === "user" ? "flex justify-end" : "flex justify-start")}
+                                        onMouseEnter={() => setHoveredMessageId(m.id || `msg-${idx}`)}
+                                        onMouseLeave={() => setHoveredMessageId(null)}
                                     >
                                         <div className={cn("flex flex-col max-w-[90%] md:max-w-[85%]", m.role === "user" ? "items-end" : "items-start")}>
                                             <div
@@ -1494,7 +1497,7 @@ function ChatHomeInner() {
                                                     <div className={cn(
                                                         "flex items-center gap-2 transition-all duration-200 ease-out",
                                                         // Desktop: hover behavior
-                                                        "md:opacity-0 md:translate-y-1 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto",
+                                                        hoveredMessageId === (m.id || `msg-${idx}`) ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-1 pointer-events-none",
                                                         // Mobile: long press behavior
                                                         "opacity-0 translate-y-1 pointer-events-none md:hidden",
                                                         longPressedMessageId === (m.id || `user-${idx}`) && "opacity-100 translate-y-0 pointer-events-auto"
@@ -1540,9 +1543,9 @@ function ChatHomeInner() {
                                                     <div className={cn(
                                                         "flex items-center gap-2 transition-all duration-200 ease-out",
                                                         // Desktop: hover behavior
-                                                        "md:opacity-0 md:translate-y-1 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto",
-                                                        // Mobile: always visible
-                                                        "md:hidden"
+                                                        hoveredMessageId === (m.id || `msg-${idx}`) ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-1 pointer-events-none",
+                                                        // Mobile: hidden
+                                                        "hidden md:flex"
                                                     )}>
                                                         <button
                                                             onClick={() => {

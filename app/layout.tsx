@@ -21,27 +21,29 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'CortexEDR',
-    template: '%s | CortexEDR'
+    default: 'Cortex EDR | AI-Powered Code Security & Vulnerability Scanner',
+    template: '%s | Cortex EDR'
   },
-  description: 'The easiest way to audit your code and find security bugs. Project Cortex helps everyone from solo creators to enterprise teams build better, more secure apps. Made with love by Hamza Hafeez.',
+  description: 'Scan your codebase for security vulnerabilities in seconds. Cortex EDR uses a 7-agent AI pipeline for deep-pass code intelligence, automated vulnerability detection, and actionable fix suggestions. Free to start.',
   keywords: [
-    'Project Cortex',
     'Cortex EDR',
-    'Cortex Security',
-    'Code Audit App',
-    'Find Security Bugs',
-    'Hamza Hafeez',
-    'Easy Code Security',
-    'Vibe Coding Security',
-    'AI Code Helper',
-    'Clean Code Scanner',
-    'Security for Everyone',
-    'Check my code for bugs'
+    'code security scanner',
+    'AI vulnerability detection',
+    'code audit tool',
+    'security analysis platform',
+    'OWASP scanner',
+    'static code analysis',
+    'AI code review',
+    'vulnerability scanner',
+    'application security',
+    'DevSecOps',
+    'code security audit',
+    'automated security testing',
+    'GitHub security scanner'
   ],
   authors: [{ name: 'Hamza Hafeez', url: 'https://github.com/hamza-hafeez82' }],
-  creator: 'Hamza Hafeez',
-  publisher: 'Hamza Hafeez',
+  creator: 'Cortex EDR',
+  publisher: 'Cortex EDR',
   metadataBase: new URL('https://cortex-edr.com'),
   alternates: {
     canonical: '/',
@@ -61,36 +63,38 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://cortex-edr.com',
-    title: 'Cortex EDR: The Helpful AI Security Auditor',
-    description: 'Build with confidence. Use Cortex EDR to scan your project for bugs and security issues in seconds. Built by Hamza Hafeez.',
+    title: 'Cortex EDR | AI-Powered Code Security & Vulnerability Scanner',
+    description: 'Scan your codebase for security vulnerabilities in seconds. 7-agent AI pipeline for deep-pass code intelligence and automated vulnerability detection. Free to start.',
     siteName: 'Cortex EDR',
     images: [
       {
-        url: '/assets/logo.png',
-        width: 800,
-        height: 800,
-        alt: 'Cortex EDR Logo',
+        url: '/assets/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Cortex EDR — AI-Powered Code Security Scanner',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cortex EDR — Simple & Powerful Code Security',
-    description: 'Audit your code, fix vulnerabilities, and build faster. Created by Hamza Hafeez.',
+    title: 'Cortex EDR | AI-Powered Code Security & Vulnerability Scanner',
+    description: 'Scan your codebase for security vulnerabilities in seconds. 7-agent AI pipeline for deep-pass code intelligence. Free to start.',
     creator: '@hamza_hafeez',
-    images: ['/assets/logo.png'],
+    images: ['/assets/og-image.png'],
   },
   icons: {
     icon: [
-      { url: '/assets/logo.png', sizes: '16x16', type: 'image/png' },
-      { url: '/assets/logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
       { url: '/assets/logo.png', sizes: '192x192', type: 'image/png' },
       { url: '/assets/logo.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       { url: '/assets/logo.png', sizes: '180x180', type: 'image/png' },
     ],
-    shortcut: '/assets/logo.png',
+    shortcut: '/favicon.png',
+  },
+  verification: {
+    google: 'ADD_YOUR_GOOGLE_SITE_VERIFICATION_CODE_HERE',
   },
 }
 
@@ -98,13 +102,32 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "WebApplication",
+      "@type": "WebSite",
       "name": "Cortex EDR",
-      "alternateName": ["Project Cortex", "Cortex Security", "Cortex"],
-      "description": "An easy-to-use AI tool for auditing code and finding security vulnerabilities.",
-      "applicationCategory": "Developer Tool",
-      "operatingSystem": "All",
-      "author": {
+      "alternateName": ["CortexEDR", "Cortex Security", "Cortex"],
+      "url": "https://cortex-edr.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://cortex-edr.com/docs?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "Organization",
+      "name": "Cortex EDR",
+      "url": "https://cortex-edr.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://cortex-edr.com/assets/logo.png",
+        "width": 512,
+        "height": 512
+      },
+      "image": "https://cortex-edr.com/assets/og-image.png",
+      "description": "AI-powered code security and vulnerability scanning platform. Scan your codebase with a 7-agent AI pipeline for deep-pass intelligence.",
+      "founder": {
         "@type": "Person",
         "name": "Hamza Hafeez",
         "sameAs": [
@@ -112,48 +135,71 @@ const jsonLd = {
           "https://www.linkedin.com/in/hamza-hafeez"
         ]
       },
+      "sameAs": [
+        "https://github.com/hamza-hafeez82/cortex-edr"
+      ]
+    },
+    {
+      "@type": "WebApplication",
+      "name": "Cortex EDR",
+      "description": "AI-powered code security scanner with 7-agent pipeline for deep vulnerability detection, automated fix suggestions, and comprehensive security reports.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web",
       "url": "https://cortex-edr.com",
-      "screenshot": "https://cortex-edr.com/assets/bg-hero.png",
+      "screenshot": "https://cortex-edr.com/assets/og-image.png",
       "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock"
-      }
-    },
-    {
-      "@type": "ItemList",
-      "name": "Site Links",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Check our Features",
-          "url": "https://cortex-edr.com/features"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "View Pricing",
-          "url": "https://cortex-edr.com/pricing"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "Get Started (Login)",
-          "url": "https://cortex-edr.com/login"
-        }
+        "availability": "https://schema.org/InStock",
+        "description": "Free tier available with unlimited public repo scanning"
+      },
+      "featureList": [
+        "7-Agent AI Security Pipeline",
+        "OWASP Top 10 Detection",
+        "Automated Fix Suggestions",
+        "PDF Security Reports",
+        "Real-time Scan Visualization",
+        "AI Security Chat Advisor",
+        "Multi-language Support",
+        "GitHub Integration"
       ]
     },
     {
-      "@type": "Organization",
-      "name": "Cortex EDR",
-      "url": "https://cortex-edr.com",
-      "logo": "https://cortex-edr.com/assets/logo.png",
-      "founder": {
-        "@type": "Person",
-        "name": "Hamza Hafeez"
-      }
+      "@type": "SiteNavigationElement",
+      "name": "Features",
+      "description": "Explore all Cortex EDR security scanning capabilities and AI-powered features.",
+      "url": "https://cortex-edr.com/features"
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "name": "Pricing",
+      "description": "Compare Cortex EDR plans — Scout, Sentinel, Guardian, and Fortress tiers.",
+      "url": "https://cortex-edr.com/pricing"
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "name": "Documentation",
+      "description": "Guides, API reference, and tutorials for Cortex EDR.",
+      "url": "https://cortex-edr.com/docs"
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "name": "Get Started",
+      "description": "Sign up and start scanning your code for vulnerabilities. Free to start.",
+      "url": "https://cortex-edr.com/login"
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "name": "Cortex Chat",
+      "description": "AI security advisor — ask questions about your codebase vulnerabilities.",
+      "url": "https://cortex-edr.com/chat"
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "name": "Support",
+      "description": "Get help with Cortex EDR — FAQ, troubleshooting, and contact.",
+      "url": "https://cortex-edr.com/support"
     }
   ]
 }

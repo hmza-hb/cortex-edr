@@ -1,5 +1,16 @@
+import type { Metadata } from 'next'
 import { Shield, Zap, BookOpen, Code, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+    title: 'Documentation',
+    description: 'Cortex EDR documentation — getting started guides, API reference, security guides, and troubleshooting. Learn to integrate AI-powered security scanning into your workflow.',
+    openGraph: {
+        title: 'Documentation | Cortex EDR',
+        description: 'Guides, API reference, and tutorials for Cortex EDR security scanning platform.',
+        url: 'https://cortex-edr.com/docs',
+    },
+}
 
 export default function DocsPage() {
     return (
