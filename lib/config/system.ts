@@ -74,9 +74,9 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 0,
             priceAnnual: 0,
             limits: {
-                maxScansPerMonth: 10,
+                maxScansPerMonth: 5,
                 maxRepositories: 3,
-                maxFilesPerScan: 1500, // Increased from 100
+                maxFilesPerScan: 500, // Increased from 100
                 retentionHours: 24,
                 teamSeats: 1
             },
@@ -96,9 +96,9 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 9,
             priceAnnual: 90,
             limits: {
-                maxScansPerMonth: 25,
-                maxRepositories: 10,
-                maxFilesPerScan: 10000, // Increased from 500
+                maxScansPerMonth: 15,
+                maxRepositories: 5,
+                maxFilesPerScan: 1000, // Increased from 500
                 retentionDays: 30,
                 teamSeats: 1
             },
@@ -118,9 +118,9 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 49,
             priceAnnual: 490,
             limits: {
-                maxScansPerMonth: 100,
-                maxRepositories: 50,
-                maxFilesPerScan: 50000, // Increased from 2000
+                maxScansPerMonth: 50,
+                maxRepositories: 15,
+                maxFilesPerScan: 5000, // Increased from 2000
                 retentionDays: 90,
                 teamSeats: 5
             },
