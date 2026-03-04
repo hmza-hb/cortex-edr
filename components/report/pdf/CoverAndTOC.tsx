@@ -13,96 +13,90 @@ interface Props {
 export const CoverPage: React.FC<Props> = ({ scan, enterpriseReport, date, issueCount }) => {
     const eng = enterpriseReport?.engagement;
     const classification = eng?.classification || 'Confidential';
-    const classColor = classification === 'Confidential' ? '#991B1B' :
-        classification === 'Restricted' ? '#92400E' : '#1E3A5F';
+    const classColor = classification === 'Confidential' ? C.red :
+        classification === 'Restricted' ? C.amber : C.blue;
 
     return (
         <Page size="A4" style={styles.coverPage}>
-            {/* Dark blue background gradient stripes */}
+            {/* Solid Navy Background without chaotic intersecting lines */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.navy }} />
-            <View style={{ position: 'absolute', top: 0, right: 0, width: 180, bottom: 0, backgroundColor: '#0D1F3C' }} />
-            <View style={{ position: 'absolute', top: 0, right: 0, width: 6, bottom: 0, backgroundColor: C.blue }} />
-            <View style={{ position: 'absolute', top: 280, left: 60, right: 200, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
 
-            <View style={styles.coverContent}>
-                {/* Logo + Org Name */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 }}>
-                    <Image src="/assets/logo.png" style={{ width: 52, height: 52 }} />
+            {/* Subtle Gradient / Accent Bar on the left edge for enterprise feel */}
+            <View style={{ position: 'absolute', top: 0, left: 0, width: 8, bottom: 0, backgroundColor: C.blue }} />
+
+            <View style={{ flex: 1, padding: '80 60', justifyContent: 'center' }}>
+
+                {/* 1. Header: Logo and Org Name perfectly aligned */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 60 }}>
+                    <Image src="/assets/logo.png" style={{ width: 64, height: 64, marginRight: 20 }} />
                     <View>
-                        <Text style={styles.coverOrgName}>CORTEX EDR</Text>
-                        <Text style={styles.coverTagline}>ENTERPRISE SECURITY PLATFORM</Text>
-                    </View>
-                </View>
-
-                <View style={{ height: 60 }} />
-
-                {/* Engagement Title */}
-                <Text style={styles.coverEngTitle}>
-                    {eng?.title || 'Enterprise Application\nSecurity Assessment'}
-                </Text>
-                <View style={styles.coverDivider} />
-
-                {/* Meta block */}
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Target:</Text>
-                    <Text style={styles.coverMetaValue}>{scan?.repo_url || 'Internal Repository'}</Text>
-                </View>
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Report Version:</Text>
-                    <Text style={styles.coverMetaValue}>{eng?.version || enterpriseReport?.reportVersion || 'v1.0'}</Text>
-                </View>
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Classification:</Text>
-                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, backgroundColor: classColor, borderRadius: 3, alignSelf: 'flex-start' }}>
-                        <Text style={{ fontSize: 8, color: C.white, fontFamily: 'Helvetica-Bold' }}>{classification.toUpperCase()}</Text>
-                    </View>
-                </View>
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Prepared By:</Text>
-                    <Text style={styles.coverMetaValue}>{eng?.preparedBy || 'CortexEDR Security Team'}</Text>
-                </View>
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Date:</Text>
-                    <Text style={styles.coverMetaValue}>{date}</Text>
-                </View>
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Total Issues:</Text>
-                    <Text style={styles.coverMetaValue}>{issueCount}</Text>
-                </View>
-                <View style={styles.coverMetaRow}>
-                    <Text style={styles.coverMetaLabel}>Risk Level:</Text>
-                    <Text style={[styles.coverMetaValue, { color: '#FCA5A5', fontFamily: 'Helvetica-Bold' }]}>
-                        {enterpriseReport?.riskLevel || 'High Risk'}
-                    </Text>
-                </View>
-
-                <View style={{ height: 40 }} />
-
-                {/* Security score circle */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                    <View style={{
-                        width: 70, height: 70, borderRadius: 35,
-                        border: `3 solid ${C.blue}`,
-                        justifyContent: 'center', alignItems: 'center',
-                        backgroundColor: 'rgba(37,99,235,0.1)',
-                    }}>
-                        <Text style={{ fontSize: 20, fontFamily: 'Helvetica-Bold', color: C.white }}>{scan?.score || 0}</Text>
-                        <Text style={{ fontSize: 7, color: '#93C5FD' }}>/ 100</Text>
-                    </View>
-                    <View>
-                        <Text style={{ fontSize: 11, color: C.white, fontFamily: 'Helvetica-Bold' }}>Security Health Score</Text>
-                        <Text style={{ fontSize: 8, color: '#93C5FD', marginTop: 3 }}>CortexEDR Posture Rating</Text>
-                        <Text style={{ fontSize: 9, color: '#FCA5A5', marginTop: 6, fontFamily: 'Helvetica-Bold' }}>
-                            {enterpriseReport?.executiveSummary?.securityPostureRating || enterpriseReport?.riskLevel || 'Under Assessment'}
+                        <Text style={{ fontSize: 36, fontFamily: 'Helvetica-Bold', color: C.white, letterSpacing: 4, marginBottom: 4 }}>
+                            CortexEDR
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#93C5FD', letterSpacing: 3, fontFamily: 'Helvetica-Bold' }}>
+                            ENTERPRISE SECURITY PLATFORM
                         </Text>
                     </View>
                 </View>
+
+                {/* 2. Main Title */}
+                <View style={{ marginBottom: 50 }}>
+                    <Text style={{ fontSize: 32, fontFamily: 'Helvetica-Bold', color: C.white, lineHeight: 1.2, marginBottom: 20 }}>
+                        {eng?.title || 'Enterprise Application\nSecurity Assessment'}
+                    </Text>
+                    <View style={{ height: 4, width: 80, backgroundColor: C.blue }} />
+                </View>
+
+                {/* 3. Metadata Grid (Clean 2-column layout) */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20, marginBottom: 50 }}>
+                    <View style={{ width: '45%', marginBottom: 12 }}>
+                        <Text style={{ fontSize: 9, color: '#60A5FA', fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginBottom: 4 }}>TARGET REPOSITORY</Text>
+                        <Text style={{ fontSize: 11, color: C.white }}>{scan?.repo_url || 'Internal Repository'}</Text>
+                    </View>
+                    <View style={{ width: '45%', marginBottom: 12 }}>
+                        <Text style={{ fontSize: 9, color: '#60A5FA', fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginBottom: 4 }}>DATE OF ASSESSMENT</Text>
+                        <Text style={{ fontSize: 11, color: C.white }}>{date}</Text>
+                    </View>
+                    <View style={{ width: '45%', marginBottom: 12 }}>
+                        <Text style={{ fontSize: 9, color: '#60A5FA', fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginBottom: 4 }}>REPORT VERSION</Text>
+                        <Text style={{ fontSize: 11, color: C.white }}>{eng?.version || enterpriseReport?.reportVersion || 'v1.0'}</Text>
+                    </View>
+                    <View style={{ width: '45%', marginBottom: 12 }}>
+                        <Text style={{ fontSize: 9, color: '#60A5FA', fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginBottom: 4 }}>PREPARED BY</Text>
+                        <Text style={{ fontSize: 11, color: C.white }}>{eng?.preparedBy || 'CortexEDR Security Team'}</Text>
+                    </View>
+                </View>
+
+                {/* 4. Score & Classification */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 24, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1 solid rgba(255,255,255,0.1)' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+                        <View style={{ width: 80, height: 80, borderRadius: 40, border: `4 solid ${C.blue}`, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(37,99,235,0.1)' }}>
+                            <Text style={{ fontSize: 28, fontFamily: 'Helvetica-Bold', color: C.white }}>{scan?.score || 0}</Text>
+                            <Text style={{ fontSize: 9, color: '#93C5FD', marginTop: 2 }}>/ 100</Text>
+                        </View>
+                        <View>
+                            <Text style={{ fontSize: 14, color: C.white, fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>Security Health Score</Text>
+                            <Text style={{ fontSize: 10, color: '#93C5FD', marginBottom: 6 }}>CortexEDR Posture Rating</Text>
+                            <Text style={{ fontSize: 12, color: enterpriseReport?.riskLevel === 'Low' ? C.green : enterpriseReport?.riskLevel === 'Medium' ? C.amber : C.red, fontFamily: 'Helvetica-Bold' }}>
+                                {enterpriseReport?.executiveSummary?.securityPostureRating || enterpriseReport?.riskLevel || 'High Risk'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 9, color: '#60A5FA', fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginBottom: 8 }}>CLASSIFICATION</Text>
+                        <View style={{ padding: '8 16', backgroundColor: classColor, borderRadius: 6 }}>
+                            <Text style={{ fontSize: 10, color: C.white, fontFamily: 'Helvetica-Bold', letterSpacing: 1 }}>{classification.toUpperCase()}</Text>
+                        </View>
+                    </View>
+                </View>
+
             </View>
 
             {/* Footer */}
-            <View style={styles.coverFooter}>
-                <Text style={styles.coverFooterText}>CORTEX EDR  ·  ENTERPRISE SECURITY AUDIT</Text>
-                <Text style={styles.coverFooterText}>{classification.toUpperCase()}  ·  DO NOT DISTRIBUTE</Text>
+            <View style={{ position: 'absolute', bottom: 40, left: 60, right: 60, borderTop: '1 solid rgba(255,255,255,0.1)', paddingTop: 16, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', letterSpacing: 1.5 }}>CORTEXEDR  ·  ENTERPRISE SECURITY AUDIT</Text>
+                <Text style={{ fontSize: 9, color: classColor, fontFamily: 'Helvetica-Bold', letterSpacing: 1.5 }}>{classification.toUpperCase()}  ·  DO NOT DISTRIBUTE</Text>
             </View>
         </Page>
     );
@@ -134,8 +128,8 @@ export const TOCPage: React.FC<{ date: string }> = ({ date }) => (
         {/* Header */}
         <View style={styles.header}>
             <View>
-                <Text style={styles.brand}>CORTEX EDR</Text>
-                <Text style={styles.brandTag}>ENTERPRISE SECURITY AUDIT</Text>
+                <Text style={styles.brand}>CortexEDR</Text>
+                <Text style={styles.brandTag}>Enterprise Security Audit</Text>
             </View>
             <View style={styles.headerRight}>
                 <Text style={styles.headerMeta}>{date}</Text>
@@ -150,7 +144,7 @@ export const TOCPage: React.FC<{ date: string }> = ({ date }) => (
             <View key={i} style={[styles.tocItem, { paddingLeft: entry.indent ? 24 : 0 }]}>
                 <View style={styles.tocItemMain}>
                     <Text style={[styles.tocNum, entry.indent ? { color: C.muted, fontSize: 8 } : {}]}>{entry.num}</Text>
-                    <Text style={[styles.tocLabel, entry.indent ? { fontSize: 9, color: C.muted } : {}]}>{entry.label}</Text>
+                    <Text style={[styles.tocLabel, entry.indent ? { fontSize: 10, color: C.slate } : {}]}>{entry.label}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <View style={{ flex: 1, borderBottom: '1 dashed #CBD5E1', width: 60 }} />
@@ -159,7 +153,7 @@ export const TOCPage: React.FC<{ date: string }> = ({ date }) => (
         ))}
 
         <View style={styles.footer}>
-            <Text style={styles.footerText}>CORTEX EDR  ·  CONFIDENTIAL</Text>
+            <Text style={styles.footerText}>CortexEDR  ·  Confidential</Text>
             <Text style={styles.footerText}>Table of Contents</Text>
         </View>
     </Page>
