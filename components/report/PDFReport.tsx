@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Font } from '@react-pdf/renderer';
 import { Issue } from '@/types/agent';
-import { ExecutiveReport } from '@/types/report';
+import { ExecutiveReport, EnterpriseIssue } from '@/types/report';
 
 import { CoverPage, TOCPage } from './pdf/CoverAndTOC';
 import { ExecSummaryPage, EngagementPage, PosturePage } from './pdf/Sections2to4';
@@ -32,15 +32,30 @@ export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseRe
     const isFreeTier = tierKey === 'VIBE_CODER';
 
     // Sort issues by severity for the Detailed Findings section
-    const sortedIssues = [...issues].sort((a, b) => {
+    let sortedIssues: Array<Issue & Partial<EnterpriseIssue>> = [...issues].sort((a, b) => {
         const severityRank = { critical: 4, high: 3, medium: 2, low: 1, informational: 0 };
         const rankA = severityRank[(a.severity as keyof typeof severityRank) || 'low'] || 0;
         const rankB = severityRank[(b.severity as keyof typeof severityRank) || 'low'] || 0;
         return rankB - rankA;
     });
 
+    // CRITICAL: Merge the deep analysis data from topPriorities into the regular issues.
+    // The basic `issues` array often lacks impact, likelihood, solution, etc.
+    if (enterpriseReport?.topPriorities) {
+        sortedIssues = sortedIssues.map(issue => {
+            // Try to match by issueId or title
+            const enrichedData = enterpriseReport.topPriorities.find(
+                (p: any) => p.issueId === issue.id || p.title === issue.title
+            );
+            if (enrichedData) {
+                return { ...issue, ...enrichedData } as Issue & Partial<EnterpriseIssue>;
+            }
+            return issue as Issue & Partial<EnterpriseIssue>;
+        });
+    }
+
     return (
-        <Document title={`Cortex Audit - ${scan?.id || 'Report'}`} author="CortexEDR" subject="Enterprise Security Audit Report">
+        <Document title={`Cortex Audit Report - ${scan?.id || 'Report'}`} author="CortexEDR" subject="Enterprise Security Audit Report">
             <CoverPage scan={scan} enterpriseReport={enterpriseReport} date={date} issueCount={issues.length} />
             <TOCPage date={date} />
             <ExecSummaryPage scan={scan} issues={issues} enterpriseReport={enterpriseReport} date={date} />
@@ -65,7 +80,7 @@ export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseRe
             <RoadmapPage enterpriseReport={enterpriseReport} issues={issues} date={date} />
             <MaturityPage enterpriseReport={enterpriseReport} date={date} />
             <ConclusionPage enterpriseReport={enterpriseReport} scan={scan} date={date} />
-            <AppendicesPage issues={sortedIssues} date={date} />
+            <AppendicesPage issues={sortedIssues as any} date={date} />
         </Document>
     );
 };
