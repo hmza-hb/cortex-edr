@@ -25,7 +25,8 @@ export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.VIBE_CODER }
         critical: 'border-red-500/50 bg-red-500/[0.02]',
         high: 'border-orange-500/50 bg-orange-500/[0.02]',
         medium: 'border-yellow-500/50 bg-yellow-500/[0.02]',
-        low: 'border-blue-500/50 bg-blue-500/[0.02]'
+        low: 'border-blue-500/50 bg-blue-500/[0.02]',
+        informational: 'border-gray-500/50 bg-gray-500/[0.02]'
     }
 
     const copyToClipboard = (text: string, type: string) => {
