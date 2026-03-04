@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         const { data: existingUser, error: checkError } = await supabase
             .from('profiles')
             .select('email, plan_tier')
-            .ilike('email', sanitizedEmail)
+            .eq('email', sanitizedEmail)
             .maybeSingle();
 
         if (checkError) {
@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
         console.log('Looking for user with email:', sanitizedEmail);
         console.log('Found user:', existingUser);
 
-        // Update user tier with sanitized inputs (case-insensitive)
+        // Update user tier with sanitized inputs
         const { data, error } = await supabase
             .from('profiles')
             .update({
                 plan_tier: newTier.toUpperCase(), // Store as uppercase to match database
                 updated_at: new Date().toISOString()
             })
-            .ilike('email', sanitizedEmail)
+            .eq('email', sanitizedEmail)
             .select();
 
         if (error) {
@@ -167,7 +167,7 @@ export async function PUT(request: NextRequest) {
                 const { error: deleteError } = await supabase
                     .from('profiles')
                     .delete()
-                    .ilike('email', sanitizeEmail(targetUserEmail));
+                    .eq('email', sanitizeEmail(targetUserEmail));
 
                 if (deleteError) {
                     return NextResponse.json(
@@ -201,7 +201,7 @@ export async function PUT(request: NextRequest) {
                         scans_remaining: scanLimit,
                         updated_at: new Date().toISOString()
                     })
-                    .ilike('email', sanitizeEmail(targetUserEmail));
+                    .eq('email', sanitizeEmail(targetUserEmail));
 
                 if (resetError) {
                     return NextResponse.json(
@@ -236,7 +236,7 @@ export async function PUT(request: NextRequest) {
                         billing_cycle: body.billingCycle || 'monthly',
                         updated_at: new Date().toISOString()
                     })
-                    .ilike('email', sanitizeEmail(targetUserEmail));
+                    .eq('email', sanitizeEmail(targetUserEmail));
 
                 if (verifyError) {
                     return NextResponse.json(
@@ -279,7 +279,7 @@ export async function PUT(request: NextRequest) {
                         payment_notes: body.notes || 'Payment rejected',
                         updated_at: new Date().toISOString()
                     })
-                    .ilike('email', sanitizeEmail(targetUserEmail));
+                    .eq('email', sanitizeEmail(targetUserEmail));
 
                 if (rejectError) {
                     return NextResponse.json(
@@ -319,7 +319,7 @@ export async function PUT(request: NextRequest) {
                         payment_notes: body.notes || 'Payment pending verification',
                         updated_at: new Date().toISOString()
                     })
-                    .ilike('email', sanitizeEmail(targetUserEmail));
+                    .eq('email', sanitizeEmail(targetUserEmail));
 
                 if (pendingError) {
                     return NextResponse.json(

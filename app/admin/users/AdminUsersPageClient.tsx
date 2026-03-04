@@ -10,13 +10,13 @@ interface User {
     created_at: string;
     updated_at: string;
     id: string;
-    payment_status: string;
-    payment_amount: number;
-    payment_date: string | null;
-    payment_method: string;
-    payment_verified_by: string | null;
-    payment_notes: string;
-    billing_cycle: string;
+    payment_status?: string;
+    payment_amount?: number;
+    payment_date?: string | null;
+    payment_method?: string;
+    payment_verified_by?: string | null;
+    payment_notes?: string;
+    billing_cycle?: string;
 }
 
 export default function AdminUsersPageClient() {
@@ -44,7 +44,7 @@ export default function AdminUsersPageClient() {
         
         // Apply payment filter
         if (paymentFilter !== 'all') {
-            filtered = filtered.filter(user => user.payment_status === paymentFilter);
+            filtered = filtered.filter(user => (user.payment_status || 'unpaid') === paymentFilter);
         }
         
         setFilteredUsers(filtered);
@@ -283,7 +283,7 @@ export default function AdminUsersPageClient() {
         }
     };
 
-    const getPaymentStatusColor = (status: string) => {
+    const getPaymentStatusColor = (status?: string) => {
         switch (status) {
             case 'paid': return 'bg-green-100 text-green-800';
             case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -414,12 +414,12 @@ export default function AdminUsersPageClient() {
                                             {user.scans_remaining}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(user.payment_status)}`}>
-                                                {user.payment_status.toUpperCase()}
+                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(user.payment_status || 'unpaid')}`}>
+                                                {(user.payment_status || 'unpaid').toUpperCase()}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            ${user.payment_amount}
+                                            ${user.payment_amount || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {user.payment_date ? new Date(user.payment_date).toLocaleDateString() : '-'}
@@ -464,7 +464,7 @@ export default function AdminUsersPageClient() {
                                                 
                                                 {/* Payment Actions */}
                                                 <div className="flex items-center gap-2">
-                                                    {user.payment_status === 'unpaid' && (
+                                                    {(user.payment_status || 'unpaid') === 'unpaid' && (
                                                         <button
                                                             onClick={() => {
                                                                 const amount = prompt('Enter payment amount:');
@@ -481,7 +481,7 @@ export default function AdminUsersPageClient() {
                                                         </button>
                                                     )}
                                                     
-                                                    {user.payment_status === 'unpaid' && (
+                                                    {(user.payment_status || 'unpaid') === 'unpaid' && (
                                                         <button
                                                             onClick={() => {
                                                                 const amount = prompt('Enter payment amount:');

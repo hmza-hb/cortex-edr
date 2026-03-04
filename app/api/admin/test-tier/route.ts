@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         const { data: existingUser, error: checkError } = await supabase
             .from('profiles')
             .select('email, plan_tier')
-            .ilike('email', targetEmail.toLowerCase())
+            .eq('email', targetEmail.toLowerCase())
             .maybeSingle();
 
         if (checkError) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
                 plan_tier: newTier.toUpperCase(),
                 updated_at: new Date().toISOString()
             })
-            .ilike('email', targetEmail.toLowerCase())
+            .eq('email', targetEmail.toLowerCase())
             .select();
 
         if (error) {
