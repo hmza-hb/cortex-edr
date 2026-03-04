@@ -21,8 +21,8 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Cortex EDR | AI-Powered Code Security & Vulnerability Scanner',
-    template: '%s | Cortex EDR'
+    default: 'CortexEDR',
+    template: '%s | CortexEDR'
   },
   description: 'Scan your codebase for security vulnerabilities in seconds. Cortex EDR uses a 7-agent AI pipeline for deep-pass code intelligence, automated vulnerability detection, and actionable fix suggestions. Free to start.',
   keywords: [
@@ -92,9 +92,6 @@ export const metadata: Metadata = {
       { url: '/assets/logo.png', sizes: '180x180', type: 'image/png' },
     ],
     shortcut: '/favicon.png',
-  },
-  verification: {
-    google: 'ADD_YOUR_GOOGLE_SITE_VERIFICATION_CODE_HERE',
   },
 }
 
