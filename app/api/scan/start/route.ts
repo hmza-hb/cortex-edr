@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { SYSTEM_CONFIG, TierId } from '@/lib/config/system';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 
 export async function POST(req: NextRequest) {
     const { userId } = await auth();
@@ -11,17 +11,28 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get the user's email for profile lookup (same as dashboard)
+    const user = await currentUser();
+    const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+
+    if (!userEmail) {
+        console.error('[API/Scan/Start] No email found for user');
+        return NextResponse.json({ error: 'User email not found' }, { status: 401 });
+    }
+
     const { repo_url } = await req.json();
     if (!repo_url) {
         return NextResponse.json({ error: 'Repository URL is required' }, { status: 400 });
     }
 
     try {
-        console.log(`[API/Scan/Start] Initiating scan for ${userId} - ${repo_url}`);
+        console.log(`[API/Scan/Start] Initiating scan for ${userEmail} - ${repo_url}`);
+
+        // Lookup profile by email (same as dashboard)
         const { data: profile, error: profileError } = await supabaseService
             .from('profiles')
-            .select('tier, plan_tier, scans_remaining')
-            .eq('id', userId)
+            .select('tier, plan_tier, scans_remaining, email')
+            .eq('email', userEmail)
             .maybeSingle();
 
         if (profileError) {
@@ -30,10 +41,15 @@ export async function POST(req: NextRequest) {
         }
 
         if (!profile) {
-            console.warn(`[API/Scan/Start] No profile found for ${userId}. Creating temporary record or failing...`);
+            console.warn(`[API/Scan/Start] No profile found for ${userEmail}. Creating temporary record or failing...`);
             // Optionally auto-create profile if missing, but better to fail and log
             return NextResponse.json({ error: 'User profile not synchronized. Please log in again.' }, { status: 403 });
         }
+
+        console.log(`[API/Scan/Start] Found profile for ${userEmail}:`, {
+            plan_tier: profile.plan_tier,
+            scans_remaining: profile.scans_remaining
+        });
 
         // Determine user's tier (fallback to TierId.VIBE_CODER if undefined)
         let userTierKey: TierId = TierId.VIBE_CODER;
@@ -76,7 +92,7 @@ export async function POST(req: NextRequest) {
         await supabaseService
             .from('profiles')
             .update({ scans_remaining: profile.scans_remaining - 1 })
-            .eq('id', userId);
+            .eq('email', userEmail);
 
         const scanId = scan.id;
 

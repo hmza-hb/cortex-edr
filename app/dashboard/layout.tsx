@@ -24,18 +24,50 @@ export default async function DashboardLayout({
 
     const supabase = await createClient();
 
+    // Serialize Clerk user for Client Components to prevent Next.js boundaries error
+    const plainUser = {
+        id: user.id,
+        email: user.primaryEmailAddress?.emailAddress || "",
+        firstName: user.firstName,
+        lastName: user.lastName,
+    };
+
     // Fetch user profile to get plan tier and scan count
     // NOTE: Using case-insensitive email matching to ensure user lookup works
+    const userEmail = user.primaryEmailAddress?.emailAddress?.toLowerCase();
+    console.log('Dashboard - Looking up user by email:', userEmail);
+
     const { data: profile } = await supabase
         .from("profiles")
-        .select("plan_tier, scans_remaining")
-        .eq("email", user.primaryEmailAddress?.emailAddress?.toLowerCase())
+        .select("plan_tier, scans_remaining, email")
+        .eq("email", userEmail)
         .maybeSingle();
 
     // Debug logging
-    console.log('Dashboard - User email:', user.primaryEmailAddress?.emailAddress?.toLowerCase());
-    console.log('Dashboard - Found profile:', profile);
+    console.log('Dashboard - User email:', userEmail);
+    console.log('Dashboard - Raw profile from DB:', profile);
     console.log('Dashboard - Raw tier:', profile?.plan_tier);
+
+    if (!profile) {
+        console.error('Dashboard - No profile found for user:', userEmail);
+        // Fallback to VIBE_CODER
+        const fallbackTier = "VIBE_CODER";
+        const tierConfig = SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+        const fallbackScanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
+            ? tierConfig.limits.maxScansPerMonth
+            : 1000; // Fallback for Unlimited
+
+        return (
+            <DashboardLayoutWrapper
+                user={plainUser}
+                planTier={fallbackTier.toLowerCase()}
+                scanCount={0}
+                scanLimit={fallbackScanLimit}
+            >
+                {children}
+            </DashboardLayoutWrapper>
+        );
+    }
 
     const rawTier = profile?.plan_tier || "VIBE_CODER";
     const tierId = rawTier.toUpperCase() as TierId;
@@ -53,14 +85,6 @@ export default async function DashboardLayout({
 
     const scansRemaining = profile?.scans_remaining ?? scanLimit;
     const scanCount = scanLimit - scansRemaining;
-
-    // Serialize Clerk user for Client Components to prevent Next.js boundaries error
-    const plainUser = {
-        id: user.id,
-        email: user.primaryEmailAddress?.emailAddress || "",
-        firstName: user.firstName,
-        lastName: user.lastName,
-    };
 
     return (
         <DashboardLayoutWrapper
