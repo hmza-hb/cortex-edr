@@ -21,22 +21,31 @@ export default async function DashboardLayout({
     const supabase = await createClient();
 
     // Fetch user profile to get plan tier and scan count
-    // NOTE: If using Clerk, we'll temporarilly bypass the strict ID match
-    // until the webhook syncs Clerk users to Supabase profiles.
+    // NOTE: Using case-insensitive email matching to ensure user lookup works
     const { data: profile } = await supabase
         .from("profiles")
         .select("plan_tier, scans_remaining")
-        .eq("email", user.primaryEmailAddress?.emailAddress)
+        .eq("email", user.primaryEmailAddress?.emailAddress?.toLowerCase())
         .maybeSingle();
 
-    const rawTier = profile?.plan_tier || "vibe_coder";
+    // Debug logging
+    console.log('Dashboard - User email:', user.primaryEmailAddress?.emailAddress?.toLowerCase());
+    console.log('Dashboard - Found profile:', profile);
+    console.log('Dashboard - Raw tier:', profile?.plan_tier);
+
+    const rawTier = profile?.plan_tier || "VIBE_CODER";
     const tierId = rawTier.toUpperCase() as TierId;
     const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
 
+    // Convert to lowercase format that sidebar expects
     const planTier = rawTier.toLowerCase();
     const scanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
         ? tierConfig.limits.maxScansPerMonth
         : 1000; // Fallback for Unlimited
+
+    // Debug logging
+    console.log('Dashboard - Plan tier passed to sidebar:', planTier);
+    console.log('Dashboard - Tier config:', tierConfig);
 
     const scansRemaining = profile?.scans_remaining ?? scanLimit;
     const scanCount = scanLimit - scansRemaining;

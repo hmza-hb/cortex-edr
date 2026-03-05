@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Tier Test</title>
+</head>
+<body>
+    <h1>Dashboard Tier Connection Test</h1>
+    
+    <h2>Test Steps:</h2>
+    <ol>
+        <li>Open your dashboard at <a href="/dashboard" target="_blank">/dashboard</a></li>
+        <li>Open browser console (F12)</li>
+        <li>Look for debug logs:</li>
+        <ul>
+            <li><code>Dashboard - User email: hmza.hb82@gmail.com</code></li>
+            <li><code>Dashboard - Found profile: {plan_tier: "DEVELOPER", scans_remaining: ...}</code></li>
+            <li><code>Dashboard - Raw tier: DEVELOPER</code></li>
+            <li><code>Dashboard - Plan tier passed to sidebar: developer</code></li>
+        </ul>
+        <li>Check your sidebar - it should show "Developer" tier instead of "Vibe Coder"</li>
+    </ol>
+    
+    <h2>Expected Result:</h2>
+    <p>The sidebar should display:</p>
+    <ul>
+        <li><strong>Developer</strong> tier name</li>
+        <li>Developer tier icon and features</li>
+        <li>Correct scan limits for Developer tier</li>
+    </ul>
+    
+    <h2>If Still Shows Vibe Coder:</h2>
+    <p>The issue might be:</p>
+    <ul>
+        <li>Browser caching - try hard refresh (Ctrl+Shift+R)</li>
+        <li>Server-side caching - restart the dev server</li>
+        <li>Profile not found - check console for errors</li>
+    </ul>
+    
+    <p><a href="/admin/users" target="_blank">Test Admin Panel</a> | <a href="/dashboard" target="_blank">Go to Dashboard</a></p>
+</body>
+</html>
