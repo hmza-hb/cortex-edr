@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Tier Management - CortexEDR</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .user-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
+        .user-row:hover { background: #f9f9f9; }
+        .user-email { flex: 1; font-weight: bold; }
+        .user-tier { flex: 1; }
+        .tier-select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .update-btn { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .update-btn:hover { background: #0056b3; }
+        .status { margin-left: 10px; font-size: 14px; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Database Tier Management - CortexEDR</h1>
+            <p>Select user tiers from dropdown and click Update. Changes reflect immediately in dashboard!</p>
+        </div>
+
+        <div id="users-list">
+            <div class="user-row">
+                <div class="user-email">Loading users...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://wkugzsqxrsorvcmzavvo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrdWd6c3F4cnNvcnZjbXphdnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNzM3NDQsImV4cCI6MjA4Njc0OTc0NH0.knsj5J8aoY2i-t8R8PrdzfoPB88nP_Xdnuwr97xVMBg';
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=email,plan_tier,updated_at&order=updated_at.desc&limit=50`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                const users = await response.json();
+                renderUsers(users);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                document.getElementById('users-list').innerHTML = '<div class="user-row"><div class="user-email">Error loading users</div></div>';
+            }
+        }
+
+        function renderUsers(users) {
+            const usersList = document.getElementById('users-list');
+            usersList.innerHTML = users.map(user => `
+                <div class="user-row">
+                    <div class="user-email">${user.email}</div>
+                    <div class="user-tier">
+                        <select class="tier-select" data-email="${user.email}" data-current="${user.plan_tier}">
+                            <option value="VIBE_CODER" ${user.plan_tier === 'VIBE_CODER' ? 'selected' : ''}>Vibe Coder (Free)</option>
+                            <option value="DEVELOPER" ${user.plan_tier === 'DEVELOPER' ? 'selected' : ''}>Developer ($9/mo)</option>
+                            <option value="TEAMS" ${user.plan_tier === 'TEAMS' ? 'selected' : ''}>Teams ($29/mo)</option>
+                            <option value="ENTERPRISE" ${user.plan_tier === 'ENTERPRISE' ? 'selected' : ''}>Enterprise (Custom)</option>
+                        </select>
+                    </div>
+                    <button class="update-btn" onclick="updateUserTier('${user.email}')">Update</button>
+                    <span class="status" id="status-${user.email.replace('@', '-').replace('.', '-')}"></span>
+                </div>
+            `).join('');
+        }
+
+        async function updateUserTier(email) {
+            const select = document.querySelector(`[data-email="${email}"]`);
+            const newTier = select.value;
+            const currentTier = select.getAttribute('data-current');
+            const statusEl = document.getElementById(`status-${email.replace('@', '-').replace('.', '-')}`);
+
+            if (newTier === currentTier) {
+                statusEl.textContent = 'No change needed';
+                statusEl.className = 'status';
+                return;
+            }
+
+            statusEl.textContent = 'Updating...';
+            statusEl.className = 'status loading';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${email}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        plan_tier: newTier,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    select.setAttribute('data-current', newTier);
+                    statusEl.textContent = `✅ Updated to ${newTier}`;
+                    statusEl.className = 'status success';
+
+                    // Auto-hide success message after 3 seconds
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                        statusEl.className = 'status';
+                    }, 3000);
+                } else {
+                    throw new Error('Update failed');
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+                statusEl.textContent = '❌ Update failed';
+                statusEl.className = 'status error';
+            }
+        }
+
+        // Load users on page load
+        fetchUsers();
+
+        // Auto-refresh every 30 seconds
+        setInterval(fetchUsers, 30000);
+    </script>
+</body>
+</html>

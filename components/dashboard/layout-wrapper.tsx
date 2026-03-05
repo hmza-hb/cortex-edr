@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
@@ -20,13 +20,50 @@ interface DashboardLayoutWrapperProps {
 export const DashboardLayoutWrapper = ({
     children,
     user,
-    planTier,
-    scanCount,
-    scanLimit,
+    planTier: initialPlanTier,
+    scanCount: initialScanCount,
+    scanLimit: initialScanLimit,
 }: DashboardLayoutWrapperProps) => {
     const pathname = usePathname();
     const isImmersive = pathname?.includes("/dashboard/scan/");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // State for dynamic updates
+    const [planTier, setPlanTier] = useState(initialPlanTier);
+    const [scanCount, setScanCount] = useState(initialScanCount);
+    const [scanLimit, setScanLimit] = useState(initialScanLimit);
+
+    // Auto-refresh tier data every 10 seconds
+    useEffect(() => {
+        const checkForUpdates = async () => {
+            try {
+                const response = await fetch('/api/admin/tiers/check-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.planTier && data.planTier !== planTier) {
+                        console.log('Tier updated:', data.planTier);
+                        setPlanTier(data.planTier);
+                        setScanLimit(data.scanLimit);
+                        // Force page reload for complete update
+                        window.location.reload();
+                    }
+                }
+            } catch (error) {
+                // Silently fail - don't spam console
+            }
+        };
+
+        // Check immediately, then every 10 seconds
+        checkForUpdates();
+        const interval = setInterval(checkForUpdates, 10000);
+
+        return () => clearInterval(interval);
+    }, [user.email, planTier]);
 
     return (
         <div className="flex h-screen bg-black text-white overflow-hidden">

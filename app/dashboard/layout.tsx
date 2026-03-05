@@ -7,6 +7,10 @@ import { DashboardLayoutWrapper } from "@/components/dashboard/layout-wrapper";
 import { currentUser } from "@clerk/nextjs/server";
 import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function DashboardLayout({
     children,
 }: {
