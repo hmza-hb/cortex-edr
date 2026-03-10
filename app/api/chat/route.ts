@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { buildMegaContext } from '@/lib/chat/mega-context';
+import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
-import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
-
-const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
 function deriveThreadTitle(params: { message: string; repoUrl?: string | null }) {
     const cleaned = (params.message || "").trim().replace(/\s+/g, " ");
@@ -54,10 +51,7 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const threadId = url.searchParams.get('threadId');
-    const scanId = url.searchParams.get('scanId');
     const planTier = (url.searchParams.get('planTier') || 'vibe_coder').toLowerCase();
-    const email = url.searchParams.get('email') || undefined;
-    const name = url.searchParams.get('name') || undefined;
 
     try {
         const { data: threads } = await supabaseService
@@ -79,14 +73,11 @@ export async function GET(req: NextRequest) {
                 .limit(200)
             : { data: [] };
 
-        const mega = await buildMegaContext({ userId, email, name, scanId });
-
         return NextResponse.json({
             planTier,
             threadId: resolvedThreadId,
             threads: threads || [],
             messages: messages || [],
-            megaContext: mega
         });
     } catch (error) {
         console.error('[Chat GET Error]:', error);
@@ -114,11 +105,8 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const mega = await buildMegaContext({ userId, email, name, scanId });
-        const computedTitle = deriveThreadTitle({
-            message,
-            repoUrl: mega?.stats?.lastScan?.repo_url || null
-        });
+        // Derive thread title from the first message
+        const computedTitle = deriveThreadTitle({ message, repoUrl: null });
 
         const ensured = await ensureThread({ userId, threadId, scanId, title: computedTitle });
         if ('error' in ensured) {
@@ -138,6 +126,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // Fetch recent message history
         const { data: recentMessages } = await supabaseService
             .from('chat_messages')
             .select('role, content')
@@ -148,6 +137,7 @@ export async function POST(req: NextRequest) {
 
         const history = (recentMessages || []).reverse();
 
+        // Store user message
         const { error: insertUserError } = await supabaseService
             .from('chat_messages')
             .insert({
@@ -162,16 +152,27 @@ export async function POST(req: NextRequest) {
             console.error('[Chat] Failed to store user message:', insertUserError);
         }
 
-        const systemPrompt = FULL_SYSTEM_PROMPT;
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ORCHESTRATION ENGINE — intelligent prompt assembly
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const orchestrated = await orchestrate({
+            userId,
+            message,
+            scanId,
+            history,
+            email,
+            name,
+        });
 
-        const contextBlock = JSON.stringify(mega);
-        const historyBlock = history
-            .map(m => `${m.role.toUpperCase()}: ${m.content}`)
-            .join('\n');
+        console.log(`[Chat] Orchestrated — Intent: ${orchestrated.debug.intent} | Tokens: ~${orchestrated.debug.tokenEstimate.total}`);
 
-        const userPrompt = `MEGA_CONTEXT_JSON:\n${contextBlock}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n\nNEW_MESSAGE:\n${message}`;
-
-        const aiResult = await callAI(planTier, 'synthesis', systemPrompt, userPrompt, { scanId: scanId || undefined });
+        const aiResult = await callAI(
+            planTier,
+            'synthesis',
+            orchestrated.systemPrompt,
+            orchestrated.userPrompt,
+            { scanId: scanId || undefined }
+        );
 
         if (aiResult && typeof aiResult === 'object' && aiResult.error === 'AI_SERVICE_UNAVAILABLE') {
             return NextResponse.json(
@@ -181,7 +182,6 @@ export async function POST(req: NextRequest) {
                     fallbackResponse: aiResult.fallbackResponse || null,
                     threadId: resolvedThreadId,
                     threadTitle: computedTitle,
-                    megaContext: mega
                 },
                 { status: 503 }
             );
@@ -200,7 +200,14 @@ export async function POST(req: NextRequest) {
                 user_id: userId,
                 role: 'assistant',
                 content: assistantText,
-                metadata: { modelRouting: 'ai-router' }
+                metadata: {
+                    modelRouting: 'ai-router',
+                    orchestration: {
+                        intent: orchestrated.debug.intent,
+                        confidence: orchestrated.debug.confidence,
+                        tokenEstimate: orchestrated.debug.tokenEstimate.total,
+                    }
+                }
             })
             .select('id, role, content, attachments, metadata, created_at')
             .single();
@@ -212,9 +219,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             threadId: resolvedThreadId,
             threadTitle: computedTitle,
-            megaContext: mega,
             response: assistantText,
-            assistantMessage: assistantRow || null
+            assistantMessage: assistantRow || null,
+            orchestration: orchestrated.debug,
         });
     } catch (error) {
         console.error('[Chat POST Error]:', error);

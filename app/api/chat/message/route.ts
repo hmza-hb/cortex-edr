@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseService } from '@/lib/supabase/service';
-import { buildMegaContext } from '@/lib/chat/mega-context';
+import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
-import { CORTEX_SYSTEM_PROMPT, FOUNDER_CONTEXT } from '@/lib/chat/system-prompt';
-
-const FULL_SYSTEM_PROMPT = CORTEX_SYSTEM_PROMPT + FOUNDER_CONTEXT;
 
 function deriveThreadTitle(params: { message: string }) {
     const cleaned = (params.message || '').trim().replace(/\s+/g, ' ');
@@ -97,21 +94,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'LOAD_FAILED', message: 'Failed to load messages' }, { status: 500 });
         }
 
-        const mega = await buildMegaContext({ userId, scanId: thread.last_scan_id ? String(thread.last_scan_id) : null });
-
-        const historyBlock = (allMessages || [])
+        // Build conversation history for orchestration
+        const history = (allMessages || [])
             .filter((m) => m.role === 'user' || m.role === 'assistant')
-            .slice(-14)
-            .map((m) => `${String(m.role).toUpperCase()}: ${m.content}`)
-            .join('\n');
+            .map((m) => ({ role: m.role, content: m.content }));
 
-        const systemPrompt = FULL_SYSTEM_PROMPT;
+        // The message to re-process is the edited text or original target content
+        const replayMessage = editedText || target.content;
 
-        const userPrompt = `MEGA_CONTEXT_JSON:\n${JSON.stringify(mega)}\n\nRECENT_CONVERSATION:\n${historyBlock || '(none)'}\n`;
-
-        const aiResult = await callAI('vibe_coder', 'synthesis', systemPrompt, userPrompt, {
-            scanId: thread.last_scan_id ? String(thread.last_scan_id) : undefined
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ORCHESTRATION ENGINE — intelligent prompt assembly
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const orchestrated = await orchestrate({
+            userId,
+            message: replayMessage,
+            scanId: thread.last_scan_id ? String(thread.last_scan_id) : null,
+            history,
         });
+
+        console.log(`[Chat Replay] Orchestrated — Intent: ${orchestrated.debug.intent} | Tokens: ~${orchestrated.debug.tokenEstimate.total}`);
+
+        const aiResult = await callAI(
+            'vibe_coder',
+            'synthesis',
+            orchestrated.systemPrompt,
+            orchestrated.userPrompt,
+            { scanId: thread.last_scan_id ? String(thread.last_scan_id) : undefined }
+        );
 
         if (aiResult && typeof aiResult === 'object' && aiResult.error === 'AI_SERVICE_UNAVAILABLE') {
             return NextResponse.json(
@@ -138,7 +147,16 @@ export async function POST(req: NextRequest) {
                 user_id: userId,
                 role: 'assistant',
                 content: assistantText,
-                metadata: { modelRouting: 'ai-router', replayedFromMessageId: messageId, action }
+                metadata: {
+                    modelRouting: 'ai-router',
+                    replayedFromMessageId: messageId,
+                    action,
+                    orchestration: {
+                        intent: orchestrated.debug.intent,
+                        confidence: orchestrated.debug.confidence,
+                        tokenEstimate: orchestrated.debug.tokenEstimate.total,
+                    }
+                }
             });
 
         if (insertAssistantError) {
