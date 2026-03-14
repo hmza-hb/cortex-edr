@@ -39,7 +39,7 @@ const ADMIN_EMAILS = [
 - **Access:** Only accessible to admin email addresses
 
 #### 2. API Endpoints
-- **Authentication:** Requires Clerk authentication + admin email
+- **Authentication:** Requires NextAuth session + admin email
 - **POST /api/admin/users:** Update user tier
 - **GET /api/admin/users:** List all users
 

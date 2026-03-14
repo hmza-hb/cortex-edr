@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 import { supabaseService } from '@/lib/supabase/service';
 import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
@@ -46,8 +47,9 @@ async function ensureThread(params: {
 }
 
 export async function GET(req: NextRequest) {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = (session.user as any).id;
 
     const url = new URL(req.url);
     const threadId = url.searchParams.get('threadId');
@@ -86,8 +88,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = (session.user as any).id;
+    const sessionUserEmail = session.user.email;
+    const sessionUserName = session.user.name;
 
     const body = await req.json();
 
@@ -96,8 +101,8 @@ export async function POST(req: NextRequest) {
     const threadId = rawThreadId && isValidUuid(rawThreadId) ? rawThreadId : null;
     const scanId = body?.scanId || null;
     const planTier = (body?.planTier || body?.plan || 'vibe_coder').toLowerCase();
-    const email = body?.email || undefined;
-    const name = typeof body?.name === 'string' ? body.name : undefined;
+    const email = body?.email || sessionUserEmail || undefined;
+    const name = typeof body?.name === 'string' ? body.name : sessionUserName || undefined;
     const attachments = Array.isArray(body?.attachments) ? body.attachments : [];
 
     if (!message && attachments.length === 0) {
@@ -171,7 +176,11 @@ export async function POST(req: NextRequest) {
             'synthesis',
             orchestrated.systemPrompt,
             orchestrated.userPrompt,
-            { scanId: scanId || undefined }
+            {
+                scanId: scanId || undefined,
+                threadId: resolvedThreadId,
+                userId: userId
+            }
         );
 
         if (aiResult && typeof aiResult === 'object' && aiResult.error === 'AI_SERVICE_UNAVAILABLE') {

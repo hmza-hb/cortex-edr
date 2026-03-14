@@ -1,7 +1,8 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { currentUser } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 import { redirect } from "next/navigation";
 import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 import {
@@ -27,9 +28,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
-    const user = await currentUser();
+    const session = await getServerSession(authOptions);
 
-    if (!user) return redirect("/login");
+    if (!session?.user) return redirect("/auth");
 
     const supabase = await createClient();
 
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
     const { data: profile } = await supabase
         .from("profiles")
         .select("*")
-        .eq("email", user.primaryEmailAddress?.emailAddress)
+        .eq("email", session.user.email)
         .maybeSingle();
 
     const rawTier = profile?.plan_tier || "vibe_coder";
@@ -104,14 +105,16 @@ export default async function DashboardPage() {
             .order("created_at", { ascending: true });
 
         // Create daily buckets with sophisticated metrics
-        const dailyData: { [key: string]: {
-            issues: number,
-            score: number,
-            scans: number,
-            criticalIssues: number,
-            resolvedIssues: number,
-            activity: number
-        } } = {};
+        const dailyData: {
+            [key: string]: {
+                issues: number,
+                score: number,
+                scans: number,
+                criticalIssues: number,
+                resolvedIssues: number,
+                activity: number
+            }
+        } = {};
 
         // Initialize 90 days of data
         for (let i = 89; i >= 0; i--) {
@@ -170,13 +173,15 @@ export default async function DashboardPage() {
         }));
 
         // Advanced vulnerability analysis
-        const vulnMap: { [key: string]: {
-            count: number,
-            severity: string,
-            severityScore: number,
-            lastSeen: string,
-            trend: 'increasing' | 'stable' | 'decreasing'
-        } } = {};
+        const vulnMap: {
+            [key: string]: {
+                count: number,
+                severity: string,
+                severityScore: number,
+                lastSeen: string,
+                trend: 'increasing' | 'stable' | 'decreasing'
+            }
+        } = {};
 
         allIssues?.forEach((issue: any) => {
             const type = issue.type || issue.description?.split(' ')[0] || 'Unknown';
@@ -430,13 +435,12 @@ export default async function DashboardPage() {
                             <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-full border-4 border-zinc-700/60 relative mx-auto lg:mx-0">
                                 {/* Progress Ring */}
                                 <div className="absolute inset-0 rounded-full border-4 border-transparent"
-                                     style={{
-                                         background: `conic-gradient(from 0deg, ${
-                                             avgScore >= 80 ? 'rgb(34 197 94)' :
-                                             avgScore >= 60 ? 'rgb(245 158 11)' :
-                                             'rgb(239 68 68)'
-                                         } ${avgScore * 3.6}deg, transparent ${avgScore * 3.6}deg)`
-                                     }} />
+                                    style={{
+                                        background: `conic-gradient(from 0deg, ${avgScore >= 80 ? 'rgb(34 197 94)' :
+                                            avgScore >= 60 ? 'rgb(245 158 11)' :
+                                                'rgb(239 68 68)'
+                                            } ${avgScore * 3.6}deg, transparent ${avgScore * 3.6}deg)`
+                                    }} />
 
                                 {/* Inner Background */}
                                 <div className="absolute inset-2 rounded-full bg-zinc-900 border border-zinc-700/60 flex items-center justify-center">
@@ -445,8 +449,8 @@ export default async function DashboardPage() {
                                         <div className={cn(
                                             "text-2xl lg:text-3xl font-black",
                                             avgScore >= 80 ? "text-emerald-400" :
-                                            avgScore >= 60 ? "text-amber-400" :
-                                            "text-red-400"
+                                                avgScore >= 60 ? "text-amber-400" :
+                                                    "text-red-400"
                                         )}>
                                             {avgScore}
                                         </div>
@@ -709,8 +713,8 @@ export default async function DashboardPage() {
                                                 <div className={cn(
                                                     "w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0",
                                                     scan.status === 'completed' ? "bg-green-500/10 border border-green-500/20" :
-                                                    scan.status === 'failed' ? "bg-red-500/10 border border-red-500/20" :
-                                                    "bg-yellow-500/10 border border-yellow-500/20"
+                                                        scan.status === 'failed' ? "bg-red-500/10 border border-red-500/20" :
+                                                            "bg-yellow-500/10 border border-yellow-500/20"
                                                 )}>
                                                     {scan.status === 'completed' ? (
                                                         <CheckCircle className="h-3 w-3 lg:h-4 lg:w-4 text-green-400" />
@@ -733,8 +737,8 @@ export default async function DashboardPage() {
                                                 <div className={cn(
                                                     "text-base lg:text-lg font-bold",
                                                     (scan.score || 0) >= 80 ? "text-green-400" :
-                                                    (scan.score || 0) >= 50 ? "text-yellow-400" :
-                                                    "text-red-400"
+                                                        (scan.score || 0) >= 50 ? "text-yellow-400" :
+                                                            "text-red-400"
                                                 )}>
                                                     {scan.score}%
                                                 </div>
@@ -778,16 +782,16 @@ export default async function DashboardPage() {
                                                 <div className={cn(
                                                     "w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0",
                                                     vuln.severity === 'critical' ? "bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30" :
-                                                    vuln.severity === 'high' ? "bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30" :
-                                                    vuln.severity === 'medium' ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30" :
-                                                    "bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30"
+                                                        vuln.severity === 'high' ? "bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30" :
+                                                            vuln.severity === 'medium' ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30" :
+                                                                "bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30"
                                                 )}>
                                                     <AlertTriangle className={cn(
                                                         "h-4 w-4 lg:h-6 lg:w-6",
                                                         vuln.severity === 'critical' ? "text-red-400" :
-                                                        vuln.severity === 'high' ? "text-orange-400" :
-                                                        vuln.severity === 'medium' ? "text-yellow-400" :
-                                                        "text-blue-400"
+                                                            vuln.severity === 'high' ? "text-orange-400" :
+                                                                vuln.severity === 'medium' ? "text-yellow-400" :
+                                                                    "text-blue-400"
                                                     )} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -796,17 +800,17 @@ export default async function DashboardPage() {
                                                         <div className={cn(
                                                             "px-1.5 lg:px-2 py-0.5 rounded-full text-[10px] lg:text-xs font-bold uppercase tracking-wider flex-shrink-0",
                                                             vuln.severity === 'critical' ? "bg-red-500/20 text-red-400" :
-                                                            vuln.severity === 'high' ? "bg-orange-500/20 text-orange-400" :
-                                                            vuln.severity === 'medium' ? "bg-yellow-500/20 text-yellow-400" :
-                                                            "bg-blue-500/20 text-blue-400"
+                                                                vuln.severity === 'high' ? "bg-orange-500/20 text-orange-400" :
+                                                                    vuln.severity === 'medium' ? "bg-yellow-500/20 text-yellow-400" :
+                                                                        "bg-blue-500/20 text-blue-400"
                                                         )}>
                                                             {vuln.severity}
                                                         </div>
                                                         <div className={cn(
                                                             "px-1.5 lg:px-2 py-0.5 rounded text-[10px] lg:text-xs font-medium flex-shrink-0",
                                                             vuln.trend === 'increasing' ? "bg-red-500/10 text-red-400 border border-red-500/20" :
-                                                            vuln.trend === 'decreasing' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
-                                                            "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
+                                                                vuln.trend === 'decreasing' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
+                                                                    "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
                                                         )}>
                                                             {vuln.trend === 'increasing' ? '↗️ Rising' : vuln.trend === 'decreasing' ? '↘️ Falling' : '➡️ Stable'}
                                                         </div>
@@ -962,11 +966,10 @@ export default async function DashboardPage() {
                             {recentChatMessages.length > 0 ? (
                                 recentChatMessages.slice(0, 3).reverse().map((message, index) => (
                                     <div key={message.id || index} className="flex gap-3">
-                                        <div className={`flex-shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${
-                                            message.role === 'assistant'
-                                                ? 'bg-blue-500/20 border border-blue-500/30'
-                                                : 'bg-zinc-700/50 border border-zinc-600/50'
-                                        }`}>
+                                        <div className={`flex-shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center ${message.role === 'assistant'
+                                            ? 'bg-blue-500/20 border border-blue-500/30'
+                                            : 'bg-zinc-700/50 border border-zinc-600/50'
+                                            }`}>
                                             {message.role === 'assistant' ? (
                                                 <img src="/assets/logo.png" alt="Cortex" className="w-3 h-3 lg:w-4 lg:h-4 object-contain" />
                                             ) : (

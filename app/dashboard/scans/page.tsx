@@ -1,5 +1,4 @@
 import React from "react";
-import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -7,12 +6,17 @@ import { Search, Filter, Clock, TrendingUp, MoreVertical, Shield, Zap, History }
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default async function ScanHistoryPage() {
-    const { userId } = await auth();
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 
-    if (!userId) {
-        return redirect("/login");
+export default async function ScanHistoryPage() {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+        return redirect("/auth");
     }
+
+    const userId = (session.user as any).id;
 
     // Fetch all scans
     const { data: scans } = await supabaseAdmin
@@ -128,7 +132,7 @@ export default async function ScanHistoryPage() {
                                                             {formatTimeAgo(scan.created_at)}
                                                         </div>
                                                     </div>
-                                                    streams                                                </div>
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center gap-8 shrink-0">

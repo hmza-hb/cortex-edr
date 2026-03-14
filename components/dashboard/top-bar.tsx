@@ -6,8 +6,8 @@ import { Search, ChevronDown, Zap, Shield, HelpCircle, Share2, Command, Github, 
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserButton } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
+import { CortexUserButton } from "@/components/auth/UserButton";
+import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
 
 interface TopBarProps {
     user: any;
@@ -118,8 +118,8 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300 overflow-hidden">
-                                                                <img 
-                                                                    src={integration.logo} 
+                                                                <img
+                                                                    src={integration.logo}
                                                                     alt={`${integration.name} logo`}
                                                                     className="w-5 h-5 object-contain"
                                                                 />
@@ -230,16 +230,9 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CO
                         </Link>
                     )}
 
-                    {/* User Menu Dropdown (Clerk) */}
+                    {/* User Menu Dropdown (Cortex Auth) */}
                     <div className="relative ml-1 flex items-center justify-center">
-                        <UserButton
-                            appearance={{
-                                baseTheme: dark,
-                                elements: {
-                                    userButtonAvatarBox: "w-8 h-8 rounded-lg border border-zinc-800",
-                                }
-                            }}
-                        />
+                        <CortexUserButton />
                     </div>
                 </div>
             </div>

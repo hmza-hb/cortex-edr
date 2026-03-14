@@ -4,6 +4,7 @@ import { AILogger } from './ai-logger';
 import { askGemini } from '@/lib/ai/gemini';
 import { askGroq } from '@/lib/ai/groq';
 import { askDeepSeek } from '@/lib/ai/deepseek';
+import { supabaseService } from '@/lib/supabase/service';
 
 function coerceToText(result: unknown): string {
     if (typeof result === 'string') return result;
@@ -19,8 +20,9 @@ export async function callAI(
     agentKey: string,
     systemPrompt: string,
     userPrompt: string,
-    options: { scanId?: string } = {}
+    options: { scanId?: string, threadId?: string, userId?: string } = {}
 ): Promise<any> {
+    const startTime = Date.now();
     // Normalize plan key
     const plan = userPlan.toLowerCase();
 
@@ -68,6 +70,32 @@ export async function callAI(
         try {
             console.log(`[AI Router] Trying provider: ${provider.name}`);
             const result = await provider.func();
+            const durationMs = Date.now() - startTime;
+
+            // 📊 Usage Tracking
+            if (options.userId) {
+                // Approximate tokens for fallback providers if usage metadata is missing
+                const promptTokens = Math.ceil((systemPrompt.length + userPrompt.length) / 4);
+                const responseTokens = Math.ceil(coerceToText(result).length / 4);
+                const cost = calculateCost(model, { prompt_tokens: promptTokens, completion_tokens: responseTokens });
+
+                await supabaseService.from('usage_logs').insert({
+                    user_id: options.userId,
+                    scan_id: options.scanId || null,
+                    thread_id: options.threadId || null,
+                    model_id: model,
+                    prompt_tokens: promptTokens,
+                    response_tokens: responseTokens,
+                    total_tokens: promptTokens + responseTokens,
+                    cost_usd: cost,
+                    duration_ms: durationMs,
+                    source: options.threadId ? 'chat' : 'scan',
+                    agent_name: agentKey
+                });
+
+                console.log(`[AI Router] Logged usage: $${cost.toFixed(6)} for ${agentKey}`);
+            }
+
             // Try to parse JSON if the agent expects it
             try {
                 return JSON.parse(result);

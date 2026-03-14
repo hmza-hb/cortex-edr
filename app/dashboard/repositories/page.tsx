@@ -1,5 +1,5 @@
-import React from "react";
-import { auth } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function RepositoriesPage() {
-    const { userId } = await auth();
+    const session = await getServerSession(authOptions);
 
-    if (!userId) {
-        return redirect("/login");
+    if (!session?.user) {
+        return redirect("/auth");
     }
+
+    const userId = (session.user as any).id;
 
     // Fetch user's repositories
     const { data: repositories } = await supabaseAdmin

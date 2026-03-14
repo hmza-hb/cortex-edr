@@ -20,11 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 
 export default function NewScanPage() {
     const router = useRouter();
-    const { user, isLoaded } = useUser();
+    const { data: session, status } = useSession();
+    const isLoaded = status !== "loading";
+    const user = session?.user;
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
     const [repositories, setRepositories] = useState<any[]>([]);
@@ -43,7 +45,7 @@ export default function NewScanPage() {
         const { data } = await supabase
             .from("repositories")
             .select("*")
-            .eq("user_id", user.id)
+            .eq("user_id", (user as any).id)
             .order("created_at", { ascending: false })
             .limit(4);
 

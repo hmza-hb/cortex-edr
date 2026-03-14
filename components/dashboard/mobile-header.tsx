@@ -5,7 +5,7 @@ import { Menu, Search, HelpCircle, Link2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
+import { CortexUserButton } from "@/components/auth/UserButton";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MobileHeaderProps {
@@ -167,19 +167,9 @@ export const MobileHeader = ({ onMenuClick, user }: MobileHeaderProps) => {
                         </AnimatePresence>
                     </div>
 
-                    {/* Account Dropdown - Clerk's UserButton */}
+                    {/* Account Dropdown - Cortex Auth */}
                     <div className="flex items-center">
-                        <UserButton
-                            appearance={{
-                                elements: {
-                                    avatarBox: "h-9 w-9",
-                                    userButtonPopoverCard: "bg-zinc-950/95 backdrop-blur-xl border-zinc-800/80 shadow-2xl",
-                                    userButtonPopoverActionButton: "hover:bg-white/[0.03] text-zinc-200",
-                                    userButtonPopoverActionButtonText: "text-zinc-200",
-                                    userButtonPopoverFooter: "border-zinc-800/80",
-                                }
-                            }}
-                        />
+                        <CortexUserButton />
                     </div>
                 </div>
             </div>

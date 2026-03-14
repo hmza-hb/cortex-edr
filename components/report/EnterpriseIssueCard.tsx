@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Copy, AlertTriangle, AlertCircle, Terminal, Info, Zap, ShieldCheck, FileText, Clock, CheckCircle2, BarChart3, HelpCircle, Lightbulb, Sparkles, Lock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, AlertTriangle, AlertCircle, Terminal, Info, Zap, ShieldCheck, FileText, Clock, CheckCircle2, BarChart3, HelpCircle, Lightbulb, Sparkles, Lock, Rocket, Flag } from 'lucide-react'
 import { EnterpriseIssue } from '@/types/report'
 import { SYSTEM_CONFIG, TierId } from '@/lib/config/system'
 import Link from 'next/link'
@@ -57,6 +57,18 @@ export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.VIBE_CODER }
                 `}>
                                 {issue.severity}
                             </span>
+
+                            {/* Strategic Identifier Badge */}
+                            {(issue.severity === 'critical' || issue.severity === 'high') ? (
+                                <span className="flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[10px] font-black text-red-400 uppercase tracking-widest">
+                                    <Flag className="w-3 h-3" /> Red Flag Fix
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                                    <Rocket className="w-3 h-3" /> Launch Anyway
+                                </span>
+                            )}
+
                             <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-white/40 uppercase tracking-widest">
                                 {issue.category}
                             </span>
@@ -306,28 +318,38 @@ export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.VIBE_CODER }
                                     </Link>
                                 </div>
                             )}
-                            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-4 ${!canSeePrompts ? 'blur-sm select-none opacity-50' : ''}`}>
+                            <div className={`grid grid-cols-1 gap-4 ${!canSeePrompts ? 'blur-sm select-none opacity-50' : ''}`}>
                                 {[
-                                    { id: 'cursor', label: 'Cursor IDE', prompt: issue.aiPrompts?.cursor },
-                                    { id: 'chatgpt', label: 'ChatGPT-4', prompt: issue.aiPrompts?.chatgpt },
-                                    { id: 'claude', label: 'Claude 3', prompt: issue.aiPrompts?.claude }
+                                    { id: 'cursor', label: 'Cursor / Windsurf AI', prompt: issue.aiPrompts?.cursor },
+                                    { id: 'chatgpt', label: 'ChatGPT / Claude Web', prompt: issue.aiPrompts?.chatgpt },
+                                    { id: 'claude', label: 'Vibe Coding Execution', prompt: issue.aiPrompts?.claude }
                                 ].filter(p => p.prompt).map((p) => (
                                     <div key={p.id} className="group relative p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all duration-300">
                                         <div className="flex items-center justify-between mb-4">
-                                            <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <Sparkles className="w-3 h-3 text-purple-400" />
                                                 {p.label}
                                             </span>
                                             <button
                                                 onClick={() => copyToClipboard(p.prompt!, p.id)}
-                                                className="p-2 rounded-lg bg-white/5 hover:bg-blue-500 hover:text-white transition-all text-white/40"
+                                                className="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500 border border-blue-500/20 hover:border-blue-500 hover:text-white transition-all text-blue-400 flex items-center gap-2"
                                             >
-                                                {copied === p.id ? <ShieldCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                                {copied === p.id ? (
+                                                    <>
+                                                        <ShieldCheck className="w-4 h-4" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Copied</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="w-4 h-4" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Copy Prompt</span>
+                                                    </>
+                                                )}
                                             </button>
                                         </div>
-                                        <div className="h-24 overflow-hidden text-[11px] font-mono text-gray-500 line-clamp-4 group-hover:text-gray-300 transition-colors">
+                                        <div className="h-24 overflow-y-auto custom-scrollbar text-[12px] font-mono text-gray-400 group-hover:text-gray-300 transition-colors bg-black/20 p-4 rounded-xl border border-white/5">
                                             {p.prompt}
                                         </div>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent pointer-events-none" />
                                     </div>
                                 ))}
                             </div>

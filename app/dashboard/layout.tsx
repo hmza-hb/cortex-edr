@@ -4,37 +4,31 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { DashboardLayoutWrapper } from "@/components/dashboard/layout-wrapper";
-import { currentUser } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 import { SYSTEM_CONFIG, TierId } from "@/lib/config/system";
-
-// Force dynamic rendering to prevent caching
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const user = await currentUser();
+    const session = await getServerSession(authOptions);
 
-    if (!user) {
-        return redirect("/login");
+    if (!session?.user) {
+        return redirect("/auth");
     }
 
     const supabase = await createClient();
 
-    // Serialize Clerk user for Client Components to prevent Next.js boundaries error
+    // Serialize session user for Client Components
     const plainUser = {
-        id: user.id,
-        email: user.primaryEmailAddress?.emailAddress || "",
-        firstName: user.firstName,
-        lastName: user.lastName,
+        id: (session.user as any).id,
+        email: session.user.email || "",
+        name: session.user.name || "",
     };
 
-    // Fetch user profile to get plan tier and scan count
-    // NOTE: Using case-insensitive email matching to ensure user lookup works
-    const userEmail = user.primaryEmailAddress?.emailAddress?.toLowerCase();
+    const userEmail = session.user.email?.toLowerCase();
     console.log('Dashboard - Looking up user by email:', userEmail);
 
     const { data: profile } = await supabase

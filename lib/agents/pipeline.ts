@@ -83,18 +83,21 @@ async function callAI(
     agentId: number,
     agentName: string,
     logger: AILogger,
-    tierKey: TierId = TierId.VIBE_CODER
+    tierKey: TierId = TierId.VIBE_CODER,
+    userId?: string,
+    scanId?: string,
+    threadId?: string
 ): Promise<string> {
     const routing = getRoutingForAgent(agentId);
 
     try {
         console.log(`[AI ROUTER] ${agentName} (Agent ${agentId}) calling primary: ${routing.primary}`);
-        return await executeAICall(routing.primary, systemPrompt, userPrompt, agentId, agentName, logger);
+        return await executeAICall(routing.primary, systemPrompt, userPrompt, agentId, agentName, logger, userId, scanId, threadId);
     } catch (error: any) {
         console.warn(`[AI ROUTER] Primary (${routing.primary}) failed for ${agentName}: ${error.message}. Trying fallback: ${routing.fallback}...`);
 
         try {
-            return await executeAICall(routing.fallback, systemPrompt, userPrompt, agentId, agentName, logger);
+            return await executeAICall(routing.fallback, systemPrompt, userPrompt, agentId, agentName, logger, userId, scanId, threadId);
         } catch (finalError: any) {
             console.error(`[AI ROUTER] Critical Failure: Fallback ${routing.fallback} also failed for ${agentName}.`);
 
@@ -102,12 +105,36 @@ async function callAI(
             const emergencyFallback = 'groq-llama-3.1-8b-instant';
             try {
                 console.log(`[AI ROUTER] Attempting emergency fallback: ${emergencyFallback}`);
-                return await executeAICall(emergencyFallback, systemPrompt, userPrompt, agentId, agentName, logger);
+                return await executeAICall(emergencyFallback, systemPrompt, userPrompt, agentId, agentName, logger, userId, scanId, threadId);
             } catch (superFinalError: any) {
                 throw new Error(`AI_PIPELINE_CRASH: All providers failed for ${agentName}. Final error: ${superFinalError.message}`);
             }
         }
     }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// COST CALCULATION ENGINE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function calculateModelCost(modelId: string, promptTokens: number, completionTokens: number): number {
+    // Estimated costs per 1M tokens (USD)
+    const PRICING: Record<string, { prompt: number, completion: number }> = {
+        'gemini-2.0-flash': { prompt: 0.10, completion: 0.40 },
+        'gemini-1.5-pro': { prompt: 1.25, completion: 5.00 },
+        'groq-llama-3.3-70b-versatile': { prompt: 0.59, completion: 0.79 },
+        'groq-llama-3.1-8b-instant': { prompt: 0.05, completion: 0.08 },
+        'deepseek-r1': { prompt: 0.55, completion: 2.19 }, // OpenRouter DeepSeek V3/R1 blend estimate
+        'claude-3-5-sonnet-latest': { prompt: 3.00, completion: 15.00 },
+        'claude-3-5-haiku-latest': { prompt: 0.80, completion: 4.00 },
+        'gpt-4o': { prompt: 2.50, completion: 10.00 }
+    };
+
+    // Normalize model ID for pricing lookup
+    let normalizedId = Object.keys(PRICING).find(k => modelId.includes(k)) || 'gemini-2.0-flash';
+
+    const rates = PRICING[normalizedId];
+    const cost = ((promptTokens / 1_000_000) * rates.prompt) + ((completionTokens / 1_000_000) * rates.completion);
+    return Number(cost.toFixed(6));
 }
 
 async function executeAICall(
@@ -116,7 +143,10 @@ async function executeAICall(
     userPrompt: string,
     agentId: number,
     agentName: string,
-    logger: AILogger
+    logger: AILogger,
+    userId?: string, // Auth Provider ID (e.g. NextAuth sub)
+    scanId?: string,
+    threadId?: string
 ): Promise<string> {
     const start = Date.now();
     const MAX_RETRIES = 2; // Fail fast so Vercel doesn't hit 60s timeout before fallback connects
@@ -125,6 +155,8 @@ async function executeAICall(
     while (attempt < MAX_RETRIES) {
         try {
             let response = '';
+            let promptTokens = 0;
+            let completionTokens = 0;
 
             if (modelId.startsWith('groq-')) {
                 const groq = getGroqClient();
@@ -138,6 +170,8 @@ async function executeAICall(
                     response_format: { type: 'json_object' }
                 });
                 response = completion.choices[0]?.message?.content || '[]';
+                promptTokens = completion.usage?.prompt_tokens || 0;
+                completionTokens = completion.usage?.completion_tokens || 0;
             }
             else if (modelId.startsWith('gemini-')) {
                 const gemini = getGeminiClient();
@@ -148,6 +182,11 @@ async function executeAICall(
                 });
                 const result = await model.generateContent(userPrompt);
                 response = result.response.text();
+
+                // Gemini SDK token extraction
+                const usage = result.response.usageMetadata;
+                promptTokens = usage?.promptTokenCount || 0;
+                completionTokens = usage?.candidatesTokenCount || 0;
             }
             else if (modelId === 'deepseek-r1') {
                 // Priority: DeepSeek via OpenRouter. Fallback to Groq Llama if no key.
@@ -184,11 +223,44 @@ async function executeAICall(
                 if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText} (${res.status})`);
                 const data = await res.json();
                 response = data.choices[0]?.message?.content || '[]';
+                promptTokens = data.usage?.prompt_tokens || 0;
+                completionTokens = data.usage?.completion_tokens || 0;
             }
 
             const durationMs = Date.now() - start;
-            console.log(`[AI SUCCESS] ${agentName} used ${modelId} (${durationMs}ms)`);
-            await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs);
+
+            // Fallback token estimation if API didn't provide it
+            if (promptTokens === 0) promptTokens = Math.ceil((systemPrompt.length + userPrompt.length) / 4);
+            if (completionTokens === 0) completionTokens = Math.ceil(response.length / 4);
+
+            const cost = calculateModelCost(modelId, promptTokens, completionTokens);
+
+            console.log(`[AI SUCCESS] ${agentName} used ${modelId} (${durationMs}ms) | Cost: $${cost}`);
+
+            await logger.logInteraction(agentId, agentName, userPrompt, response, durationMs, {
+                modelId,
+                promptTokens,
+                responseTokens: completionTokens,
+                costUsd: cost
+            });
+
+            // 📊 PERSIST TO USAGE_LOGS (Real-time analytics)
+            if (userId) {
+                await supabase.from('usage_logs').insert({
+                    user_id: userId,
+                    scan_id: scanId || null,
+                    thread_id: threadId || null,
+                    model_id: modelId,
+                    prompt_tokens: promptTokens,
+                    response_tokens: completionTokens,
+                    total_tokens: promptTokens + completionTokens,
+                    cost_usd: cost,
+                    duration_ms: durationMs,
+                    source: threadId ? 'chat' : 'scan',
+                    agent_name: agentName
+                });
+            }
+
             return response;
 
         } catch (error: any) {
@@ -205,7 +277,7 @@ async function executeAICall(
             }
 
             const durationMs = Date.now() - start;
-            await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${modelId}): ${error.message}`, durationMs);
+            await logger.logInteraction(agentId, agentName, userPrompt, `ERROR (${modelId}): ${error.message}`, durationMs, { modelId });
             throw error;
         }
     }
@@ -389,6 +461,38 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
         const limitConfig = SYSTEM_CONFIG.tiers[tierKey].limits;
         const maxFiles = limitConfig.maxFilesPerScan;
         if (maxFiles !== "Unlimited" && importantFiles.length > (maxFiles as number)) {
+            // Trigger Quota Alert Email
+            try {
+                // First get the user_id from the scan
+                const { data: scanData } = await supabase
+                    .from('scans')
+                    .select('user_id')
+                    .eq('id', scanId)
+                    .single();
+
+                if (scanData?.user_id) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('email, user_name')
+                        .eq('id', scanData.user_id)
+                        .single();
+
+                    if (profile?.email) {
+                        const { resend, SYSTEM_EMAIL, templates } = await import('@/lib/email/resend');
+                        const userName = profile.user_name || 'Protocol User';
+                        const limitEmail = templates.quotaLimit(userName, SYSTEM_CONFIG.tiers[tierKey].name);
+                        await resend.emails.send({
+                            from: `Cortex EDR <${SYSTEM_EMAIL}>`,
+                            to: profile.email,
+                            subject: limitEmail.subject,
+                            html: limitEmail.html
+                        });
+                    }
+                }
+            } catch (emailError) {
+                console.error('[GIT CONNECT] Error sending quota alert email:', emailError);
+            }
+
             throw new Error(`Repository exceeds the max file limit for the ${SYSTEM_CONFIG.tiers[tierKey].name} tier (${maxFiles} files). Found ${importantFiles.length} files. Please upgrade your tier or run on a smaller repository.`);
         }
 
@@ -451,7 +555,7 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 1: RECONNAISSANCE - The Architect
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
     try {
         await emit(scanId, 1, 'Reconnaissance', 'started', 'Beginning deep codebase reconnaissance...');
 
@@ -463,7 +567,17 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
             !f.includes('.next')
         );
 
-        await emit(scanId, 1, 'Reconnaissance', 'processing', `Mapping ${importantFiles.length} files...`);
+        // 📏 Calculate Repo Lines
+        let totalLines = 0;
+        const lineCountBatch = importantFiles.slice(0, 50); // Sample first 50 files for speed if too large
+        for (const file of lineCountBatch) {
+            try {
+                const content = fs.readFileSync(file, 'utf-8');
+                totalLines += content.split('\n').length;
+            } catch { /* skip */ }
+        }
+
+        await emit(scanId, 1, 'Reconnaissance', 'processing', `Mapping ${importantFiles.length} files (${totalLines}+ lines)...`, { totalLines });
 
         // Read package.json
         let pkg: any = {};
@@ -500,7 +614,7 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
                 pkg,
                 sampleCode
             ),
-            1, 'Reconnaissance', logger, tierKey
+            1, 'Reconnaissance', logger, tierKey, userId, scanId
         );
 
         const analysis = parseAIResponse(aiResponse, {
@@ -529,8 +643,10 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
         await supabase.from('scans').update({
             recon_data: {
                 fileTree: importantFiles.map(f => f.replace(repoPath, '')),
+                annotatedFileTree: analysis.annotatedFileTree || [],
                 analysis,
-                totalFiles: allFiles.length
+                totalFiles: allFiles.length,
+                totalLines: totalLines
             }
         }).eq('id', scanId);
 
@@ -554,7 +670,8 @@ export async function runSecurityScanner(
     fileTree: string[],
     techStack: any,
     logger: AILogger,
-    tierKey: TierId = TierId.VIBE_CODER
+    tierKey: TierId = TierId.VIBE_CODER,
+    userId?: string
 ) {
     try {
         await emit(scanId, 2, 'Security Scanner', 'started', 'Initializing deep security audit...');
@@ -583,7 +700,7 @@ export async function runSecurityScanner(
                     const aiResponse = await callAI(
                         AGENT_PROMPTS.security.systemPrompt,
                         AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
-                        2, 'Security Scanner', logger, tierKey
+                        2, 'Security Scanner', logger, tierKey, userId, scanId
                     );
                     const vulns = parseAIResponse(aiResponse, []);
                     return Array.isArray(vulns) ? vulns.map(v => ({ ...v, fileName })) : [];
@@ -632,7 +749,7 @@ export async function runSecurityScanner(
 
 // AGENT 3: ARCHITECTURE REVIEWER - The Designer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
     try {
         await emit(scanId, 3, 'Architecture', 'started', 'Analyzing system architecture...');
 
@@ -664,7 +781,7 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
         const aiResponse = await callAI(
             AGENT_PROMPTS.architecture.systemPrompt,
             AGENT_PROMPTS.architecture.analysisPrompt(structure, keyFilesContent),
-            3, 'Architecture', logger, tierKey
+            3, 'Architecture', logger, tierKey, userId, scanId
         );
 
         console.log('[Architecture] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -708,7 +825,7 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 4: CODE QUALITY ANALYST - The Critic
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
     try {
         await emit(scanId, 4, 'Code Quality', 'started', 'Analyzing code quality...');
 
@@ -732,7 +849,7 @@ export async function runCodeQuality(scanId: string, repoPath: string, fileTree:
         const aiResponse = await callAI(
             AGENT_PROMPTS.codeQuality.systemPrompt,
             AGENT_PROMPTS.codeQuality.analysisPrompt(filesContent),
-            4, 'Code Quality', logger, tierKey
+            4, 'Code Quality', logger, tierKey, userId, scanId
         );
 
         console.log('[Code Quality] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -775,7 +892,7 @@ export async function runCodeQuality(scanId: string, repoPath: string, fileTree:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 5: TECHNICAL DEBT HUNTER - The Auditor
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
     try {
         await emit(scanId, 5, 'Technical Debt', 'started', 'Scanning for technical debt...');
 
@@ -800,7 +917,7 @@ export async function runTechnicalDebt(scanId: string, repoPath: string, fileTre
         const aiResponse = await callAI(
             AGENT_PROMPTS.technicalDebt.systemPrompt,
             AGENT_PROMPTS.technicalDebt.analysisPrompt(codebase, pkg),
-            5, 'Technical Debt', logger, tierKey
+            5, 'Technical Debt', logger, tierKey, userId, scanId
         );
 
         console.log('[Technical Debt] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -843,7 +960,7 @@ export async function runTechnicalDebt(scanId: string, repoPath: string, fileTre
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 6: AI CODE DETECTOR - The Investigator
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
     try {
         await emit(scanId, 6, 'AI-Engine Review', 'started', 'Analyzing AI code patterns...');
 
@@ -867,7 +984,7 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
         const aiResponse = await callAI(
             AGENT_PROMPTS.aiSpecific.systemPrompt,
             AGENT_PROMPTS.aiSpecific.analysisPrompt(code),
-            6, 'AI-Engine Review', logger, tierKey
+            6, 'AI-Engine Review', logger, tierKey, userId, scanId
         );
 
         console.log('[AI-Engine] Raw response (first 400):', aiResponse.substring(0, 400));
@@ -908,7 +1025,7 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 7: ORCHESTRATOR - The Synthesizer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runOrchestrator(scanId: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runOrchestrator(scanId: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
     try {
         await emit(scanId, 7, 'Synthesis & Report', 'started', 'Initializing executive synthesis...');
 
@@ -931,6 +1048,7 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
 
         // 2. Organize findings by category
         const findings = {
+            recon: scan?.recon_data?.analysis || {},
             security: (allIssues || []).filter((i: any) => i.category === 'security'),
             architecture: (allIssues || []).filter((i: any) => i.category === 'architecture'),
             quality: (allIssues || []).filter((i: any) => i.category === 'quality'),
@@ -945,14 +1063,14 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
         };
 
         await emit(scanId, 7, 'Synthesis & Report', 'processing',
-            'Sending all findings to CTO AI for deep executive synthesis...'
+            'Sending all findings to Strategic CTO AI for deep synthesis...'
         );
 
         // 3. Call AI for strategic synthesis
         const aiResponse = await callAI(
             AGENT_PROMPTS.orchestrator.systemPrompt,
             AGENT_PROMPTS.orchestrator.synthesisPrompt(findings, metadata),
-            7, 'Orchestrator', logger, tierKey
+            7, 'Orchestrator', logger, tierKey, userId, scanId
         );
 
         const enterpriseReport = parseAIResponse(aiResponse, {
@@ -979,7 +1097,7 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
             ((enterpriseReport.overallScore || 50) * 0.6) + (calculatedScore * 0.4)
         );
 
-        // 5. Update scan with final results
+        // 5. Update scan with final strategic results
         await supabase.from('scans').update({
             status: 'completed',
             score: finalScore,
@@ -999,11 +1117,15 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
             },
             enterprise_report: enterpriseReport,
             summary: enterpriseReport.executiveSummary?.overview || '',
+            architecture_map: enterpriseReport.architectureMap || findings.recon?.architectureMap || null,
+            application_story: enterpriseReport.applicationStory || findings.recon?.applicationStory || null,
+            annotated_file_tree: enterpriseReport.annotatedFileTree || findings.recon?.annotatedFileTree || [],
+            strengths: enterpriseReport.strengths || findings.recon?.strengths || [],
             completed_at: new Date().toISOString()
         }).eq('id', scanId);
 
         await emit(scanId, 7, 'Synthesis & Report', 'completed',
-            `Audit complete! Final score: ${finalScore}/100. ${allIssues?.length || 0} total findings.`
+            `Audit complete! Final score: ${finalScore}/100. ${allIssues?.length || 0} total findings, with architecture mapping.`
         );
 
         return enterpriseReport;
@@ -1026,39 +1148,43 @@ export async function runPipeline(scanId: string, repoUrl: string, tierKey: Tier
     console.log(`[PIPELINE START] Scan: ${scanId}, Repo: ${repoUrl}, Tier: ${tierKey}`);
     const logger = new AILogger(scanId);
 
+    // 👤 Fetch User ID for reporting
+    const { data: scanData } = await supabase.from('scans').select('user_id').eq('id', scanId).single();
+    const userId = scanData?.user_id;
+
     try {
         // Agent 0: Git Connect (no AI needed)
         const repoPath = await runGitConnect(scanId, repoUrl, tierKey);
         console.log(`[PIPELINE] Agent 0 complete`);
 
         // Agent 1: Reconnaissance (AI: architectural blueprint)
-        const { fileTree, analysis, pkg } = await runReconnaissance(scanId, repoPath, logger, tierKey);
+        const { fileTree, analysis, pkg } = await runReconnaissance(scanId, repoPath, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 1 complete (${fileTree.length} files)`);
 
         const techStack = analysis?.techStack || {};
 
         // Agent 2: Security Scanner (AI: per-file vulnerability hunting)
-        await runSecurityScanner(scanId, repoPath, fileTree, techStack, logger, tierKey);
+        await runSecurityScanner(scanId, repoPath, fileTree, techStack, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 2 complete`);
 
         // Agent 3: Architecture Reviewer (AI: design pattern analysis)
-        await runArchitecture(scanId, repoPath, fileTree, logger, tierKey);
+        await runArchitecture(scanId, repoPath, fileTree, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 3 complete`);
 
         // Agent 4: Code Quality (AI: clean code analysis)
-        await runCodeQuality(scanId, repoPath, fileTree, logger, tierKey);
+        await runCodeQuality(scanId, repoPath, fileTree, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 4 complete`);
 
         // Agent 5: Technical Debt (AI: debt hunting)
-        await runTechnicalDebt(scanId, repoPath, fileTree, pkg, logger, tierKey);
+        await runTechnicalDebt(scanId, repoPath, fileTree, pkg, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 5 complete`);
 
         // Agent 6: AI-Engine Review (AI: generated code detection)
-        await runAIEngineReview(scanId, repoPath, fileTree, logger, tierKey);
+        await runAIEngineReview(scanId, repoPath, fileTree, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 6 complete`);
 
         // Agent 7: Orchestrator (AI: executive synthesis)
-        await runOrchestrator(scanId, logger, tierKey);
+        await runOrchestrator(scanId, logger, tierKey, userId);
         console.log(`[PIPELINE] Agent 7 complete`);
 
         // Save AI interaction log

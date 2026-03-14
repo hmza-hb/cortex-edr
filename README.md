@@ -443,7 +443,7 @@ Based on published AGI research:
 ### Backend:
 - **Next.js API Routes**
 - **Supabase** (PostgreSQL)
-- **Clerk Authentication**
+- **Cortex Custom Auth** (NextAuth.js)
 - **Railway Hosting**
 
 ### AI Infrastructure:
@@ -455,7 +455,7 @@ Based on published AGI research:
 
 ### Database Schema:
 ```sql
-- users (Clerk auth)
+- users (NextAuth)
 - profiles (plan, subscription)
 - scans (repo_url, score, status)
 - issues (vulnerability details)
@@ -669,7 +669,7 @@ Based on everything we've built and discussed, here's what CortexEDR actually ha
 
 ### 6. Authentication & User Management
 
-**Powered by Clerk:**
+**Powered by Cortex Auth:**
 - Email/password authentication
 - Google OAuth
 - GitHub OAuth
@@ -710,7 +710,7 @@ Based on everything we've built and discussed, here's what CortexEDR actually ha
 - Node.js (v20 or higher)
 - npm, yarn, or pnpm
 - Supabase account
-- Clerk account
+- Resend account (for emails)
 
 ### Quick Start
 

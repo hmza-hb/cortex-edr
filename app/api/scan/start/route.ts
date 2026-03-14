@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { SYSTEM_CONFIG, TierId } from '@/lib/config/system';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 
 export async function POST(req: NextRequest) {
-    const { userId } = await auth();
+    const session = await getServerSession(authOptions);
 
-    if (!userId) {
-        console.error('[API/Scan/Start] No userId found in Clerk session');
+    if (!session?.user) {
+        console.error('[API/Scan/Start] No session found');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the user's email for profile lookup (same as dashboard)
-    const user = await currentUser();
-    const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+    const userId = (session.user as any).id;
+    const userEmail = session.user.email?.toLowerCase();
 
-    if (!userEmail) {
-        console.error('[API/Scan/Start] No email found for user');
-        return NextResponse.json({ error: 'User email not found' }, { status: 401 });
+    if (!userId || !userEmail) {
+        console.error('[API/Scan/Start] Missing user info in session');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { repo_url } = await req.json();
@@ -70,6 +70,21 @@ export async function POST(req: NextRequest) {
         // we should either reset `scans_remaining` monthly or check total scans in current month.
         // For now, we keep the existing logic but ensure we respect the tier boundaries.
         if (!profile || profile.scans_remaining <= 0) {
+            // Trigger Quota Alert Email
+            try {
+                const { resend, SYSTEM_EMAIL, templates } = await import('@/lib/email/resend');
+                const fullName = session.user.name || 'Protocol User';
+                const limitEmail = templates.quotaLimit(fullName, tierConfig.name);
+                await resend.emails.send({
+                    from: `Cortex EDR <${SYSTEM_EMAIL}>`,
+                    to: userEmail,
+                    subject: limitEmail.subject,
+                    html: limitEmail.html
+                });
+            } catch (emailError) {
+                console.error('[API/Scan/Start] Error sending quota alert email:', emailError);
+            }
+
             return NextResponse.json({
                 error: `Monthly scan limit (${scanLimit}) reached for ${tierConfig.name} tier. Please upgrade.`
             }, { status: 403 });

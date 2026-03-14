@@ -14,7 +14,8 @@ import {
     Binary,
     Terminal as TerminalIcon,
     ChevronRight,
-    ArrowUpRight
+    ArrowUpRight,
+    AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -193,18 +194,43 @@ export const PricingSection = () => {
                                 ))}
                             </ul>
 
-                            <button className={`
-                                w-full py-4 rounded-xl text-[10px] font-mono font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2
-                                ${tier.popular
-                                    ? 'bg-purple-600 text-white shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-[1.02]'
-                                    : 'bg-white/5 border border-white/5 text-neutral-400 hover:bg-white/10 hover:text-white'
+                            <Link
+                                href={
+                                    tier.name.includes('LEVEL_01')
+                                        ? "/dashboard"
+                                        : `/dashboard/billing/checkout/${tier.name.includes('LEVEL_02') ? 'developer' : 'teams'}`
                                 }
-                            `}>
-                                {tier.cta}
-                                <ChevronRight className="h-3 w-3" />
-                            </button>
+                                className="block mt-auto"
+                            >
+                                <button className={`
+                                    w-full py-4 rounded-xl text-[10px] font-mono font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2
+                                    ${tier.popular
+                                        ? 'bg-purple-600 text-white shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-[1.02]'
+                                        : 'bg-white/5 border border-white/5 text-neutral-400 hover:bg-white/10 hover:text-white'
+                                    }
+                                `}>
+                                    {tier.cta}
+                                    <ChevronRight className="h-3 w-3" />
+                                </button>
+                            </Link>
+
+                            <div className="mt-4 flex items-start gap-2 opacity-50">
+                                <AlertCircle className="h-3 w-3 text-neutral-500 mt-0.5" />
+                                <p className="text-[9px] font-mono text-neutral-600 leading-relaxed uppercase">
+                                    {tier.price === "0"
+                                        ? "Instant deployment following protocol initiation."
+                                        : "Protocol activation finalized within 24-48 hours of verification."}
+                                </p>
+                            </div>
                         </motion.div>
                     ))}
+                </div>
+
+                {/* Humble Activation Note */}
+                <div className="max-w-2xl mx-auto mb-32 text-center px-6">
+                    <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-[0.2em] leading-relaxed italic opacity-60">
+                        "Your patience is valued as our engineers manually verify transaction integrity to ensure the highest security standards for your dedicated node cluster. Activation typically concludes within 24 to 48 hours."
+                    </p>
                 </div>
 
                 {/* Technical Module Connectors */}

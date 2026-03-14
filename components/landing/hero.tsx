@@ -47,7 +47,7 @@ export const Hero = ({ user }: { user: { email?: string } | null }) => {
                             {/* Security Philosophy Text */}
                             <p className="max-w-2xl mx-auto font-mono text-xs md:text-sm text-neutral-400 leading-relaxed mb-12 px-4 uppercase tracking-[0.2em]">
                                 Our philosophy: Security is not a feature, it&apos;s a foundation. <br />
-                                CortexEDR provides the intelligence to build indestructible systems. <br />
+                                Cortex EDR provides the intelligence to build indestructible systems. <br />
                                 <span className="text-[10px] text-purple-500/50 block mt-4 tracking-[0.4em]">Engineered by Hamza Hafeez</span>
                             </p>
 
@@ -70,7 +70,7 @@ export const Hero = ({ user }: { user: { email?: string } | null }) => {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col sm:flex-row items-center gap-6 animate-fadeIn">
-                                        <Link href="/login">
+                                        <Link href="/auth">
                                             <MagicButton
                                                 title="INITIATE PROTOCOL"
                                                 position="right"

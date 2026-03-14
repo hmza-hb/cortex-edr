@@ -18,34 +18,31 @@ export default async function Home() {
       <header className="fixed top-6 left-0 right-0 z-[100] flex justify-center px-4">
         <div className="bg-black/40 backdrop-blur-xl border border-white/[0.1] rounded-full px-6 py-3 flex items-center justify-between w-full max-w-4xl shadow-2xl shadow-purple-500/10">
           <div className="flex items-center gap-2 font-bold text-xl tracking-tighter text-white">
-            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-8 w-8" />
-            <span className="font-sans uppercase tracking-[0.2em] text-sm md:block hidden">Cortex<span className="text-purple-500">EDR</span></span>
+            <img src="/assets/logo.png" alt="Cortex EDR Logo" className="h-8 w-8" />
+            <span className="font-sans uppercase tracking-[0.2em] text-sm md:block hidden">Cortex<span className="text-purple-500"> EDR</span></span>
           </div>
-          <nav className="hidden md:flex items-center gap-8 text-[11px] font-mono tracking-widest text-white/70">
-            <Link href="/features" className="hover:text-white transition-all">Features</Link>
-            <Link href="/pricing" className="hover:text-white transition-all">Pricing</Link>
-            <Link href="/docs" className="hover:text-white transition-all">Docs</Link>
+          <nav className="hidden md:flex items-center gap-8 text-[11px] font-mono tracking-widest text-white">
+            <Link href="/features" className="hover:text-white transition-all uppercase">Features</Link>
+            <Link href="/pricing" className="hover:text-white transition-all uppercase">Pricing</Link>
+            <Link href="/docs" className="hover:text-white transition-all uppercase">Docs</Link>
           </nav>
           <div className="flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-6">
                 <Link href="/dashboard" className="text-[10px] font-mono tracking-widest text-white/50 hover:text-white transition-colors uppercase">
-                  Sys_Control
+                  Sys Control
                 </Link>
                 <Link href="/dashboard">
                   <Button size="sm" className="rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 text-[10px] font-mono tracking-[0.2em] uppercase px-6">
-                    GO_DASHBOARD
+                    GO DASHBOARD
                   </Button>
                 </Link>
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <Link href="/login" className="text-[10px] font-mono tracking-widest text-white/50 hover:text-white transition-colors uppercase md:block hidden">
-                  Auth_Login
-                </Link>
-                <Link href="/login">
-                  <Button size="sm" className="rounded-full bg-white text-black hover:bg-neutral-200 text-[10px] font-mono tracking-widest uppercase px-8">
-                    GET_STARTED
+                <Link href="/auth">
+                  <Button size="sm" className="rounded-full bg-white text-black hover:bg-neutral-200 text-[10px] font-mono tracking-widest px-8">
+                    GET STARTED
                   </Button>
                 </Link>
               </div>

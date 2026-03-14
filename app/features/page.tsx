@@ -507,7 +507,7 @@ export default function FeaturesPage() {
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link href="/login">
+                            <Link href="/auth">
                                 <button className="px-12 py-5 bg-white text-black font-bold rounded-lg hover:bg-purple-500 hover:text-white transition-all duration-300 flex items-center gap-2">
                                     Start Free Scan <Zap className="h-5 w-5" />
                                 </button>

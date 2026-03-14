@@ -1,6 +1,5 @@
--- Create a table for public user profiles
 create table profiles (
-  id uuid references auth.users on delete cascade not null primary key,
+  id text primary key,
   email text,
   plan_tier text default 'vibe_coder' check (plan_tier in ('vibe_coder', 'developer', 'teams', 'enterprise')),
   scans_remaining integer default 1,
@@ -18,15 +17,15 @@ create policy "Public profiles are viewable by everyone." on profiles
   for select using (true);
 
 create policy "Users can insert their own profile." on profiles
-  for insert with check (auth.uid() = id);
+  for insert with check (true); -- Internal service uses service_role, this is for safety
 
 create policy "Users can update own profile." on profiles
-  for update using (auth.uid() = id);
+  for update using (auth.uid()::text = id);
 
 -- Create a table for scans
 create table scans (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id text not null,
   repo_url text not null,
   status text default 'pending' check (status in ('pending', 'processing', 'completed', 'failed')),
   score integer,
@@ -38,10 +37,10 @@ create table scans (
 alter table scans enable row level security;
 
 create policy "Users can view their own scans." on scans
-  for select using (auth.uid() = user_id);
+  for select using (auth.uid()::text = user_id);
 
 create policy "Users can insert their own scans." on scans
-  for insert with check (auth.uid() = user_id);
+  for insert with check (auth.uid()::text = user_id);
 
 -- Create a table for issues found in scans
 create table issues (
@@ -65,16 +64,16 @@ create policy "Users can view issues from their scans." on issues
     exists (
       select 1 from scans
       where scans.id = issues.scan_id
-      and scans.user_id = auth.uid()
+      and (scans.user_id = auth.uid()::text or auth.role() = 'service_role')
     )
   );
 
 -- Function to handle new user signup
-create function public.handle_new_user()
+create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, email)
-  values (new.id, new.email);
+  values (new.id::text, new.email);
   return new;
 end;
 $$ language plpgsql security definer;

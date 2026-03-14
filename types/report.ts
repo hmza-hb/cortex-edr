@@ -243,4 +243,9 @@ export interface ExecutiveReport {
     reportVersion?: string
     analystName?: string
     attestation?: string
+
+    // UI Metadata
+    architectureMap?: string
+    applicationStory?: string
+    annotatedFileTree?: Array<{ path: string; tag?: string; annotation?: string }>
 }

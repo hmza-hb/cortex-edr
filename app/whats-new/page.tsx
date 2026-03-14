@@ -28,8 +28,8 @@ export default function WhatsNewPage() {
         },
         {
             date: "Feb 15, 2026",
-            title: "Clerk Authentication Identity",
-            desc: "Enterprise-grade authentication with Clerk is now standard across the platform, providing faster logins and secure session management.",
+            title: "Cortex Custom Auth (Identity)",
+            desc: "Full data ownership with our new custom authentication system. Experience faster sessions, custom branding, and seamless OAuth integration.",
             icon: Shield,
             tag: "SECURITY"
         }

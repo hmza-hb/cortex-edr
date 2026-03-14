@@ -60,7 +60,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1,
     const accountItems = [
         { icon: Settings, label: "Settings", href: "/dashboard/settings" },
         { icon: CreditCard, label: "Billing", href: "/dashboard/billing" },
-        { icon: Gift, label: "Referrals", href: "/dashboard/referrals", badge: "3" },
+        { icon: Gift, label: "Referrals", href: "/dashboard/referrals" },
     ];
 
     const resourceItems = [

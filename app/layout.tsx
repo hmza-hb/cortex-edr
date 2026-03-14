@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Outfit, JetBrains_Mono } from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
+import AuthProvider from '@/components/auth/SessionProvider'
 import './globals.css'
 import { LoadingScreen } from '@/components/ui/loading-screen'
 
@@ -21,8 +21,8 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'CortexEDR',
-    template: '%s | CortexEDR'
+    default: 'Cortex EDR',
+    template: '%s | Cortex EDR'
   },
   description: 'Scan your codebase for security vulnerabilities in seconds. Cortex EDR uses a 7-agent AI pipeline for deep-pass code intelligence, automated vulnerability detection, and actionable fix suggestions. Free to start.',
   keywords: [
@@ -184,7 +184,7 @@ const jsonLd = {
       "@type": "SiteNavigationElement",
       "name": "Get Started",
       "description": "Sign up and start scanning your code for vulnerabilities. Free to start.",
-      "url": "https://cortex-edr.com/login"
+      "url": "https://cortex-edr.com/auth"
     },
     {
       "@type": "SiteNavigationElement",
@@ -207,7 +207,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
+    <AuthProvider>
       <html lang="en" className="dark">
         <head>
           <script
@@ -255,6 +255,6 @@ export default function RootLayout({
           {children}
         </body>
       </html>
-    </ClerkProvider>
+    </AuthProvider>
   )
 }

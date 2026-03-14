@@ -1,137 +1,332 @@
 "use client";
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import {
-    CreditCard,
     Zap,
     Shield,
     CheckCircle2,
-    AlertCircle,
     ArrowUpRight,
-    Loader2
+    Loader2,
+    Target,
+    Activity,
+    Lock,
+    Scale,
+    CreditCard,
+    ChevronRight,
+    Download,
+    History
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { SYSTEM_CONFIG, TierId } from '@/lib/config/system';
-import { useUser } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { useSession } from "next-auth/react";
 
 export default function BillingPage() {
-    const { user, isLoaded } = useUser();
+    const { data: session, status } = useSession();
+    const isLoaded = status !== "loading";
+    const user = session?.user;
     const [profile, setProfile] = React.useState<any>(null);
+    const [invoices, setInvoices] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
     const supabase = createClient();
 
     React.useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             if (isLoaded && user) {
-                const { data } = await supabase
+                // Fetch Profile
+                const { data: profileData } = await supabase
                     .from('profiles')
                     .select('*')
-                    .eq('id', user.id)
+                    .eq('id', (user as any).id)
                     .single();
-                setProfile(data);
+                setProfile(profileData);
+
+                // Fetch Invoices
+                const { data: invoiceData } = await supabase
+                    .from('billing_invoices')
+                    .select('*')
+                    .eq('user_id', (user as any).id)
+                    .order('created_at', { ascending: false });
+                setInvoices(invoiceData || []);
             }
             if (isLoaded) setLoading(false);
         };
-        fetchProfile();
+        fetchData();
     }, [isLoaded, user]);
-
-    const openCustomerPortal = () => {
-        // Paddle doesn't have a direct "Portal" link like Stripe, 
-        // usually you provide a "Cancel/Update" button that opens Paddle.js
-        // or redirect to a management URL if you use Paddle Billing's out-of-the-box portal.
-        toast.info("Customer portal access initiated. Connecting to secure billing unit.");
-        // Implement Paddle.js management overlay here if needed
-    };
 
     if (loading) {
         return (
-            <div className="min-h-[50vh] flex items-center justify-center">
-                <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-zinc-500 animate-spin" />
             </div>
         );
     }
 
+    const currentTierId = (profile?.plan_tier?.toUpperCase() || "VIBE_CODER") as TierId;
+    const tierConfig = SYSTEM_CONFIG.tiers[currentTierId];
+
+    const plans = [
+        {
+            id: TierId.DEVELOPER,
+            name: "Sentinel",
+            tagline: "For professional developers",
+            price: "$9",
+            features: ["20 Deep Scans / month", "Detailed logic analysis", "Priority AI routing"],
+            cta: "Get Sentinel"
+        },
+        {
+            id: TierId.TEAMS,
+            name: "Guardian",
+            tagline: "For scaling teams",
+            price: "$49",
+            popular: true,
+            features: ["100 Deep Scans / month", "5 team seats", "Enterprise security checks"],
+            cta: "Get Guardian"
+        },
+        {
+            id: TierId.ENTERPRISE,
+            name: "Fortress",
+            tagline: "For global infrastructure",
+            price: "$299",
+            features: ["5,000 Deep Scans / month", "Military-grade compliance", "Dedicated support"],
+            cta: "Get Fortress"
+        }
+    ];
+
+    // Helper to calculate next invoice date
+    const getNextInvoiceDate = (paymentDate: string | null, cycle: string | null) => {
+        if (!paymentDate) return "N/A";
+        const date = new Date(paymentDate);
+        if (cycle === 'annual') {
+            date.setFullYear(date.getFullYear() + 1);
+        } else {
+            date.setMonth(date.getMonth() + 1);
+        }
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    };
+
     return (
-        <div className="max-w-4xl mx-auto py-12 px-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-12"
-            >
-                <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Subscription & Billing</h1>
-                <p className="text-white/40 font-mono text-sm uppercase tracking-widest">Management Protocol</p>
-            </motion.div>
+        <div className="max-w-5xl mx-auto py-12 px-6 lg:pt-16 space-y-12 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="space-y-1">
+                <h1 className="text-2xl font-bold text-white tracking-tight">Usage & Billing</h1>
+                <p className="text-sm text-zinc-500 font-medium">Manage your subscription, usage limits, and financial history.</p>
+            </div>
 
-            <div className="grid gap-8">
-                {/* Current Plan Card */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-8 rounded-3xl bg-neutral-900/50 border border-white/10 relative overflow-hidden group"
-                >
-                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                        {profile?.plan_tier === 'vibe_coder' ? <Zap className="h-24 w-24" /> : <Shield className="h-24 w-24" />}
-                    </div>
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="h-10 w-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                                <CreditCard className="h-5 w-5 text-purple-400" />
+            {/* Current Plan Overview */}
+            <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="p-8 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Subscription</label>
+                            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                                <span className="capitalize">{profile?.plan_tier?.replace('_', ' ')}</span>
+                                <span className={cn(
+                                    "px-2 py-0.5 text-[10px] font-black uppercase rounded-full border",
+                                    profile?.payment_status === 'paid'
+                                        ? "bg-green-500/10 border-green-500/20 text-green-500"
+                                        : "bg-zinc-500/10 border-zinc-500/20 text-zinc-500"
+                                )}>
+                                    {profile?.payment_status || 'Inactive'}
+                                </span>
+                            </h2>
+                        </div>
+                        <div className="flex items-center gap-8">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Billing Period</p>
+                                <p className="text-sm text-zinc-300 font-medium capitalize">{profile?.billing_cycle || 'N/A'}</p>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-white capitalize">{profile?.plan_tier?.replace('_', ' ')} Plan</h3>
-                                <div className="flex items-center gap-2">
-                                    <span className={`h-2 w-2 rounded-full ${profile?.subscription_status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                    <p className="text-xs font-mono text-white/40 uppercase tracking-widest">{profile?.subscription_status}</p>
-                                </div>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Next Invoice</p>
+                                <p className="text-sm text-zinc-300 font-medium">
+                                    {getNextInvoiceDate(profile?.payment_date, profile?.billing_cycle)}
+                                </p>
                             </div>
                         </div>
-
-                        <div className="grid md:grid-cols-2 gap-8 items-end">
-                            <div>
-                                <div className="space-y-3 mb-6">
-                                    {profile?.plan_tier && (
-                                        <>
-                                            <div className="flex items-center gap-2 text-sm text-white/60">
-                                                <CheckCircle2 className="h-4 w-4 text-purple-500" />
-                                                <span>{SYSTEM_CONFIG.tiers[profile.plan_tier.toUpperCase() as TierId]?.limits.maxScansPerMonth} audit scans per month</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-white/60">
-                                                <CheckCircle2 className="h-4 w-4 text-purple-500" />
-                                                <span>{SYSTEM_CONFIG.tiers[profile.plan_tier.toUpperCase() as TierId]?.features.detailedExplanations ? 'Detailed logic analysis' : 'Basic security scanning'}</span>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={openCustomerPortal}
-                                    className="px-6 py-3 rounded-xl bg-white text-black text-xs font-black font-mono uppercase tracking-widest hover:bg-purple-500 hover:text-white transition-all flex items-center gap-2"
-                                >
-                                    Manage Subscription
-                                    <ArrowUpRight className="h-3 w-3" />
-                                </button>
-                            </div>
-
-                            {profile?.plan_tier === 'vibe_coder' && (
-                                <div className="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10">
-                                    <div className="flex gap-3">
-                                        <AlertCircle className="h-5 w-5 text-purple-400 shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-white/80 font-bold mb-1">Upgrade Available</p>
-                                            <p className="text-[10px] text-white/40 leading-relaxed font-mono">Unlock advanced security units and deeper logic analysis by upgrading to the Developer Tier.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
-                </motion.div>
 
-                {/* Billing History Placeholder or Paddle Link */}
-                <div className="p-8 rounded-3xl bg-black border border-white/5 font-mono text-[10px] text-white/20 tracking-widest uppercase text-center py-16">
-                    Historical transaction records are managed securely via Paddle
+                    <div className="h-px md:h-20 w-full md:w-px bg-zinc-800" />
+
+                    <div className="flex-1 space-y-4">
+                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                            <span className="text-zinc-500">Scan Usage</span>
+                            <span className="text-white">
+                                {profile?.scans_remaining || 0} / {tierConfig.limits.maxScansPerMonth === "Unlimited" ? "∞" : tierConfig.limits.maxScansPerMonth} Remaining
+                            </span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{
+                                    width: tierConfig.limits.maxScansPerMonth === "Unlimited"
+                                        ? "100%"
+                                        : `${Math.min(100, ((profile?.scans_remaining || 0) / (tierConfig.limits.maxScansPerMonth as number)) * 100)}%`
+                                }}
+                                className="h-full bg-white transition-all duration-1000"
+                            />
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-medium">Usage resets on your next billing cycle.</p>
+                    </div>
                 </div>
+
+                <div className="px-8 py-4 bg-zinc-900/80 border-t border-zinc-800 flex items-center justify-between">
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                        Subscription ID: <span className="text-zinc-400">{profile?.subscription_id || 'NOT_CONNECTED'}</span>
+                    </p>
+                    {profile?.subscription_id && (
+                        <button className="text-[10px] font-bold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-2">
+                            Cancel Subscription
+                            <ChevronRight className="h-3 w-3" />
+                        </button>
+                    )}
+                </div>
+            </section>
+
+            {/* Plans List */}
+            <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Available Upgrades</h3>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500">
+                        <Lock className="h-3 w-3" />
+                        SECURE CHECKOUT
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {plans.map((plan) => {
+                        const isCurrent = currentTierId === plan.id;
+
+                        return (
+                            <div
+                                key={plan.id}
+                                className={cn(
+                                    "p-8 rounded-2xl border flex flex-col justify-between transition-all duration-300",
+                                    plan.popular ? "bg-white/[0.03] border-white/20" : "bg-transparent border-zinc-800"
+                                )}
+                            >
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-lg font-bold text-white tracking-tight">{plan.name}</h4>
+                                        {plan.popular && (
+                                            <span className="text-[8px] font-black bg-white text-black px-2 py-0.5 rounded-full uppercase tracking-widest">Recommended</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-zinc-500 font-medium">{plan.tagline}</p>
+                                </div>
+
+                                <div className="text-3xl font-bold text-white tracking-tighter">
+                                    {plan.price}
+                                    <span className="text-sm text-zinc-500 font-medium tracking-normal ml-1">/mo</span>
+                                </div>
+
+                                <ul className="space-y-3">
+                                    {plan.features.map((feature, i) => (
+                                        <li key={i} className="flex items-center gap-3 text-[11px] text-zinc-400 font-medium">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-zinc-600 shrink-0" />
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <Link href={`/dashboard/billing/checkout/${plan.id.toLowerCase()}`} className="block">
+                                    <Button
+                                        disabled={isCurrent}
+                                        className={cn(
+                                            "w-full h-11 mt-8 rounded-xl font-bold text-xs uppercase tracking-widest transition-all",
+                                            isCurrent
+                                                ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
+                                                : plan.popular
+                                                    ? "bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                                    : "bg-transparent border border-zinc-800 text-zinc-300 hover:bg-zinc-900"
+                                        )}
+                                    >
+                                        {isCurrent ? "Current Plan" : plan.cta}
+                                    </Button>
+                                </Link>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            {/* Invoices */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <History className="h-4 w-4 text-zinc-500" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Invoices</h3>
+                </div>
+
+                <div className="bg-zinc-900/30 border border-zinc-800 rounded-2xl overflow-hidden">
+                    {invoices.length > 0 ? (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-zinc-800 bg-zinc-900/50">
+                                    <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Date</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Service</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Amount</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Status</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-800">
+                                {invoices.map((inv, i) => (
+                                    <tr key={i} className="group hover:bg-white/[0.01] transition-colors">
+                                        <td className="px-6 py-4 text-xs font-medium text-zinc-300">
+                                            {new Date(inv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-bold text-white italic">{inv.billing_reason || 'Subscription Renewal'}</td>
+                                        <td className="px-6 py-4 text-xs font-bold text-white">{inv.currency === 'USD' ? '$' : inv.currency}{inv.amount}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={cn(
+                                                "px-2 py-0.5 text-[10px] font-black uppercase rounded-full border",
+                                                inv.status === 'paid'
+                                                    ? "bg-green-500/10 text-green-500 border-green-500/20"
+                                                    : "bg-zinc-500/10 text-zinc-500 border-zinc-500/20"
+                                            )}>
+                                                {inv.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {inv.pdf_url ? (
+                                                <a href={inv.pdf_url} target="_blank" rel="noopener noreferrer" className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 transition-all">
+                                                    <Download className="h-3.5 w-3.5" />
+                                                </a>
+                                            ) : (
+                                                <button className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-zinc-800 text-zinc-500/30 cursor-not-allowed">
+                                                    <Download className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="p-12 text-center">
+                            <p className="text-xs text-zinc-500 font-medium tracking-widest uppercase">No invoice records found in your account history.</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* Bottom Note */}
+            <div className="pt-12 flex flex-col items-center gap-6 border-t border-zinc-900">
+                <div className="flex items-center gap-8 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
+                    <img src="https://paddle.com/assets/images/paddle-logo-white.svg" alt="Paddle" className="h-5" />
+                    <div className="h-4 w-px bg-zinc-800" />
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                        <Scale className="h-4 w-4" />
+                        PCI DSS COMPLIANT
+                    </div>
+                </div>
+                <p className="max-w-md text-center text-[10px] text-zinc-600 font-medium leading-relaxed uppercase tracking-widest">
+                    All payment processing is handled securely by Paddle, our Merchant of Record.
+                    <br />
+                    Taxes calculated based on your jurisdiction.
+                </p>
             </div>
         </div>
     );

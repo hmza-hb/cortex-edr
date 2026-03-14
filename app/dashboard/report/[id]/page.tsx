@@ -5,11 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { ScoreCard } from "@/components/report/ScoreCard";
 import { IssueList } from "@/components/report/IssueList";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, RotateCcw, ShieldCheck, Share2, Loader2, FileJson, Zap, MessageCircle, ArrowRight } from "lucide-react";
+import { ArrowLeft, Download, RotateCcw, ShieldCheck, Share2, Loader2, FileJson, Zap, MessageCircle, ArrowRight, BookOpen, Star } from "lucide-react";
 import Link from "next/link";
 import { Issue } from "@/types/agent";
 
 import { EnterpriseIssueCard } from "@/components/report/EnterpriseIssueCard";
+import { MermaidDiagram } from "@/components/report/MermaidDiagram";
+import { FileTreeVisualizer } from "@/components/report/FileTreeVisualizer";
 import { ExecutiveReport } from "@/types/report";
 import { motion } from "framer-motion";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -156,6 +158,83 @@ export default function ReportPage() {
                     </Link>
                 </div>
             </motion.div>
+
+            {/* Visualizer Section */}
+            {(scan?.architecture_map || scan?.recon_data?.fileTree) && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25, duration: 0.6 }}
+                    className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                >
+                    {/* Architecture Diagram */}
+                    {scan?.architecture_map && (
+                        <div className="lg:col-span-2 space-y-4">
+                            <h2 className="text-xl font-black text-white tracking-wider uppercase pl-2">System Architecture Blueprint</h2>
+                            <MermaidDiagram chart={scan.architecture_map} />
+                        </div>
+                    )}
+
+                    {/* File Tree */}
+                    {(scan?.recon_data?.fileTree || scan?.annotated_file_tree) && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-black text-white tracking-wider uppercase pl-2">Codebase Structure</h2>
+                            <FileTreeVisualizer
+                                files={scan.recon_data?.fileTree || []}
+                                annotatedFiles={scan.annotated_file_tree || scan.recon_data?.annotatedFileTree}
+                            />
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
+            {/* Application Story & Strengths Section */}
+            {(scan?.application_story || scan?.strengths?.length > 0) && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                    className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                >
+                    {/* The Narrative */}
+                    {scan?.application_story && (
+                        <div className="lg:col-span-2 p-10 rounded-[40px] bg-white/[0.02] border border-white/5 space-y-6">
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="p-3 rounded-2xl bg-blue-500/10">
+                                    <BookOpen className="w-6 h-6 text-blue-400" />
+                                </div>
+                                <h2 className="text-xl font-black text-white tracking-wider uppercase">Your Application</h2>
+                            </div>
+                            <p className="text-sm leading-relaxed text-white/60 font-medium whitespace-pre-wrap">
+                                {scan.application_story}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* The Strengths */}
+                    {scan?.strengths && scan.strengths.length > 0 && (
+                        <div className="p-10 rounded-[40px] bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/10 space-y-6">
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="p-3 rounded-2xl bg-green-500/20">
+                                    <Star className="w-6 h-6 text-green-400" />
+                                </div>
+                                <h2 className="text-xl font-black text-white tracking-wider uppercase">Core Strengths</h2>
+                            </div>
+                            <ul className="space-y-4">
+                                {scan.strengths.map((strength: string, idx: number) => (
+                                    <li key={idx} className="flex gap-4 items-start">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 shrink-0 shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
+                                        <p className="text-sm font-medium text-white/70 leading-relaxed">
+                                            {strength}
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
             <ScoreCard
                 score={scan?.score || 0}
                 severityCounts={severityCounts}

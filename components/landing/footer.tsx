@@ -78,7 +78,7 @@ export const Footer = () => {
                     {/* Brand Section */}
                     <div className="lg:col-span-2">
                         <Link href="/" className="flex items-center gap-3 mb-6">
-                            <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-8 w-8" />
+                            <img src="/assets/logo.png" alt="Cortex EDR Logo" className="h-8 w-8" />
                             <span className="text-xl font-bold text-white tracking-tight">
                                 Cortex<span className="text-purple-500">EDR</span>
                             </span>
@@ -133,7 +133,7 @@ export const Footer = () => {
                 <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
                         <span className="text-white text-sm tracking-tight font-medium">
-                            © {currentYear} CortexEDR All Rights Reserved.
+                            © {currentYear} Cortex EDR All Rights Reserved.
                         </span>
                         <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
                         <Link

@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { getAdminSession } from "@/lib/auth/admin";
 
 export async function POST(request: NextRequest) {
     try {
-        // Authentication: Check if user is logged in
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
+        const session = await getAdminSession();
+        if (!session) {
+            return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
-
-        // Authorization: Check if user is admin
-        const userEmail = user.primaryEmailAddress?.emailAddress;
-        if (!userEmail || userEmail !== 'hmza.hb82@gmail.com') {
-            return NextResponse.json(
-                { error: 'Admin access required' },
-                { status: 403 }
-            );
-        }
+        const userEmail = session.user!.email!;
 
         const body = await request.json();
         const { targetEmail, newTier } = body;

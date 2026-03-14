@@ -3,7 +3,7 @@
 The CortexEDR API allows you to programmatically interact with our intelligence engine and integrate security audits into your own tools.
 
 ## Authentication
-CortexEDR uses **Clerk JSON Web Tokens (JWT)** for authentication. All API requests must include a valid session token in the `Authorization` header.
+CortexEDR uses **NextAuth JSON Web Tokens (JWT)** for authentication. All API requests must include a valid session token in the `Authorization` header.
 
 ```bash
 Authorization: Bearer <your_session_token>
@@ -61,7 +61,7 @@ Query the **Neural Codebase Index** for specific architectural or security insig
 **Response:**
 ```json
 {
-  "response": "The authentication flow utilizes Clerk for identity management and..."
+  "response": "The authentication flow utilizes Cortex Auth for identity management and..."
 }
 ```
 

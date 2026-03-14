@@ -38,7 +38,7 @@ import {
     Send,
     X
 } from "lucide-react";
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -126,8 +126,8 @@ function ChatHomeInner() {
     const searchParams = useSearchParams();
     const scanIdFromUrl = searchParams.get("scanId");
 
-    const { user } = useUser();
-    const { signOut } = useClerk();
+    const { data: session } = useSession();
+    const user = session?.user;
 
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
@@ -377,7 +377,7 @@ function ChatHomeInner() {
 
             if (!res.ok) {
                 if (data.error === "AI_SERVICE_UNAVAILABLE") {
-                    const fallback = typeof data.fallbackResponse === "object" 
+                    const fallback = typeof data.fallbackResponse === "object"
                         ? JSON.stringify(data.fallbackResponse, null, 2)
                         : data.fallbackResponse || "Cortex AI is temporarily unavailable. Please try again shortly.";
                     const assistantMsg: ChatMessage = { role: "assistant", content: fallback };
@@ -392,8 +392,8 @@ function ChatHomeInner() {
             if (optimisticThreadId && data.threadId) {
                 setThreadId(data.threadId);
                 // Replace optimistic thread with real one
-                setThreads((prev) => prev.map((t) => 
-                    t.id === optimisticThreadId 
+                setThreads((prev) => prev.map((t) =>
+                    t.id === optimisticThreadId
                         ? { ...t, id: data.threadId, title: data.threadTitle || t.title }
                         : t
                 ));
@@ -659,8 +659,8 @@ function ChatHomeInner() {
                         >
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="h-9 w-9 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-center shrink-0 overflow-hidden">
-                                    {user?.imageUrl ? (
-                                        <img src={user.imageUrl} alt="Profile" className="h-9 w-9 object-cover" />
+                                    {user?.image ? (
+                                        <img src={user.image} alt="Profile" className="h-9 w-9 object-cover" />
                                     ) : (
                                         <User className="h-4 w-4 text-zinc-300" />
                                     )}
@@ -668,7 +668,7 @@ function ChatHomeInner() {
                                 {!sidebarCollapsed && (
                                     <div className="min-w-0 text-left">
                                         <div className="text-sm font-semibold truncate">
-                                            {user?.fullName || user?.primaryEmailAddress?.emailAddress || "Your profile"}
+                                            {user?.name || user?.email || "Your profile"}
                                         </div>
                                         <div className="text-[11px] text-zinc-600 font-medium truncate">Manage your account</div>
                                     </div>
@@ -1095,7 +1095,7 @@ function ChatHomeInner() {
                                                         className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
                                                         aria-label="Like"
                                                         title="Like"
-                                                        onClick={() => {}}
+                                                        onClick={() => { }}
                                                     >
                                                         <ThumbsUp className="h-3.5 w-3.5" />
                                                     </button>
@@ -1103,7 +1103,7 @@ function ChatHomeInner() {
                                                         className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
                                                         aria-label="Dislike"
                                                         title="Dislike"
-                                                        onClick={() => {}}
+                                                        onClick={() => { }}
                                                     >
                                                         <ThumbsDown className="h-3.5 w-3.5" />
                                                     </button>
@@ -1119,7 +1119,7 @@ function ChatHomeInner() {
                                                         className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
                                                         aria-label="Retry"
                                                         title="Retry"
-                                                        onClick={() => {}}
+                                                        onClick={() => { }}
                                                     >
                                                         <RefreshCcw className="h-3.5 w-3.5" />
                                                     </button>
@@ -1129,7 +1129,7 @@ function ChatHomeInner() {
                                                             className="h-7 w-7 rounded-lg border border-white/5 bg-zinc-950/80 hover:bg-zinc-900 flex items-center justify-center text-zinc-300"
                                                             aria-label="More"
                                                             title="More"
-                                                            onClick={() => {}}
+                                                            onClick={() => { }}
                                                         >
                                                             <MoreHorizontal className="h-3.5 w-3.5" />
                                                         </button>

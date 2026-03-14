@@ -383,7 +383,7 @@ export default function PrivacyPage() {
                                 <li>• Google Analytics (usage analytics)</li>
                                 <li>• Sentry (error monitoring)</li>
                                 <li>• Cloudflare (CDN and security)</li>
-                                <li>• Auth0/Clerk (authentication)</li>
+                                <li>• NextAuth (authentication)</li>
                             </ul>
                         </div>
                     </div>
@@ -456,7 +456,7 @@ export default function PrivacyPage() {
 
                     <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded">
                         <p className="text-indigo-300 text-sm">
-                            <strong>Data Protection Officer:</strong> Hamza Hafeez Bhatti - Founder & CEO<br/>
+                            <strong>Data Protection Officer:</strong> Hamza Hafeez Bhatti - Founder & CEO<br />
                             <strong>Certification:</strong> SOC 2 Type II Compliant | GDPR Ready | CCPA Compliant
                         </p>
                     </div>

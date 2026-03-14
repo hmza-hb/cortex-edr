@@ -58,7 +58,7 @@ export async function buildMegaContext(params: {
     const profile = profileByEmail || null;
 
     // Determine which identifier is stored in scans.user_id in this deployment.
-    // In some environments it is the Clerk userId string; in others it may be a UUID.
+    // In some environments it is the authentication provider's userId string; in others it may be a UUID.
     const possibleScanUserIds = [userId];
     if (profile?.id && profile.id !== userId) possibleScanUserIds.push(profile.id);
 
