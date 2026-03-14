@@ -1,3 +1,5 @@
+"use client"
+
 import Link from 'next/link'
 import { ChevronLeft, AlertCircle, ShieldAlert, RefreshCcw } from 'lucide-react'
 import { motion } from 'framer-motion'
