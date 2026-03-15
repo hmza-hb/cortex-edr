@@ -218,7 +218,8 @@ function ChatHomeInner() {
     // const [isScanSelectorOpen, setIsScanSelectorOpen] = useState(false);
     // const [availableScans, setAvailableScans] = useState<Array<{id: string; repo_url: string; score: number | null; created_at: string; status: string; title: string}>>([]);
     // const [currentScanId, setCurrentScanId] = useState<string | null>(() => scanIdFromUrl);
-    const [streamingMessage, setStreamingMessage] = useState("");
+    const [streamingResponse, setStreamingResponse] = useState("");
+    const [streamingThinking, setStreamingThinking] = useState("");
     const [isStreaming, setIsStreaming] = useState(false);
     const [thinkingDots, setThinkingDots] = useState<"." | ".." | "...">(".");
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -257,11 +258,37 @@ function ChatHomeInner() {
         shouldAutoScrollRef.current = nearBottom;
         didUserScrollAwayRef.current = !nearBottom;
         setIsStreaming(true);
-        setStreamingMessage("");
+        setStreamingResponse("");
+        setStreamingThinking("");
+
         let index = 0;
+        let state: 'response' | 'thinking' = 'response';
+        let currentThinking = "";
+        let currentResponse = "";
+
         const interval = setInterval(() => {
             if (index < text.length) {
-                setStreamingMessage((prev) => prev + text[index]);
+                const remaining = text.slice(index);
+
+                if (remaining.startsWith('<thinking>')) {
+                    state = 'thinking';
+                    index += 10;
+                    return;
+                }
+                if (remaining.startsWith('</thinking>')) {
+                    state = 'response';
+                    index += 11;
+                    return;
+                }
+
+                if (state === 'thinking') {
+                    currentThinking += text[index];
+                    setStreamingThinking(currentThinking);
+                } else {
+                    currentResponse += text[index];
+                    setStreamingResponse(currentResponse);
+                }
+
                 index++;
                 maybeAutoScroll();
             } else {
@@ -269,7 +296,7 @@ function ChatHomeInner() {
                 setIsStreaming(false);
                 if (callback) callback();
             }
-        }, 12); // Adjust speed here (lower = faster)
+        }, 8); // Slightly faster for smoother feel
     }, [isNearBottom, maybeAutoScroll]);
 
     useEffect(() => {
@@ -505,7 +532,8 @@ function ChatHomeInner() {
                     const alreadyHas = prev.some((m) => m.role === 'assistant' && m.content === assistantMsg.content);
                     return alreadyHas ? prev : [...prev, assistantMsg];
                 });
-                setStreamingMessage("");
+                setStreamingResponse("");
+                setStreamingThinking("");
             });
 
         } catch (err) {
@@ -1060,12 +1088,12 @@ function ChatHomeInner() {
                                                     : "max-w-none text-zinc-200"
                                             )}
                                         >
-                                            {m.role === "assistant" && (
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <div className="h-8 w-8 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center overflow-hidden">
-                                                        <Image src="/assets/logo.png" alt="Cortex" width={24} height={24} className="opacity-80" />
+                                            {m.role === "assistant" && messages[idx - 1]?.role !== "assistant" && (
+                                                <div className="flex items-center gap-2.5 mb-5">
+                                                    <div className="h-7 w-7 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center overflow-hidden">
+                                                        <Image src="/assets/logo.png" alt="Cortex" width={20} height={20} className="opacity-80" />
                                                     </div>
-                                                    <span className="text-[13px] font-bold tracking-tight text-white uppercase">Cortex</span>
+                                                    <span className="text-[13px] font-medium text-zinc-400">Cortex</span>
                                                 </div>
                                             )}
 
@@ -1282,30 +1310,37 @@ function ChatHomeInner() {
                             ))
                         )}
 
-                        {isStreaming && (() => {
-                            const { turns, rest } = extractThinking(streamingMessage);
-                            return (
-                                <div className="flex justify-start group">
-                                    <div className="flex flex-col items-start w-full">
-                                        <div className="w-full px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap text-zinc-200">
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="h-8 w-8 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center overflow-hidden">
-                                                    <Image src="/assets/logo.png" alt="Cortex" width={24} height={24} className="opacity-80" />
+                        {isStreaming && (
+                            <div className="flex justify-start group">
+                                <div className="flex flex-col items-start w-full">
+                                    <div className="w-full px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap text-zinc-200">
+                                        {/* Header matches message list logic */}
+                                        {messages[messages.length - 1]?.role !== "assistant" && (
+                                            <div className="flex items-center gap-2.5 mb-5">
+                                                <div className="h-7 w-7 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center overflow-hidden">
+                                                    <Image src="/assets/logo.png" alt="Cortex" width={20} height={20} className="opacity-80" />
                                                 </div>
-                                                <span className="text-[13px] font-bold tracking-tight text-white uppercase">Cortex</span>
+                                                <span className="text-[13px] font-medium text-zinc-400">Cortex</span>
                                             </div>
+                                        )}
 
-                                            {turns.length > 0 && (
-                                                <div className="mb-8 pl-1">
-                                                    <details className="group/reasoning" open>
-                                                        <summary className="flex items-center gap-2 text-[13px] font-semibold text-zinc-500 hover:text-zinc-300 cursor-pointer list-none select-none transition-colors">
-                                                            <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
-                                                            <span>Thought Process</span>
-                                                            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/reasoning:rotate-180" />
-                                                        </summary>
-                                                        <div className="mt-6 ml-1 relative pl-6 border-l border-zinc-900 space-y-8">
-                                                            {turns.map((turn: ThinkingTurn, tIdx: number) => {
+                                        {streamingThinking && (
+                                            <div className="mb-8 pl-1">
+                                                <details className="group/reasoning" open>
+                                                    <summary className="flex items-center gap-2 text-[13px] font-semibold text-zinc-500 hover:text-zinc-300 cursor-pointer list-none select-none transition-colors">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
+                                                        <span>Thought Process</span>
+                                                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/reasoning:rotate-180" />
+                                                    </summary>
+                                                    <div className="mt-6 ml-1 relative pl-6 border-l border-zinc-900 space-y-8">
+                                                        {(() => {
+                                                            const { turns } = extractThinking(`<thinking>${streamingThinking}</thinking>`);
+                                                            // Bug 2: Filter non-tool call dialog
+                                                            return turns.map((turn: ThinkingTurn, tIdx: number) => {
                                                                 const isLast = tIdx === turns.length - 1;
+                                                                const isToolCall = /calling|executor|searching|retrieved|found/i.test(turn.action + turn.content);
+                                                                if (!isToolCall && !isLast) return null;
+
                                                                 return (
                                                                     <div key={tIdx} className="relative">
                                                                         <div className={cn(
@@ -1319,59 +1354,55 @@ function ChatHomeInner() {
                                                                         </div>
                                                                     </div>
                                                                 );
-                                                            })}
-                                                        </div>
-                                                    </details>
-                                                </div>
-                                            )}
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        )}
 
-                                            {rest && (
-                                                <div className="prose prose-invert max-w-none prose-p:leading-8 prose-p:text-zinc-200 prose-p:text-[16px] prose-p:my-4 prose-li:my-1 prose-headings:text-white prose-pre:p-0 prose-pre:bg-transparent">
-                                                    <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                        components={{
-                                                            p: (p) => <p {...p} />,
-                                                            pre: ({ children }) => <div className="my-6 rounded-2xl overflow-hidden border border-white/5 bg-[#0D0D0D]">{children}</div>,
-                                                            code: (props) => {
-                                                                const { inline, className, children } = props as any;
-                                                                const match = /language-(\w+)/.exec(className || '');
-                                                                return !inline ? (
-                                                                    <div className="group/code relative">
-                                                                        <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
-                                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{match ? match[1] : 'code'}</span>
-                                                                            <button
-                                                                                onClick={() => safeCopy(String(children))}
-                                                                                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-widest flex items-center gap-1.5"
-                                                                            >
-                                                                                <Copy className="h-3 w-3" />
-                                                                                Copy
-                                                                            </button>
-                                                                        </div>
-                                                                        <div className="p-4 overflow-x-auto text-[13.5px] leading-6 font-mono text-zinc-300">
-                                                                            {children}
-                                                                        </div>
+                                        {streamingResponse && (
+                                            <div className="prose prose-invert max-w-none prose-p:leading-8 prose-p:text-zinc-200 prose-p:text-[16px] prose-p:my-4 prose-li:my-1 prose-headings:text-white prose-pre:p-0 prose-pre:bg-transparent">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        p: (p: any) => <p {...p} />,
+                                                        pre: ({ children }: any) => <div className="my-6 rounded-2xl overflow-hidden border border-white/5 bg-[#0D0D0D]">{children}</div>,
+                                                        code: (props: any) => {
+                                                            const { inline, className, children } = props;
+                                                            const match = /language-(\w+)/.exec(className || '');
+                                                            return !inline ? (
+                                                                <div className="group/code relative">
+                                                                    <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
+                                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{match ? match[1] : 'code'}</span>
+                                                                        <button
+                                                                            onClick={() => safeCopy(String(children))}
+                                                                            className="text-[10px] font-bold text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-widest flex items-center gap-1.5"
+                                                                        >
+                                                                            <Copy className="h-3 w-3" />
+                                                                            Copy
+                                                                        </button>
                                                                     </div>
-                                                                ) : (
-                                                                    <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]">
+                                                                    <div className="p-4 overflow-x-auto text-[13.5px] leading-6 font-mono text-zinc-300">
                                                                         {children}
-                                                                    </code>
-                                                                );
-                                                            }
-                                                        }}
-                                                    >
-                                                        {rest + " "}
-                                                    </ReactMarkdown>
-                                                    <span className="animate-pulse absolute bottom-[22px] ml-1">|</span>
-                                                </div>
-                                            )}
-                                            {turns.length === 0 && !rest && (
-                                                <span className="animate-pulse">|</span>
-                                            )}
-                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]">
+                                                                    {children}
+                                                                </code>
+                                                            );
+                                                        }
+                                                    }}
+                                                >
+                                                    {streamingResponse}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            );
-                        })()}
+                            </div>
+                        )}
 
                         {sending && !isStreaming && (
                             <div className="text-xs font-semibold tracking-wide">
