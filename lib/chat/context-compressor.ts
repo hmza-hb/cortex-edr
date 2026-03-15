@@ -11,10 +11,10 @@ import type { RetrievedContext, IssueContext, ScanStats } from './context-retrie
 
 const TOKEN_BUDGETS: Record<string, number> = {
     scanMeta: 50,
-    issues: 400,
-    issuesFix: 600,    // fix guidance needs more detail
+    issues: 2500,       // Increased for Multi-Hop full file content RAG
+    issuesFix: 3000,    // Elevated for fix guidance
     stats: 100,
-    architecture: 300,
+    architecture: 800,
 };
 
 // ── Rough token estimator ───────────────────────────
@@ -54,9 +54,12 @@ function compressIssuesForDetail(issues: IssueContext[], tokenBudget: number): s
         if (issue.description) {
             line += `\n  → ${truncate(issue.description, 150)}`;
         }
+        if (issue.fullFileContent) {
+            line += `\n\n--- 📄 FULL FILE CONTEXT (${issue.filePath}) ---\n\`\`\`\n${issue.fullFileContent}\n\`\`\`\n-----------------------------------------`;
+        }
 
         const lineTokens = estimateTokens(line);
-        if (currentTokens + lineTokens > tokenBudget) break;
+        if (currentTokens + lineTokens > tokenBudget && currentTokens > 0) break; // Ensure at least 1 issue is allowed
 
         lines.push(line);
         currentTokens += lineTokens;
@@ -90,9 +93,12 @@ function compressIssuesForFix(issues: IssueContext[], tokenBudget: number): stri
         if (issue.fixSuggestion) {
             line += `\n  Suggested Fix: ${truncate(issue.fixSuggestion, 200)}`;
         }
+        if (issue.fullFileContent) {
+            line += `\n\n--- 📄 FULL FILE CONTEXT (${issue.filePath}) ---\n\`\`\`\n${issue.fullFileContent}\n\`\`\`\n-----------------------------------------`;
+        }
 
         const lineTokens = estimateTokens(line);
-        if (currentTokens + lineTokens > tokenBudget) break;
+        if (currentTokens + lineTokens > tokenBudget && currentTokens > 0) break; // Ensure at least 1 issue is allowed
 
         lines.push(line);
         currentTokens += lineTokens;

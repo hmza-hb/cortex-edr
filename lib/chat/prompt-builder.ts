@@ -8,6 +8,7 @@
 import type { ChatIntent } from './intent-classifier';
 import type { ManagedMemory } from './memory-manager';
 import { formatMemoryForPrompt } from './memory-manager';
+import { TOOLS_SYSTEM_PROMPT } from './tools';
 
 import {
     BASE_SYSTEM_PROMPT,
@@ -74,6 +75,9 @@ export function buildSystemPrompt(intent: ChatIntent): string {
     if (instructions) {
         prompt += instructions;
     }
+
+    // Always append tool calling instructions
+    prompt += '\n' + TOOLS_SYSTEM_PROMPT;
 
     return prompt;
 }

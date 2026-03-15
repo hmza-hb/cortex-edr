@@ -23,6 +23,7 @@ export interface OrchestrateParams {
 export interface OrchestrateResult {
     systemPrompt: string;
     userPrompt: string;
+    repoUrl: string | null;
     debug: {
         intent: string;
         confidence: number;
@@ -89,6 +90,7 @@ export async function orchestrate(params: OrchestrateParams): Promise<Orchestrat
     return {
         systemPrompt: assembled.systemPrompt,
         userPrompt: assembled.userPrompt,
+        repoUrl: context.scanMeta?.repoUrl || null,
         debug: {
             intent: intentResult.intent,
             confidence: intentResult.confidence,

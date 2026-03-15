@@ -5,6 +5,7 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { supabaseService } from '@/lib/supabase/service';
+import { parseGitHubUrl } from '@/lib/agents/pipeline';
 import type { ChatIntent } from './intent-classifier';
 
 // ── Types ───────────────────────────────────────────
@@ -35,6 +36,7 @@ export interface IssueContext {
     codeSnippet: string | null;
     fixSuggestion: string | null;
     aiPrompt: string | null;
+    fullFileContent?: string | null;
 }
 
 export interface ScanStats {
@@ -249,6 +251,45 @@ function mapIssue(raw: any): IssueContext {
     };
 }
 
+// ── File Content Fetcher (Multi-Hop RAG) ────────────
+
+async function enrichIssuesWithFiles(issues: IssueContext[], repoUrl: string): Promise<IssueContext[]> {
+    if (issues.length === 0) return issues;
+
+    try {
+        const { owner, repo } = parseGitHubUrl(repoUrl);
+        // Defaulting to main branch for live file fetches. 
+        // In a perfect world, we'd store the branch in 'scans', but 'main' catches 95% of cases.
+        const branch = 'main';
+        const rawBase = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
+
+        // Only fetch files for the top 2 issues to avoid blowing up the context window
+        const toEnrich = issues.slice(0, 2);
+
+        await Promise.all(toEnrich.map(async (issue) => {
+            if (!issue.filePath) return;
+            try {
+                const resp = await fetch(`${rawBase}/${issue.filePath}`);
+                if (resp.ok) {
+                    const text = await resp.text();
+                    // Optional: Truncate to max 4000 chars to save tokens, centered around the line number if possible
+                    if (text.length > 5000) {
+                        issue.fullFileContent = "(File too large, omitting full content but snippet is available)";
+                    } else {
+                        issue.fullFileContent = text;
+                    }
+                }
+            } catch (err) {
+                console.error(`[ContextRetriever] Failed to fetch file ${issue.filePath}`, err);
+            }
+        }));
+    } catch (err) {
+        console.warn("[ContextRetriever] Could not parse repo URL for secondary fetch", err);
+    }
+
+    return issues;
+}
+
 // ── Main retriever ──────────────────────────────────
 
 export async function retrieveContext(
@@ -285,13 +326,15 @@ export async function retrieveContext(
     switch (intent) {
         case 'vulnerability_detail': {
             const issues = await searchIssues(scan.id, keywords, 5);
-            return { type: intent, scanMeta, issues, isEmpty: issues.length === 0 };
+            const enriched = await enrichIssuesWithFiles(issues, scan.repo_url);
+            return { type: intent, scanMeta, issues: enriched, isEmpty: enriched.length === 0 };
         }
 
         case 'fix_guidance': {
             // For fix guidance, fetch issues with full detail including fix suggestions
             const issues = await searchIssues(scan.id, keywords, 3);
-            return { type: intent, scanMeta, issues, isEmpty: issues.length === 0 };
+            const enriched = await enrichIssuesWithFiles(issues, scan.repo_url);
+            return { type: intent, scanMeta, issues: enriched, isEmpty: enriched.length === 0 };
         }
 
         case 'repo_overview': {
@@ -325,7 +368,8 @@ export async function retrieveContext(
             const issues = keywords.length > 0
                 ? await searchIssues(scan.id, keywords, 3)
                 : await getTopCriticalIssues(scan.id, 3);
-            return { type: intent, scanMeta, issues, isEmpty: issues.length === 0 };
+            const enriched = await enrichIssuesWithFiles(issues, scan.repo_url);
+            return { type: intent, scanMeta, issues: enriched, isEmpty: enriched.length === 0 };
         }
 
         default:

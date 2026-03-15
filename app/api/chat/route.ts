@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import { supabaseService } from '@/lib/supabase/service';
 import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
+import { executeToolCall } from '@/lib/chat/tools';
 
 function deriveThreadTitle(params: { message: string; repoUrl?: string | null }) {
     const cleaned = (params.message || "").trim().replace(/\s+/g, " ");
@@ -171,36 +172,69 @@ export async function POST(req: NextRequest) {
 
         console.log(`[Chat] Orchestrated — Intent: ${orchestrated.debug.intent} | Tokens: ~${orchestrated.debug.tokenEstimate.total}`);
 
-        const aiResult = await callAI(
-            planTier,
-            'synthesis',
-            orchestrated.systemPrompt,
-            orchestrated.userPrompt,
-            {
-                scanId: scanId || undefined,
-                threadId: resolvedThreadId,
-                userId: userId
-            }
-        );
+        let aiResult: any = null;
+        let cumulativeText = "";
+        let toolLoops = 0;
+        let currentSystemPrompt = orchestrated.systemPrompt;
+        let currentUserPrompt = orchestrated.userPrompt;
+        const MAX_TOOL_LOOPS = 4;
 
-        if (aiResult && typeof aiResult === 'object' && aiResult.error === 'AI_SERVICE_UNAVAILABLE') {
-            return NextResponse.json(
+        while (toolLoops < MAX_TOOL_LOOPS) {
+            aiResult = await callAI(
+                planTier,
+                'synthesis',
+                currentSystemPrompt,
+                currentUserPrompt,
                 {
-                    error: 'AI_SERVICE_UNAVAILABLE',
-                    message: aiResult.message || 'AI service temporarily unavailable',
-                    fallbackResponse: aiResult.fallbackResponse || null,
+                    scanId: scanId || undefined,
                     threadId: resolvedThreadId,
-                    threadTitle: computedTitle,
-                },
-                { status: 503 }
+                    userId: userId
+                }
             );
+
+            if (aiResult && typeof aiResult === 'object' && aiResult.error === 'AI_SERVICE_UNAVAILABLE') {
+                return NextResponse.json(
+                    {
+                        error: 'AI_SERVICE_UNAVAILABLE',
+                        message: aiResult.message || 'AI service temporarily unavailable',
+                        fallbackResponse: aiResult.fallbackResponse || null,
+                        threadId: resolvedThreadId,
+                        threadTitle: computedTitle,
+                    },
+                    { status: 503 }
+                );
+            }
+
+            const assistantTurnText = typeof aiResult === 'string'
+                ? aiResult
+                : aiResult?.content
+                    ? String(aiResult.content)
+                    : JSON.stringify(aiResult);
+
+            cumulativeText += (cumulativeText ? "\n\n" : "") + assistantTurnText;
+
+            // Check if AI called a tool
+            const toolCallMatch = assistantTurnText.match(/<tool_call>([\s\S]*?)<\/tool_call>/i);
+            if (toolCallMatch) {
+                console.log(`[Chat] Tool Called (Loop ${toolLoops + 1}):`, toolCallMatch[0].trim());
+                toolLoops++;
+
+                // Execute tool
+                const repoUrl = orchestrated.repoUrl || "";
+                const safeScanId = scanId || "";
+                const toolResult = await executeToolCall(toolCallMatch[0], safeScanId, repoUrl);
+
+                console.log(`[Chat] Tool Result:`, toolResult.trim());
+
+                // Append the AI's partial stream and the tool result to the prompt
+                currentUserPrompt += `\n\nAssistant:\n${assistantTurnText}\n\nSystem:\n${toolResult}\n\nPlease continue your response:`;
+            } else {
+                // No tool called (or finished), loop is done!
+                break;
+            }
         }
 
-        const assistantText = typeof aiResult === 'string'
-            ? aiResult
-            : aiResult?.content
-                ? String(aiResult.content)
-                : JSON.stringify(aiResult);
+        const assistantText = cumulativeText;
 
         const { data: assistantRow, error: insertAssistantError } = await supabaseService
             .from('chat_messages')
