@@ -2,7 +2,6 @@ import { NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { SupabaseAdapter } from "@auth/supabase-adapter";
 import bcrypt from "bcryptjs";
 import { createClient } from "@supabase/supabase-js";
 
@@ -15,11 +14,7 @@ const supabaseAdmin = createClient(
 import { resend, SYSTEM_EMAIL, templates } from "@/lib/email/resend";
 
 export const authOptions: NextAuthOptions = {
-    // @ts-ignore
-    adapter: SupabaseAdapter({
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    }),
+    // No adapter needed - using JWT sessions with custom user management in public.users
     session: {
         strategy: "jwt",
         maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -72,12 +67,74 @@ export const authOptions: NextAuthOptions = {
     ],
     pages: {
         signIn: "/auth",
-        error: "/auth/error",
+        error: "/auth/auth-code-error",
     },
     callbacks: {
-        async jwt({ token, user, account }) {
+        async signIn({ user, account }) {
+            console.log(`[Auth] signIn - provider: ${account?.provider}, email: ${user?.email}`);
+
+            // For OAuth providers (Google, GitHub), upsert user into public.users
+            if (account && account.provider !== 'credentials') {
+                try {
+                    const { data: existingUser } = await supabaseAdmin
+                        .from('users')
+                        .select('id')
+                        .eq('email', user.email!)
+                        .maybeSingle();
+
+                    if (!existingUser) {
+                        // New OAuth user — create them in public.users
+                        const { data: newUser, error: createErr } = await supabaseAdmin
+                            .from('users')
+                            .insert({
+                                email: user.email,
+                                name: user.name,
+                                image: user.image,
+                            })
+                            .select()
+                            .single();
+
+                        if (createErr) {
+                            console.error('[Auth] Failed to create OAuth user in public.users:', createErr);
+                            return false;
+                        }
+
+                        // Override user.id so JWT gets the correct DB id
+                        user.id = newUser.id;
+
+                        // Send welcome email
+                        try {
+                            const welcomeEmail = templates.welcome(user.name || 'User');
+                            await resend.emails.send({
+                                from: `Cortex EDR <${SYSTEM_EMAIL}>`,
+                                to: user.email!,
+                                subject: welcomeEmail.subject,
+                                html: welcomeEmail.html,
+                            });
+                        } catch (emailErr) {
+                            console.error('[Auth] Welcome email failed:', emailErr);
+                        }
+                    } else {
+                        user.id = existingUser.id;
+                    }
+
+                    // Keep profile in sync
+                    await supabaseAdmin
+                        .from('profiles')
+                        .upsert({ id: user.id, email: user.email, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+
+                } catch (err) {
+                    console.error('[Auth] OAuth signIn error:', err);
+                    return false;
+                }
+            }
+
+            return true;
+        },
+        async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
+                token.email = user.email;
             }
             return token;
         },
@@ -87,53 +144,6 @@ export const authOptions: NextAuthOptions = {
             }
             return session;
         },
-    },
-    events: {
-        async createUser({ user }) {
-            // Trigger welcome email
-            if (user.email) {
-                try {
-                    const welcomeEmail = templates.welcome(user.name || 'User');
-                    await resend.emails.send({
-                        from: `Cortex EDR <${SYSTEM_EMAIL}>`,
-                        to: user.email,
-                        subject: welcomeEmail.subject,
-                        html: welcomeEmail.html
-                    });
-                    console.log(`Welcome email sent to ${user.email}`);
-                } catch (error) {
-                    console.error('Error sending welcome email:', error);
-                }
-            }
-
-            // Ensure profile exists (SupabaseAdapter might have already created it if schema is linked, 
-            // but we'll be explicit to avoid issues with our specific 'profiles' table)
-            try {
-                await supabaseAdmin
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        email: user.email,
-                        updated_at: new Date().toISOString(),
-                    }, { onConflict: 'id' });
-            } catch (error) {
-                console.error('Error creating profile on createUser:', error);
-            }
-        },
-        async signIn({ user }) {
-            // Ensure profile exists on every sign in (sync check)
-            try {
-                await supabaseAdmin
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        email: user.email,
-                        updated_at: new Date().toISOString(),
-                    }, { onConflict: 'id' });
-            } catch (error) {
-                console.error('Error syncing profile on signIn:', error);
-            }
-        }
     },
     secret: process.env.NEXTAUTH_SECRET,
 };
