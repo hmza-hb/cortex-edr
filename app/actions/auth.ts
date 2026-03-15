@@ -88,69 +88,101 @@ export async function completeRegistration(email: string, code: string, signupDa
             .from('auth_codes')
             .select('*')
             .eq('email', email)
-            .single();
+            .maybeSingle();  // use maybeSingle to avoid error when no row exists
 
-        if (fetchError || !authCode) {
-            return { error: "Verification code not found or expired" };
+        if (fetchError) {
+            console.error('[OTP] Fetch error:', fetchError);
+            return { error: `Database error: ${fetchError.message}` };
+        }
+
+        if (!authCode) {
+            return { error: "Verification code not found or expired. Please request a new one." };
         }
 
         if (new Date(authCode.expires_at) < new Date()) {
-            return { error: "Verification code has expired" };
+            return { error: "Verification code has expired. Please request a new one." };
         }
 
         if (authCode.code !== code) {
-            // Increment attempts
             await supabaseAdmin
                 .from('auth_codes')
                 .update({ attempts: authCode.attempts + 1 })
                 .eq('email', email);
-
-            return { error: "Invalid verification code" };
+            return { error: "Invalid verification code. Please check your email and try again." };
         }
 
         // 2. Hash password
         const hashedPassword = await bcrypt.hash(signupData.password, 12);
 
-        // 3. Create user
-        const { data: newUser, error: createError } = await supabaseAdmin
+        // 3. Check if user already exists (from a previous failed attempt)
+        const { data: existingUser } = await supabaseAdmin
             .from('users')
-            .insert({
-                email,
-                password: hashedPassword,
-                name: signupData.name,
-                image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(signupData.name)}`
-            })
-            .select()
-            .single();
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
 
-        if (createError) throw createError;
+        let userId: string;
 
-        // 4. Cleanup OTP
+        if (existingUser) {
+            // User was already created in a previous attempt — just update the password
+            const { error: updateError } = await supabaseAdmin
+                .from('users')
+                .update({ password: hashedPassword, name: signupData.name })
+                .eq('email', email);
+
+            if (updateError) {
+                console.error('[OTP] Update existing user error:', updateError);
+                return { error: `Failed to update user: ${updateError.message}` };
+            }
+
+            userId = existingUser.id;
+        } else {
+            // 4. Create new user
+            const { data: newUser, error: createError } = await supabaseAdmin
+                .from('users')
+                .insert({
+                    email,
+                    password: hashedPassword,
+                    name: signupData.name,
+                    image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(signupData.name)}`
+                })
+                .select()
+                .single();
+
+            if (createError) {
+                console.error('[OTP] Create user error:', createError);
+                return { error: `Failed to create user: ${createError.message}` };
+            }
+
+            userId = newUser.id;
+
+            // 5. Send Welcome Email (only for truly new users)
+            try {
+                const welcomeTemplate = templates.welcome(signupData.name);
+                await resend.emails.send({
+                    from: `Cortex EDR <${SYSTEM_EMAIL}>`,
+                    to: email,
+                    subject: welcomeTemplate.subject,
+                    html: welcomeTemplate.html,
+                });
+            } catch (emailErr) {
+                console.error('[OTP] Welcome email error (non-fatal):', emailErr);
+            }
+        }
+
+        // 6. Cleanup OTP
         await supabaseAdmin
             .from('auth_codes')
             .delete()
             .eq('email', email);
 
-        // 5. Send Welcome Email
-        const welcomeTemplate = templates.welcome(newUser.name);
-        await resend.emails.send({
-            from: `Cortex EDR <${SYSTEM_EMAIL}>`,
-            to: email,
-            subject: welcomeTemplate.subject,
-            html: welcomeTemplate.html,
-        });
-
         return { success: true };
     } catch (error: any) {
-        console.error("Complete registration error:", error);
-
-        if (error.message?.includes('auth_codes')) {
-            return { error: "Validation system is currently updating. Please try again shortly." };
-        }
-
-        return { error: "Verification process interrupted. Please re-initiate the protocol." };
+        console.error('[OTP] Unexpected completeRegistration error:', JSON.stringify(error, null, 2));
+        return { error: `Unexpected error: ${error?.message || 'Unknown error'}` };
     }
 }
+
 
 export async function requestPasswordReset(email: string) {
     if (!email) return { error: "Email address required" };
