@@ -20,6 +20,7 @@ import {
     GREETING_INSTRUCTIONS,
     FOUNDER_CONTEXT,
     PRODUCT_CONTEXT,
+    GROUND_TRUTH_GUARDS,
 } from './system-prompt';
 
 // ── Intent → System prompt segment mapping ──────────
@@ -65,7 +66,7 @@ function shouldIncludeHallucinationGuard(intent: ChatIntent): boolean {
 // ── Build system prompt ─────────────────────────────
 
 export function buildSystemPrompt(intent: ChatIntent): string {
-    let prompt = BASE_SYSTEM_PROMPT;
+    let prompt = BASE_SYSTEM_PROMPT + '\n' + GROUND_TRUTH_GUARDS;
 
     if (shouldIncludeHallucinationGuard(intent)) {
         prompt += HALLUCINATION_GUARD;

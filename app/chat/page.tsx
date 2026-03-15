@@ -90,20 +90,27 @@ function extractThinking(text: string) {
         });
     }
 
-    // 3. Strip tags from display text
-    let rest = text
-        .replace(/<thinking>[\s\S]*?<\/thinking>/gi, "")
-        .replace(/<thinking>[\s\S]*$/gi, "")
-        .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
-        .replace(/<tool_call>[\s\S]*$/gi, "")
-        .trim();
+    // 3. Strip tags from display text more aggressively
+    let rest = text;
+    // Remove all closed thinking blocks
+    rest = rest.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "");
+    // Remove any trailing open thinking block
+    rest = rest.replace(/<thinking>[\s\S]*$/gi, "");
+    // Remove all closed tool_call blocks
+    rest = rest.replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "");
+    // Remove any trailing open tool_call block
+    rest = rest.replace(/<tool_call>[\s\S]*$/gi, "");
+
+    // Final trim and cleanup
+    rest = rest.trim();
 
     return {
         turns,
-        rest: rest || (isStreaming ? "" : text),
+        rest: rest || (isStreaming ? "" : ""),
         isStreaming
     };
 }
+
 
 interface ChatMessage {
     id?: string;
@@ -1047,73 +1054,79 @@ function ChatHomeInner() {
                                     <div className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
                                         <div
                                             className={cn(
-                                                "rounded-2xl px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap",
+                                                "w-full px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap",
                                                 m.role === "user"
-                                                    ? "max-w-[84%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50"
-                                                    : "w-full max-w-[92%] md:max-w-[82%] text-zinc-200"
+                                                    ? "max-w-[84%] md:max-w-[72%] bg-zinc-900/80 border border-white/5 text-zinc-50 rounded-[22px] rounded-br-[4px]"
+                                                    : "max-w-none text-zinc-200"
                                             )}
                                         >
+                                            {m.role === "assistant" && (
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="h-8 w-8 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center overflow-hidden">
+                                                        <Image src="/assets/logo.png" alt="Cortex" width={24} height={24} className="opacity-80" />
+                                                    </div>
+                                                    <span className="text-[13px] font-bold tracking-tight text-white uppercase">Cortex</span>
+                                                </div>
+                                            )}
+
                                             {m.role === "assistant" ? (() => {
-                                                const { turns, rest, isStreaming } = extractThinking(m.content);
+                                                const { turns, rest } = extractThinking(m.content);
                                                 return (
                                                     <div className="min-w-0">
                                                         {turns.length > 0 && (
-                                                            <div className="mb-4 space-y-3">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <Sparkles className="h-4 w-4 text-purple-400" />
-                                                                    <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">Reasoning Chain</span>
-                                                                </div>
-                                                                <div className="relative pl-2 space-y-4 border-l border-zinc-800 ml-2">
-                                                                    {turns.map((turn, tIdx) => {
-                                                                        const isLast = tIdx === turns.length - 1;
-                                                                        const isCurrent = isLast && isStreaming;
-
-                                                                        return (
-                                                                            <div key={tIdx} className="relative pl-6">
-                                                                                {/* Timeline dot */}
-                                                                                <div className={cn(
-                                                                                    "absolute -left-[13px] top-1.5 h-3 w-3 rounded-full border-2",
-                                                                                    isCurrent ? "bg-purple-500 border-purple-500 animate-pulse" :
-                                                                                        "bg-zinc-950 border-zinc-700"
-                                                                                )}>
-                                                                                    {!isCurrent && <div className="absolute inset-0.5 bg-zinc-400 rounded-full" />}
+                                                            <div className="mb-8 pl-1">
+                                                                <details className="group/reasoning">
+                                                                    <summary className="flex items-center gap-2 text-[13px] font-semibold text-zinc-500 hover:text-zinc-300 cursor-pointer list-none select-none transition-colors">
+                                                                        <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
+                                                                        <span>Thought for {turns.length} step{turns.length > 1 ? 's' : ''}</span>
+                                                                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/reasoning:rotate-180" />
+                                                                    </summary>
+                                                                    <div className="mt-6 ml-1 relative pl-6 border-l border-zinc-900 space-y-8">
+                                                                        {turns.map((turn: ThinkingTurn, tIdx: number) => (
+                                                                            <div key={tIdx} className="relative">
+                                                                                <div className="absolute -left-[30px] top-1.5 h-3 w-3 rounded-full bg-zinc-950 border-2 border-purple-500/50" />
+                                                                                <div className="text-[13px] font-bold text-zinc-300 mb-2 uppercase tracking-tight">{turn.action}</div>
+                                                                                <div className="text-[13px] leading-relaxed text-zinc-500 font-mono whitespace-pre-wrap">
+                                                                                    {turn.content}
                                                                                 </div>
-
-                                                                                <details
-                                                                                    className="group/turn"
-                                                                                    open={isLast} // Expand last turn by default
-                                                                                >
-                                                                                    <summary className="text-[14px] font-medium text-zinc-300 cursor-pointer hover:text-white transition-colors flex items-center gap-2 list-none select-none">
-                                                                                        <span>{turn.action}</span>
-                                                                                        <div className="flex-1" />
-                                                                                        <span className="text-[10px] text-zinc-500 font-mono">STEP {turn.number}</span>
-                                                                                    </summary>
-                                                                                    <div className="mt-2 p-3 rounded-xl border border-white/5 bg-white/[0.02] text-[13px] text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">
-                                                                                        {turn.content}
-                                                                                    </div>
-                                                                                </details>
                                                                             </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </details>
                                                             </div>
                                                         )}
                                                         {rest && (
-                                                            <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                            <div className="prose prose-invert max-w-none prose-p:leading-8 prose-p:text-zinc-200 prose-p:text-[16px] prose-p:my-4 prose-li:my-1 prose-headings:text-white prose-pre:p-0 prose-pre:bg-transparent">
                                                                 <ReactMarkdown
                                                                     remarkPlugins={[remarkGfm]}
                                                                     components={{
-                                                                        p: (p) => <p className="leading-6 text-zinc-200 my-1.5" {...p} />,
-                                                                        ul: (p) => <ul className="my-1 ml-5 list-disc space-y-0.5" {...p} />,
-                                                                        ol: (p) => <ol className="my-1 ml-5 list-decimal space-y-0.5" {...p} />,
-                                                                        li: (p) => <li className="leading-5 text-zinc-200" {...p} />,
-                                                                        h1: (p) => <h1 className="text-lg font-semibold text-zinc-100 my-2" {...p} />,
-                                                                        h2: (p) => <h2 className="text-base font-semibold text-zinc-100 my-2" {...p} />,
-                                                                        h3: (p) => <h3 className="text-sm font-semibold text-zinc-100 my-1.5" {...p} />,
-                                                                        h4: (p) => <h4 className="text-sm font-medium text-zinc-100 my-1.5" {...p} />,
-                                                                        a: (p) => <a className="text-zinc-100 hover:text-white underline" {...p} />,
-                                                                        code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
-                                                                        pre: (p) => <pre className="overflow-auto my-2" {...p} />
+                                                                        p: (p) => <p {...p} />,
+                                                                        pre: ({ children }) => <div className="my-6 rounded-2xl overflow-hidden border border-white/5 bg-[#0D0D0D]">{children}</div>,
+                                                                        code: (props) => {
+                                                                            const { inline, className, children } = props as any;
+                                                                            const match = /language-(\w+)/.exec(className || '');
+                                                                            return !inline ? (
+                                                                                <div className="group/code relative">
+                                                                                    <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
+                                                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{match ? match[1] : 'code'}</span>
+                                                                                        <button
+                                                                                            onClick={() => safeCopy(String(children))}
+                                                                                            className="text-[10px] font-bold text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-widest flex items-center gap-1.5"
+                                                                                        >
+                                                                                            <Copy className="h-3 w-3" />
+                                                                                            Copy
+                                                                                        </button>
+                                                                                    </div>
+                                                                                    <div className="p-4 overflow-x-auto text-[13.5px] leading-6 font-mono text-zinc-300">
+                                                                                        {children}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]">
+                                                                                    {children}
+                                                                                </code>
+                                                                            );
+                                                                        }
                                                                     }}
                                                                 >
                                                                     {rest}
@@ -1270,59 +1283,80 @@ function ChatHomeInner() {
                         )}
 
                         {isStreaming && (() => {
-                            const { turns, rest, isStreaming: isCurrentlyThinking } = extractThinking(streamingMessage);
+                            const { turns, rest } = extractThinking(streamingMessage);
                             return (
-                                <div className="flex justify-start">
-                                    <div className="flex flex-col items-start max-w-[92%] md:max-w-[82%]">
-                                        <div className="rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap text-zinc-200 w-full min-w-0">
+                                <div className="flex justify-start group">
+                                    <div className="flex flex-col items-start w-full">
+                                        <div className="w-full px-5 py-4 text-[15px] leading-7 whitespace-pre-wrap text-zinc-200">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="h-8 w-8 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center overflow-hidden">
+                                                    <Image src="/assets/logo.png" alt="Cortex" width={24} height={24} className="opacity-80" />
+                                                </div>
+                                                <span className="text-[13px] font-bold tracking-tight text-white uppercase">Cortex</span>
+                                            </div>
+
                                             {turns.length > 0 && (
-                                                <div className="mb-4 space-y-3">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Sparkles className="h-4 w-4 text-purple-400" />
-                                                        <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">Reasoning Chain</span>
-                                                    </div>
-                                                    <div className="relative pl-2 space-y-4 border-l border-zinc-800 ml-2">
-                                                        {turns.map((turn, tIdx) => {
-                                                            const isLast = tIdx === turns.length - 1;
-                                                            const isCurrent = isLast && isCurrentlyThinking;
-
-                                                            return (
-                                                                <div key={tIdx} className="relative pl-6">
-                                                                    <div className={cn(
-                                                                        "absolute -left-[13px] top-1.5 h-3 w-3 rounded-full border-2",
-                                                                        isCurrent ? "bg-purple-500 border-purple-500 animate-pulse" :
-                                                                            "bg-zinc-950 border-zinc-700"
-                                                                    )}>
-                                                                        {!isCurrent && <div className="absolute inset-0.5 bg-zinc-400 rounded-full" />}
-                                                                    </div>
-
-                                                                    <details className="group/turn" open={isLast}>
-                                                                        <summary className="text-[14px] font-medium text-zinc-300 cursor-pointer hover:text-white transition-colors flex items-center gap-2 list-none select-none">
-                                                                            <span>{turn.action}</span>
-                                                                            <div className="flex-1" />
-                                                                        </summary>
-                                                                        <div className="mt-2 p-3 rounded-xl border border-white/5 bg-white/[0.02] text-[13px] text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">
+                                                <div className="mb-8 pl-1">
+                                                    <details className="group/reasoning" open>
+                                                        <summary className="flex items-center gap-2 text-[13px] font-semibold text-zinc-500 hover:text-zinc-300 cursor-pointer list-none select-none transition-colors">
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
+                                                            <span>Thought Process</span>
+                                                            <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/reasoning:rotate-180" />
+                                                        </summary>
+                                                        <div className="mt-6 ml-1 relative pl-6 border-l border-zinc-900 space-y-8">
+                                                            {turns.map((turn: ThinkingTurn, tIdx: number) => {
+                                                                const isLast = tIdx === turns.length - 1;
+                                                                return (
+                                                                    <div key={tIdx} className="relative">
+                                                                        <div className={cn(
+                                                                            "absolute -left-[30px] top-1.5 h-3 w-3 rounded-full bg-zinc-950 border-2",
+                                                                            isLast ? "border-purple-500 animate-pulse" : "border-purple-500/50"
+                                                                        )} />
+                                                                        <div className="text-[13px] font-bold text-zinc-300 mb-2 uppercase tracking-tight">{turn.action}</div>
+                                                                        <div className="text-[13px] leading-relaxed text-zinc-500 font-mono whitespace-pre-wrap">
                                                                             {turn.content}
-                                                                            {isCurrent && <span className="animate-pulse">|</span>}
+                                                                            {isLast && <span className="animate-pulse">|</span>}
                                                                         </div>
-                                                                    </details>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </details>
                                                 </div>
                                             )}
+
                                             {rest && (
-                                                <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
+                                                <div className="prose prose-invert max-w-none prose-p:leading-8 prose-p:text-zinc-200 prose-p:text-[16px] prose-p:my-4 prose-li:my-1 prose-headings:text-white prose-pre:p-0 prose-pre:bg-transparent">
                                                     <ReactMarkdown
                                                         remarkPlugins={[remarkGfm]}
                                                         components={{
-                                                            p: (p) => <p className="leading-6 text-zinc-200 my-1.5" {...p} />,
-                                                            ul: (p) => <ul className="my-1 ml-5 list-disc space-y-0.5" {...p} />,
-                                                            ol: (p) => <ol className="my-1 ml-5 list-decimal space-y-0.5" {...p} />,
-                                                            li: (p) => <li className="leading-5 text-zinc-200" {...p} />,
-                                                            code: (p) => <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]" {...p} />,
-                                                            pre: (p) => <pre className="overflow-auto my-2" {...p} />
+                                                            p: (p) => <p {...p} />,
+                                                            pre: ({ children }) => <div className="my-6 rounded-2xl overflow-hidden border border-white/5 bg-[#0D0D0D]">{children}</div>,
+                                                            code: (props) => {
+                                                                const { inline, className, children } = props as any;
+                                                                const match = /language-(\w+)/.exec(className || '');
+                                                                return !inline ? (
+                                                                    <div className="group/code relative">
+                                                                        <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/5">
+                                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{match ? match[1] : 'code'}</span>
+                                                                            <button
+                                                                                onClick={() => safeCopy(String(children))}
+                                                                                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-widest flex items-center gap-1.5"
+                                                                            >
+                                                                                <Copy className="h-3 w-3" />
+                                                                                Copy
+                                                                            </button>
+                                                                        </div>
+                                                                        <div className="p-4 overflow-x-auto text-[13.5px] leading-6 font-mono text-zinc-300">
+                                                                            {children}
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[13px]">
+                                                                        {children}
+                                                                    </code>
+                                                                );
+                                                            }
                                                         }}
                                                     >
                                                         {rest + " "}

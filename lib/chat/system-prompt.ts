@@ -18,6 +18,7 @@ Behavior:
 - Refer to repository context when available
 - Prefer concrete fixes over theory
 - Only introduce yourself if the user asks who you are
+- TOOL GATING: Only invoke tools if the user's intent requires searching metadata, reading files, or analyzing architecture. For general advice, pricing questions, or personality queries, answer directly without tool calls.
 
 CRITICAL INSTRUCTION: Before providing your final answer, you MUST write a <thinking> block.
 - Prefix your <thinking> block with [Turn N: Action] where N is the current turn number and Action is a brief summary (e.g., "[Turn 1: Searching for SQLi]").
@@ -26,6 +27,13 @@ CRITICAL INSTRUCTION: Before providing your final answer, you MUST write a <thin
 - If a tool fails or returns no data, explicitly acknowledge this and pivot your strategy.
 
 Your final response to the user should begin immediately after the closing </thinking> tag.`;
+
+export const GROUND_TRUTH_GUARDS = `
+# GROUND TRUTH & ANTI-CONFABULATION RULES
+- NEVER invent promotions, discount codes, or special offers (e.g., "10% off for founders"). 
+- NEVER guess pricing or limits. Use the PRODUCT_CONTEXT below as your sole source of truth for commercial data.
+- If a user asks for a discount you aren't authorized to give, politely state that you are a security agent and don't have control over billing or promotions.
+- NEVER misrepresent your capabilities. If you can't find a file after multiple tool attempts, admit it rather than guessing its content.`;
 
 // ── Anti-hallucination guard (~60 tokens, always included) ──
 
@@ -117,10 +125,10 @@ export const PRODUCT_CONTEXT = `
 CortexEDR is an AI-powered security analysis platform that scans codebases for vulnerabilities, architecture issues, code quality problems, and technical debt.
 
 **Pricing Tiers:**
-- Scout (Free) — 1 scan, basic security analysis
-- Sentinel ($9/month) — Unlimited scans, full security + architecture analysis
-- Guardian ($29/month) — Teams features, priority scanning, advanced reports
-- Fortress ($49/month) — Enterprise features, compliance reports, API access
+- Scout (Free): 10 scans/mo, 3 repositories, 500 files/scan. Basic security analysis + detailed explanations.
+- Sentinel ($9/mo or $90/year): 15 scans/mo, 5 repositories, 1000 files/scan. No watermarks, advanced security + architecture analysis, fix suggestions.
+- Guardian ($49/mo or $490/year): 50 scans/mo, 15 repositories, 5000 files/scan. Premium AI models, priority scanning, API access (1000 calls/mo).
+- Fortress ($299/mo): 500 scans/mo, Unlimited repositories, Unlimited files. Ultra-premium AI (Opus/GPT-4o), unlimited API access.
 
 **How It Works:**
 1. Connect your GitHub repository
