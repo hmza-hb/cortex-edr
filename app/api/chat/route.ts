@@ -6,6 +6,7 @@ import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
 import { executeToolCall } from '@/lib/chat/tools';
 import type { ChatIntent } from '@/lib/chat/intent-classifier';
+import { sanitizeAIResponse } from '@/lib/chat/sanitizer';
 
 function getLoopBudget(intent: ChatIntent): number {
     switch (intent) {
@@ -230,10 +231,9 @@ export async function POST(req: NextRequest) {
                     ? String(aiResult.content)
                     : JSON.stringify(aiResult);
 
-            cumulativeText += (cumulativeText ? "\n\n" : "") + assistantTurnText;
-
             // Check if AI called a tool
             const toolCallMatch = assistantTurnText.match(/<tool_call>([\s\S]*?)<\/tool_call>/i);
+
             if (toolCallMatch) {
                 console.log(`[Chat] Tool Called (Loop ${toolLoops + 1}):`, toolCallMatch[0].trim());
                 toolLoops++;
@@ -254,15 +254,22 @@ export async function POST(req: NextRequest) {
 
                 console.log(`[Chat] Tool Result:`, toolResult.trim());
 
-                // Append the AI's partial stream and the tool result to the prompt
-                currentUserPrompt += `\n\nAssistant:\n${assistantTurnText}\n\nSystem:\n${toolResult}\n\nPlease continue your response:`;
+                // REAL FIX FOR DUPLICATION:
+                // We keep the history clean by only sending the last assistant turn + tool result
+                // The AI sees context and history in the System Prompt (see prompt-builder.ts)
+                currentUserPrompt += `\n\n${assistantTurnText}\n\n<TOOL_RESULT>\n${toolResult}\n</TOOL_RESULT>\n\nPlease continue.`;
+
+                // Reset cumulative text because this turn was intermediate
+                cumulativeText = "";
             } else {
-                // No tool called (or finished), loop is done!
+                // No tool called — this is our final response!
+                cumulativeText = assistantTurnText;
                 break;
             }
         }
 
-        const assistantText = cumulativeText;
+        // Final Sanitization — Strip all internal tags
+        const assistantText = sanitizeAIResponse(cumulativeText);
 
         const { data: assistantRow, error: insertAssistantError } = await supabaseService
             .from('chat_messages')

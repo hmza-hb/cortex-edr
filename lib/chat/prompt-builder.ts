@@ -9,6 +9,7 @@ import type { ChatIntent } from './intent-classifier';
 import type { ManagedMemory } from './memory-manager';
 import { formatMemoryForPrompt } from './memory-manager';
 import { TOOLS_SYSTEM_PROMPT } from './tools';
+import { sanitizeAIResponse } from './sanitizer';
 
 import {
     BASE_SYSTEM_PROMPT,
@@ -65,7 +66,14 @@ function shouldIncludeHallucinationGuard(intent: ChatIntent): boolean {
 
 // ── Build system prompt ─────────────────────────────
 
-export function buildSystemPrompt(intent: ChatIntent): string {
+export function buildSystemPrompt(params: {
+    intent: ChatIntent;
+    compressedContext: string;
+    memory: ManagedMemory;
+}): string {
+    const { intent, compressedContext, memory } = params;
+    const { summaryBlock, historyBlock } = formatMemoryForPrompt(memory);
+
     let prompt = BASE_SYSTEM_PROMPT + '\n' + GROUND_TRUTH_GUARDS;
 
     if (shouldIncludeHallucinationGuard(intent)) {
@@ -77,6 +85,21 @@ export function buildSystemPrompt(intent: ChatIntent): string {
         prompt += instructions;
     }
 
+    // Ephemeral Context Injection (Moved from User Prompt)
+    if (compressedContext) {
+        prompt += `\n\n<SCAN_CONTEXT>\n${compressedContext}\n</SCAN_CONTEXT>`;
+    }
+
+    if (summaryBlock) {
+        prompt += `\n\n${summaryBlock}`;
+    }
+
+    if (historyBlock) {
+        // Sanitize historyBlock again as a last line of defense against legacy dirty data
+        const safeHistory = sanitizeAIResponse(historyBlock);
+        prompt += `\n\n<RECENT_MESSAGES>\n${safeHistory}\n</RECENT_MESSAGES>`;
+    }
+
     // Always append tool calling instructions
     prompt += '\n' + TOOLS_SYSTEM_PROMPT;
 
@@ -86,35 +109,9 @@ export function buildSystemPrompt(intent: ChatIntent): string {
 // ── Build user prompt ───────────────────────────────
 
 export function buildUserPrompt(params: {
-    intent: ChatIntent;
-    compressedContext: string;
-    memory: ManagedMemory;
     message: string;
 }): string {
-    const { intent, compressedContext, memory, message } = params;
-    const { summaryBlock, historyBlock } = formatMemoryForPrompt(memory);
-
-    const parts: string[] = [];
-
-    // 1. Scan context (only if available)
-    if (compressedContext) {
-        parts.push(`<SCAN_CONTEXT>\n${compressedContext}\n</SCAN_CONTEXT>`);
-    }
-
-    // 2. Conversation summary (only if available)
-    if (summaryBlock) {
-        parts.push(summaryBlock);
-    }
-
-    // 3. Recent conversation history (only if available)
-    if (historyBlock) {
-        parts.push(`<RECENT_MESSAGES>\n${historyBlock}\n</RECENT_MESSAGES>`);
-    }
-
-    // 4. User's current message
-    parts.push(message);
-
-    return parts.join('\n\n');
+    return params.message;
 }
 
 // ── Full prompt assembly (convenience) ──────────────
@@ -136,8 +133,8 @@ export function buildPrompt(params: {
     memory: ManagedMemory;
     message: string;
 }): AssembledPrompt {
-    const systemPrompt = buildSystemPrompt(params.intent);
-    const userPrompt = buildUserPrompt(params);
+    const systemPrompt = buildSystemPrompt(params);
+    const userPrompt = buildUserPrompt({ message: params.message });
 
     const systemTokens = Math.ceil(systemPrompt.length / 4);
     const userTokens = Math.ceil(userPrompt.length / 4);

@@ -21,12 +21,11 @@ Behavior:
 - TOOL GATING: Only invoke tools if the user's intent requires searching metadata, reading files, or analyzing architecture. For general advice, pricing questions, or personality queries, answer directly without tool calls.
 
 CRITICAL INSTRUCTION: Before providing your final answer, you MUST write a <thinking> block.
-- Your <thinking> blocks must contain ONLY tool call decisions (which tool and why) and tool result summaries.
-- Never write extended reasoning, self-reflection, or dialogue in <thinking>. Keep it under 15 words per entry.
-- Prefix your <thinking> block with [Turn N: Action] where N is the turn number and Action is the tool name or objective.
-- If a tool fails, acknowledge it and pivot. Never hallucinate content.
-
-Your final response to the user should begin immediately after the closing </thinking> tag.`;
+STRICT OUTPUT FORMAT:
+- <thinking> blocks: one line only. Format exactly as: "Action: [tool_name] [reason in 5 words]" or "Result: [findings in 5 words]".
+- Never write paragraphs, self-reflection, or extended reasoning inside <thinking>.
+- Keep thinking entries atomic and tool-focused.
+- Your final response to the user starts immediately after the closing </thinking> tag with NO XML TAGS or template markers.`;
 
 export const GROUND_TRUTH_GUARDS = `
 # GROUND TRUTH & ANTI-CONFABULATION RULES
