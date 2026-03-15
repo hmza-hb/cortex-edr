@@ -13,24 +13,24 @@ interface TopBarProps {
     user: any;
     scanCount?: number;
     scanLimit?: number;
-    planTier?: "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE" | string;
+    planTier?: "SCOUT" | "SENTINEL" | "GUARDIAN" | "FORTRESS" | string;
 }
 
-export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "VIBE_CODER" }: TopBarProps) => {
+export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "SCOUT" }: TopBarProps) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isConnectMenuOpen, setIsConnectMenuOpen] = useState(false);
     const [isSupportMenuOpen, setIsSupportMenuOpen] = useState(false);
 
     const planConfig = {
-        VIBE_CODER: { name: "Vibe Coder", color: "text-gray-400", showUpgrade: true },
-        DEVELOPER: { name: "Developer", color: "text-purple-400", showUpgrade: true },
-        TEAMS: { name: "Teams", color: "text-blue-400", showUpgrade: true },
-        ENTERPRISE: { name: "Enterprise", color: "text-white", showUpgrade: false },
+        SCOUT: { name: "Scout", color: "text-gray-400", showUpgrade: true },
+        SENTINEL: { name: "Sentinel", color: "text-purple-400", showUpgrade: true },
+        GUARDIAN: { name: "Guardian", color: "text-blue-400", showUpgrade: true },
+        FORTRESS: { name: "Fortress", color: "text-white", showUpgrade: false },
     };
 
-    const rawTier = (planTier || "VIBE_CODER").toUpperCase();
-    const currentPlan = planConfig[rawTier as keyof typeof planConfig] || planConfig.VIBE_CODER;
-    const isUnlimited = rawTier === "ENTERPRISE";
+    const rawTier = (planTier || "SCOUT").toUpperCase();
+    const currentPlan = planConfig[rawTier as keyof typeof planConfig] || planConfig.SCOUT;
+    const isUnlimited = rawTier === "FORTRESS";
 
     return (
         <div className="sticky top-0 z-50 bg-zinc-950/60 backdrop-blur-xl border-b border-zinc-800/50">

@@ -24,12 +24,12 @@ interface PDFReportProps {
     tierKey?: string;
 }
 
-export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseReport, tierKey = 'VIBE_CODER' }) => {
+export const PDFReport: React.FC<PDFReportProps> = ({ scan, issues, enterpriseReport, tierKey = 'SCOUT' }) => {
     const date = new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
     });
 
-    const isFreeTier = tierKey === 'VIBE_CODER';
+    const isFreeTier = tierKey === 'SCOUT';
 
     // Sort issues by severity for the Detailed Findings section
     let sortedIssues: Array<Issue & Partial<EnterpriseIssue>> = [...issues].sort((a, b) => {

@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Convert to lowercase format that sidebar expects
-        const rawTier = profile.plan_tier || "VIBE_CODER";
+        const rawTier = profile.plan_tier || "SCOUT";
         const tierId = rawTier.toUpperCase() as TierId;
-        const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+        const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
 
         const planTier = rawTier.toLowerCase();
         const scanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'

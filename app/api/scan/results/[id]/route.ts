@@ -25,7 +25,7 @@ export async function GET(
         }
 
         // 2. Fetch user profile for tier info
-        let userTier = 'VIBE_CODER';
+        let userTier = 'SCOUT';
         if (scan.user_id) {
             const { data: profile } = await supabaseService
                 .from('profiles')
@@ -34,14 +34,11 @@ export async function GET(
                 .single();
 
             if (profile) {
-                if (profile.tier) {
-                    userTier = profile.tier;
-                } else if (profile.plan_tier) {
-                    if (profile.plan_tier === 'free') userTier = 'VIBE_CODER';
-                    else if (profile.plan_tier === 'starter') userTier = 'DEVELOPER';
-                    else if (profile.plan_tier === 'professional') userTier = 'TEAMS';
-                    else userTier = 'ENTERPRISE';
-                }
+                const rawTier = (profile.plan_tier || 'SCOUT').toUpperCase();
+                if (rawTier === 'SCOUT' || rawTier === 'VIBE_CODER' || rawTier === 'FREE') userTier = 'SCOUT';
+                else if (rawTier === 'SENTINEL' || rawTier === 'DEVELOPER' || rawTier === 'STARTER') userTier = 'SENTINEL';
+                else if (rawTier === 'GUARDIAN' || rawTier === 'TEAMS' || rawTier === 'PROFESSIONAL') userTier = 'GUARDIAN';
+                else if (rawTier === 'FORTRESS' || rawTier === 'ENTERPRISE') userTier = 'FORTRESS';
             }
         }
 

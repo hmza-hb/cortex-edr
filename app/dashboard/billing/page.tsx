@@ -65,12 +65,12 @@ export default function BillingPage() {
         );
     }
 
-    const currentTierId = (profile?.plan_tier?.toUpperCase() || "VIBE_CODER") as TierId;
+    const currentTierId = (profile?.plan_tier?.toUpperCase() || "SCOUT") as TierId;
     const tierConfig = SYSTEM_CONFIG.tiers[currentTierId];
 
     const plans = [
         {
-            id: TierId.DEVELOPER,
+            id: TierId.SENTINEL,
             name: "Sentinel",
             tagline: "For professional developers",
             price: "$9",
@@ -78,7 +78,7 @@ export default function BillingPage() {
             cta: "Get Sentinel"
         },
         {
-            id: TierId.TEAMS,
+            id: TierId.GUARDIAN,
             name: "Guardian",
             tagline: "For scaling teams",
             price: "$49",
@@ -87,7 +87,7 @@ export default function BillingPage() {
             cta: "Get Guardian"
         },
         {
-            id: TierId.ENTERPRISE,
+            id: TierId.FORTRESS,
             name: "Fortress",
             tagline: "For global infrastructure",
             price: "$299",

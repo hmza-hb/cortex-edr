@@ -12,11 +12,11 @@ interface EnterpriseIssueCardProps {
     tierKey?: TierId
 }
 
-export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.VIBE_CODER }: EnterpriseIssueCardProps) {
+export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.SCOUT }: EnterpriseIssueCardProps) {
     const [expanded, setExpanded] = useState(rank <= 3) // Auto-expand top 3
     const [copied, setCopied] = useState<string | null>(null)
 
-    const tierConfig = SYSTEM_CONFIG.tiers[tierKey] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+    const tierConfig = SYSTEM_CONFIG.tiers[tierKey] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
     const canSeeExplanations = tierConfig.features.detailedExplanations ?? false;
     const canSeeFixes = tierConfig.features.fixSuggestions ?? false;
     const canSeePrompts = tierConfig.features.executionReadyPrompts ?? false;
@@ -120,7 +120,7 @@ export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.VIBE_CODER }
                                     <p className="text-sm font-bold text-white mb-2">Detailed Explanations Locked</p>
                                     <Link href="/pricing">
                                         <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all">
-                                            Upgrade to Developer Tier
+                                            Upgrade to Sentinel Tier
                                         </button>
                                     </Link>
                                 </div>

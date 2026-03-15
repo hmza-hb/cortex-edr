@@ -1,8 +1,8 @@
 export enum TierId {
-    VIBE_CODER = 'VIBE_CODER',
-    DEVELOPER = 'DEVELOPER',
-    TEAMS = 'TEAMS',
-    ENTERPRISE = 'ENTERPRISE'
+    SCOUT = 'SCOUT',
+    SENTINEL = 'SENTINEL',
+    GUARDIAN = 'GUARDIAN',
+    FORTRESS = 'FORTRESS'
 }
 
 export interface TierFeatures {
@@ -43,22 +43,22 @@ export const SYSTEM_CONFIG: {
     // 🧠 AI MODEL ROUTING BY TIER
     // ==========================================
     ai: {
-        vibe_coder: {
+        scout: {
             primary: "gemini-2.0-flash",
             fallback: "groq-llama-3.3-70b-versatile"
         },
-        developer: {
+        sentinel: {
             standard: "gemini-2.0-flash",
             security: "gemini-1.5-pro",
             orchestrator: "gemini-1.5-pro"
         },
-        teams: {
+        guardian: {
             standard: "gemini-2.0-flash",
             security: "claude-3-5-haiku-latest",
             architecture: "gemini-1.5-pro",
             orchestrator: "claude-3-5-sonnet-latest"
         },
-        enterprise: {
+        fortress: {
             critical: "claude-3-opus-latest",
             orchestrator: "gpt-4o"
         }
@@ -68,9 +68,9 @@ export const SYSTEM_CONFIG: {
     // 🛡️ THE 4 ACCESS TIERS (LIMITS & PRICING)
     // ==========================================
     tiers: {
-        [TierId.VIBE_CODER]: {
-            id: "vibe_coder",
-            name: "VIBE CODERS",
+        [TierId.SCOUT]: {
+            id: "scout",
+            name: "SCOUT",
             priceMonthly: 0,
             priceAnnual: 0,
             limits: {
@@ -90,9 +90,9 @@ export const SYSTEM_CONFIG: {
                 executionReadyPrompts: false
             }
         },
-        [TierId.DEVELOPER]: {
-            id: "developer",
-            name: "DEVELOPERS",
+        [TierId.SENTINEL]: {
+            id: "sentinel",
+            name: "SENTINEL",
             priceMonthly: 9,
             priceAnnual: 90,
             limits: {
@@ -112,9 +112,9 @@ export const SYSTEM_CONFIG: {
                 executionReadyPrompts: false
             }
         },
-        [TierId.TEAMS]: {
-            id: "teams",
-            name: "TEAMS",
+        [TierId.GUARDIAN]: {
+            id: "guardian",
+            name: "GUARDIAN",
             priceMonthly: 49,
             priceAnnual: 490,
             limits: {
@@ -135,9 +135,9 @@ export const SYSTEM_CONFIG: {
                 apiCallsPerMonth: 1000
             }
         },
-        [TierId.ENTERPRISE]: {
-            id: "enterprise",
-            name: "ENTERPRISE",
+        [TierId.FORTRESS]: {
+            id: "fortress",
+            name: "FORTRESS",
             priceMonthly: 299,
             priceAnnual: 2990,
             limits: {

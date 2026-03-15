@@ -44,9 +44,9 @@ export default async function DashboardLayout({
 
     if (!profile) {
         console.error('Dashboard - No profile found for user:', userEmail);
-        // Fallback to VIBE_CODER
-        const fallbackTier = "VIBE_CODER";
-        const tierConfig = SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+        // Fallback to SCOUT
+        const fallbackTier = "SCOUT";
+        const tierConfig = SYSTEM_CONFIG.tiers[TierId.SCOUT];
         const fallbackScanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
             ? tierConfig.limits.maxScansPerMonth
             : 1000; // Fallback for Unlimited
@@ -63,9 +63,9 @@ export default async function DashboardLayout({
         );
     }
 
-    const rawTier = profile?.plan_tier || "VIBE_CODER";
+    const rawTier = profile?.plan_tier || "SCOUT";
     const tierId = rawTier.toUpperCase() as TierId;
-    const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+    const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
 
     // Convert to lowercase format that sidebar expects
     const planTier = rawTier.toLowerCase();

@@ -16,7 +16,7 @@ interface IssueListProps {
 
 type Tab = 'all' | 'security' | 'architecture' | 'quality' | 'debt' | 'ai_specific';
 
-export const IssueList: React.FC<IssueListProps> = ({ issues, tierKey = TierId.VIBE_CODER }) => {
+export const IssueList: React.FC<IssueListProps> = ({ issues, tierKey = TierId.SCOUT }) => {
     const [activeTab, setActiveTab] = useState<Tab>('all');
 
     const filteredIssues = activeTab === 'all'

@@ -83,7 +83,7 @@ async function callAI(
     agentId: number,
     agentName: string,
     logger: AILogger,
-    tierKey: TierId = TierId.VIBE_CODER,
+    tierKey: TierId = TierId.SCOUT,
     userId?: string,
     scanId?: string,
     threadId?: string
@@ -412,7 +412,7 @@ export async function setupForStep(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 0: GIT CONNECT (GitHub API — no git binary, works on Vercel Hobby)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runGitConnect(scanId: string, repoUrl: string, tierKey: TierId = TierId.VIBE_CODER): Promise<string> {
+export async function runGitConnect(scanId: string, repoUrl: string, tierKey: TierId = TierId.SCOUT): Promise<string> {
     const repoPath = `/tmp/cortexedr-${scanId}`;
 
     try {
@@ -555,7 +555,7 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 1: RECONNAISSANCE - The Architect
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
+export async function runReconnaissance(scanId: string, repoPath: string, logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
         await emit(scanId, 1, 'Reconnaissance', 'started', 'Beginning deep codebase reconnaissance...');
 
@@ -670,7 +670,7 @@ export async function runSecurityScanner(
     fileTree: string[],
     techStack: any,
     logger: AILogger,
-    tierKey: TierId = TierId.VIBE_CODER,
+    tierKey: TierId = TierId.SCOUT,
     userId?: string
 ) {
     try {
@@ -749,7 +749,7 @@ export async function runSecurityScanner(
 
 // AGENT 3: ARCHITECTURE REVIEWER - The Designer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
+export async function runArchitecture(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
         await emit(scanId, 3, 'Architecture', 'started', 'Analyzing system architecture...');
 
@@ -825,7 +825,7 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 4: CODE QUALITY ANALYST - The Critic
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
+export async function runCodeQuality(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
         await emit(scanId, 4, 'Code Quality', 'started', 'Analyzing code quality...');
 
@@ -892,7 +892,7 @@ export async function runCodeQuality(scanId: string, repoPath: string, fileTree:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 5: TECHNICAL DEBT HUNTER - The Auditor
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
+export async function runTechnicalDebt(scanId: string, repoPath: string, fileTree: string[], pkg: any, logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
         await emit(scanId, 5, 'Technical Debt', 'started', 'Scanning for technical debt...');
 
@@ -960,7 +960,7 @@ export async function runTechnicalDebt(scanId: string, repoPath: string, fileTre
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 6: AI CODE DETECTOR - The Investigator
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
+export async function runAIEngineReview(scanId: string, repoPath: string, fileTree: string[], logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
         await emit(scanId, 6, 'AI-Engine Review', 'started', 'Analyzing AI code patterns...');
 
@@ -1025,7 +1025,7 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 7: ORCHESTRATOR - The Synthesizer
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runOrchestrator(scanId: string, logger: AILogger, tierKey: TierId = TierId.VIBE_CODER, userId?: string) {
+export async function runOrchestrator(scanId: string, logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
         await emit(scanId, 7, 'Synthesis & Report', 'started', 'Initializing executive synthesis...');
 
@@ -1144,7 +1144,7 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MASTER PIPELINE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export async function runPipeline(scanId: string, repoUrl: string, tierKey: TierId = TierId.VIBE_CODER) {
+export async function runPipeline(scanId: string, repoUrl: string, tierKey: TierId = TierId.SCOUT) {
     console.log(`[PIPELINE START] Scan: ${scanId}, Repo: ${repoUrl}, Tier: ${tierKey}`);
     const logger = new AILogger(scanId);
 

@@ -12,7 +12,7 @@ import { AnimatePresence, motion } from "framer-motion";
 interface DashboardLayoutWrapperProps {
     children: React.ReactNode;
     user: any;
-    planTier: "VIBE_CODER" | "DEVELOPER" | "TEAMS" | "ENTERPRISE" | string;
+    planTier: "SCOUT" | "SENTINEL" | "GUARDIAN" | "FORTRESS" | string;
     scanCount: number;
     scanLimit: number;
 }

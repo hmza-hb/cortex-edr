@@ -23,9 +23,9 @@ import { toast } from "sonner";
 
 const pricingTiers = [
     {
-        name: SYSTEM_CONFIG.tiers.VIBE_CODER.name,
-        id: SYSTEM_CONFIG.tiers.VIBE_CODER.id,
-        price: `$${SYSTEM_CONFIG.tiers.VIBE_CODER.priceMonthly}`,
+        name: SYSTEM_CONFIG.tiers.SCOUT.name,
+        id: SYSTEM_CONFIG.tiers.SCOUT.id,
+        price: `$${SYSTEM_CONFIG.tiers.SCOUT.priceMonthly}`,
         period: "per month",
         desc: "Essential reconnaissance node for public repo auditing.",
         icon: Binary,
@@ -34,9 +34,9 @@ const pricingTiers = [
         paddlePriceId: "" // Free tier
     },
     {
-        name: SYSTEM_CONFIG.tiers.DEVELOPER.name,
-        id: SYSTEM_CONFIG.tiers.DEVELOPER.id,
-        price: `$${SYSTEM_CONFIG.tiers.DEVELOPER.priceMonthly}`,
+        name: SYSTEM_CONFIG.tiers.SENTINEL.name,
+        id: SYSTEM_CONFIG.tiers.SENTINEL.id,
+        price: `$${SYSTEM_CONFIG.tiers.SENTINEL.priceMonthly}`,
         period: "per month",
         desc: "Advanced security unit for professional auditors.",
         icon: Zap,
@@ -46,9 +46,9 @@ const pricingTiers = [
         paddlePriceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID_DEVELOPER || ""
     },
     {
-        name: SYSTEM_CONFIG.tiers.TEAMS.name,
-        id: SYSTEM_CONFIG.tiers.TEAMS.id,
-        price: `$${SYSTEM_CONFIG.tiers.TEAMS.priceMonthly}`,
+        name: SYSTEM_CONFIG.tiers.GUARDIAN.name,
+        id: SYSTEM_CONFIG.tiers.GUARDIAN.id,
+        price: `$${SYSTEM_CONFIG.tiers.GUARDIAN.priceMonthly}`,
         period: "per month",
         desc: "High-capacity cluster for serious engineering operations.",
         icon: Server,
@@ -57,9 +57,9 @@ const pricingTiers = [
         paddlePriceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_ID_TEAMS || ""
     },
     {
-        name: SYSTEM_CONFIG.tiers.ENTERPRISE.name,
-        id: SYSTEM_CONFIG.tiers.ENTERPRISE.id,
-        price: `$${SYSTEM_CONFIG.tiers.ENTERPRISE.priceMonthly}`,
+        name: SYSTEM_CONFIG.tiers.FORTRESS.name,
+        id: SYSTEM_CONFIG.tiers.FORTRESS.id,
+        price: `$${SYSTEM_CONFIG.tiers.FORTRESS.priceMonthly}`,
         period: "per month",
         desc: "Enterprise-grade isolation and custom scaling protocols.",
         icon: Shield,
@@ -81,29 +81,29 @@ const comparisonData = [
             { name: "Fix suggestions with code", scout: false, sentinel: true, guardian: true, fortress: true },
             { name: "Execution-ready AI prompts", scout: false, sentinel: true, guardian: true, fortress: true },
             { name: "Severity prioritization", scout: false, sentinel: true, guardian: true, fortress: true },
-            { name: "AI Protocol", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.features.aiPromptType, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.features.aiPromptType, guardian: SYSTEM_CONFIG.tiers.TEAMS.features.aiPromptType, fortress: SYSTEM_CONFIG.tiers.ENTERPRISE.features.aiPromptType },
+            { name: "AI Protocol", scout: SYSTEM_CONFIG.tiers.SCOUT.features.aiPromptType, sentinel: SYSTEM_CONFIG.tiers.SENTINEL.features.aiPromptType, guardian: SYSTEM_CONFIG.tiers.GUARDIAN.features.aiPromptType, fortress: SYSTEM_CONFIG.tiers.FORTRESS.features.aiPromptType },
         ]
     },
     {
         category: "Operational Capacity",
         features: [
-            { name: "Monthly scan limit", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.limits.maxScansPerMonth, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.limits.maxScansPerMonth, guardian: SYSTEM_CONFIG.tiers.TEAMS.limits.maxScansPerMonth, fortress: "Unlimited" },
-            { name: "Repository limit", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.limits.maxRepositories, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.limits.maxRepositories, guardian: SYSTEM_CONFIG.tiers.TEAMS.limits.maxRepositories, fortress: "Unlimited" },
-            { name: "Files analyzed per scan", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.limits.maxFilesPerScan, sentinel: SYSTEM_CONFIG.tiers.DEVELOPER.limits.maxFilesPerScan, guardian: SYSTEM_CONFIG.tiers.TEAMS.limits.maxFilesPerScan, fortress: "Unlimited" },
-            { name: "PDF report manifest", scout: SYSTEM_CONFIG.tiers.VIBE_CODER.features.watermarkedPdf ? "Watermarked" : true, sentinel: true, guardian: true, fortress: true },
-            { name: "Scan history retention", scout: `${SYSTEM_CONFIG.tiers.VIBE_CODER.limits.retentionHours} Hours`, sentinel: `${SYSTEM_CONFIG.tiers.DEVELOPER.limits.retentionDays} Days`, guardian: `${SYSTEM_CONFIG.tiers.TEAMS.limits.retentionDays} Days`, fortress: "Forever" },
+            { name: "Monthly scan limit", scout: SYSTEM_CONFIG.tiers.SCOUT.limits.maxScansPerMonth, sentinel: SYSTEM_CONFIG.tiers.SENTINEL.limits.maxScansPerMonth, guardian: SYSTEM_CONFIG.tiers.GUARDIAN.limits.maxScansPerMonth, fortress: "Unlimited" },
+            { name: "Repository limit", scout: SYSTEM_CONFIG.tiers.SCOUT.limits.maxRepositories, sentinel: SYSTEM_CONFIG.tiers.SENTINEL.limits.maxRepositories, guardian: SYSTEM_CONFIG.tiers.GUARDIAN.limits.maxRepositories, fortress: "Unlimited" },
+            { name: "Files analyzed per scan", scout: SYSTEM_CONFIG.tiers.SCOUT.limits.maxFilesPerScan, sentinel: SYSTEM_CONFIG.tiers.SENTINEL.limits.maxFilesPerScan, guardian: SYSTEM_CONFIG.tiers.GUARDIAN.limits.maxFilesPerScan, fortress: "Unlimited" },
+            { name: "PDF report manifest", scout: SYSTEM_CONFIG.tiers.SCOUT.features.watermarkedPdf ? "Watermarked" : true, sentinel: true, guardian: true, fortress: true },
+            { name: "Scan history retention", scout: `${SYSTEM_CONFIG.tiers.SCOUT.limits.retentionHours} Hours`, sentinel: `${SYSTEM_CONFIG.tiers.SENTINEL.limits.retentionDays} Days`, guardian: `${SYSTEM_CONFIG.tiers.GUARDIAN.limits.retentionDays} Days`, fortress: "Forever" },
             { name: "Processing priority", scout: "Standard", sentinel: "High", guardian: "Fast-track", fortress: "Dedicated" },
         ]
     },
     {
         category: "Ecosystem & Support",
         features: [
-            { name: "API Access", scout: false, sentinel: false, guardian: `${SYSTEM_CONFIG.tiers.TEAMS.features.apiCallsPerMonth} calls/mo`, fortress: "Unlimited" },
+            { name: "API Access", scout: false, sentinel: false, guardian: `${SYSTEM_CONFIG.tiers.GUARDIAN.features.apiCallsPerMonth} calls/mo`, fortress: "Unlimited" },
             { name: "Email notifications", scout: false, sentinel: true, guardian: true, fortress: true },
             { name: "Delta tracking (Scan vs Scan)", scout: false, sentinel: true, guardian: true, fortress: true },
             { name: "Dependency CVE tracking", scout: false, sentinel: false, guardian: true, fortress: true },
             { name: "Shareable report links", scout: false, sentinel: false, guardian: true, fortress: true },
-            { name: "Team access", scout: false, sentinel: false, guardian: `${SYSTEM_CONFIG.tiers.TEAMS.limits.teamSeats} Seats`, fortress: "Unlimited" },
+            { name: "Team access", scout: false, sentinel: false, guardian: `${SYSTEM_CONFIG.tiers.GUARDIAN.limits.teamSeats} Seats`, fortress: "Unlimited" },
             { name: "Support response time", scout: "Community", sentinel: "48h", guardian: "24h Priority", fortress: "Dedicated Manager" },
         ]
     }

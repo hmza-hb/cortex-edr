@@ -81,7 +81,7 @@ export async function PUT(request: NextRequest) {
                 return NextResponse.json({ success: true, message: 'User deleted' });
 
             case 'reset_scans':
-                const tierConfig = SYSTEM_CONFIG.tiers[newTier.toUpperCase() as TierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+                const tierConfig = SYSTEM_CONFIG.tiers[newTier.toUpperCase() as TierId] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
                 const scanLimit = tierConfig.limits.maxScansPerMonth;
                 const { error: resetError } = await supabase
                     .from('profiles')

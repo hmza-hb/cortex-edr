@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate tier
-        const validTiers = ['VIBE_CODER', 'DEVELOPER', 'TEAMS', 'ENTERPRISE'];
+        const validTiers = ['SCOUT', 'SENTINEL', 'GUARDIAN', 'FORTRESS'];
         if (!validTiers.includes(newTier.toUpperCase())) {
             return NextResponse.json(
                 { error: `Invalid tier. Must be one of: ${validTiers.join(', ')}` },

@@ -51,19 +51,17 @@ export async function POST(req: NextRequest) {
             scans_remaining: profile.scans_remaining
         });
 
-        // Determine user's tier (fallback to TierId.VIBE_CODER if undefined)
-        let userTierKey: TierId = TierId.VIBE_CODER;
-        if (profile?.tier) {
-            userTierKey = profile.tier as TierId;
-        } else if (profile?.plan_tier) {
-            // Legacy mapping fallback just in case migration hasn't run
-            if (profile.plan_tier === 'free') userTierKey = TierId.VIBE_CODER;
-            else if (profile.plan_tier === 'starter') userTierKey = TierId.DEVELOPER;
-            else if (profile.plan_tier === 'professional') userTierKey = TierId.TEAMS;
-            else userTierKey = TierId.ENTERPRISE;
+        // Determine user's tier (fallback to TierId.SCOUT if undefined)
+        let userTierKey: TierId = TierId.SCOUT;
+        if (profile?.plan_tier) {
+            const pt = profile.plan_tier.toUpperCase();
+            if (pt === 'SCOUT' || pt === 'VIBE_CODER' || pt === 'FREE') userTierKey = TierId.SCOUT;
+            else if (pt === 'SENTINEL' || pt === 'DEVELOPER' || pt === 'STARTER') userTierKey = TierId.SENTINEL;
+            else if (pt === 'GUARDIAN' || pt === 'TEAMS' || pt === 'PROFESSIONAL') userTierKey = TierId.GUARDIAN;
+            else if (pt === 'FORTRESS' || pt === 'ENTERPRISE') userTierKey = TierId.FORTRESS;
         }
 
-        const tierConfig = SYSTEM_CONFIG.tiers[userTierKey] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+        const tierConfig = SYSTEM_CONFIG.tiers[userTierKey] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
         const scanLimit = tierConfig.limits.maxScansPerMonth;
 
         // Note: Currently we decrement `scans_remaining`. To be fully dynamic, 

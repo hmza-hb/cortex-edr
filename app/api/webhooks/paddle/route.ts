@@ -65,12 +65,12 @@ async function handleSubscriptionUpdate(subscription: any) {
 
     // Map Paddle Price ID to our Plan Tier (MUST MATCH TierId enum)
     const priceId = subscription.items?.[0]?.price_id;
-    let tier = 'VIBE_CODER';
+    let tier = 'SCOUT';
 
     // Map these in your .env.local
-    if (priceId === process.env.PADDLE_PRICE_ID_DEVELOPER) tier = 'DEVELOPER';
-    if (priceId === process.env.PADDLE_PRICE_ID_TEAMS) tier = 'TEAMS';
-    if (priceId === process.env.PADDLE_PRICE_ID_ENTERPRISE) tier = 'ENTERPRISE';
+    if (priceId === process.env.PADDLE_PRICE_ID_DEVELOPER) tier = 'SENTINEL';
+    if (priceId === process.env.PADDLE_PRICE_ID_TEAMS) tier = 'GUARDIAN';
+    if (priceId === process.env.PADDLE_PRICE_ID_ENTERPRISE) tier = 'FORTRESS';
 
     const { error } = await supabaseAdmin
         .from('profiles')
@@ -97,7 +97,7 @@ async function handleSubscriptionDeactivation(subscription: any) {
         .from('profiles')
         .update({
             subscription_status: status,
-            plan_tier: 'VIBE_CODER', // Downgrade to lowest tier on deactivation
+            plan_tier: 'SCOUT', // Downgrade to lowest tier on deactivation
             updated_at: new Date().toISOString()
         })
         .eq('paddle_subscription_id', subscriptionId);

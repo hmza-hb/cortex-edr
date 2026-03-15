@@ -13,10 +13,10 @@ interface IssueCardProps {
     tierKey?: TierId;
 }
 
-export const IssueCard: React.FC<IssueCardProps> = ({ issue, tierKey = TierId.VIBE_CODER }) => {
+export const IssueCard: React.FC<IssueCardProps> = ({ issue, tierKey = TierId.SCOUT }) => {
     const [copied, setCopied] = React.useState(false);
 
-    const tierConfig = SYSTEM_CONFIG.tiers[tierKey] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+    const tierConfig = SYSTEM_CONFIG.tiers[tierKey] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
     const canSeeExplanations = tierConfig.features.detailedExplanations ?? false;
     const canSeeFixes = tierConfig.features.fixSuggestions ?? false;
     const canSeePrompts = tierConfig.features.executionReadyPrompts ?? false;

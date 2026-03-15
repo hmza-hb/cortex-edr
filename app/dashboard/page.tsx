@@ -41,9 +41,9 @@ export default async function DashboardPage() {
         .eq("email", session.user.email)
         .maybeSingle();
 
-    const rawTier = profile?.plan_tier || "vibe_coder";
+    const rawTier = profile?.plan_tier || "SCOUT";
     const tierId = rawTier.toUpperCase() as TierId;
-    const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.VIBE_CODER];
+    const tierConfig = SYSTEM_CONFIG.tiers[tierId] || SYSTEM_CONFIG.tiers[TierId.SCOUT];
 
     const scanLimit = typeof tierConfig.limits.maxScansPerMonth === 'number'
         ? tierConfig.limits.maxScansPerMonth
