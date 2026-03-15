@@ -29,7 +29,7 @@ export async function GET(
         if (scan.user_id) {
             const { data: profile } = await supabaseService
                 .from('profiles')
-                .select('tier, plan_tier')
+                .select('plan_tier')
                 .eq('id', scan.user_id)
                 .single();
 

@@ -13,7 +13,7 @@ export async function executeSearchIssues(scanId: string, query: string): Promis
         .limit(5);
 
     if (error || !data || data.length === 0) {
-        return "No matching issues found.";
+        return "STALE_CONTEXT_OR_NO_MATCH: No matching issues found for the given query. Please try searching with broader keywords or direct file paths.";
     }
 
     return data.map(i => `[${i.severity.toUpperCase()}] ${i.title} (File: ${i.file_path || 'unknown'}:${i.line_number || '?'})`).join('\n');
@@ -29,7 +29,10 @@ export async function executeGetFileContent(repoUrl: string, filePath: string): 
 
         const resp = await fetch(`${rawBase}/${filePath}`);
         if (!resp.ok) {
-            return `Failed to fetch file. Status: ${resp.status}`;
+            if (resp.status === 404) {
+                return `FILE_NOT_FOUND: The file at "${filePath}" does not exist in the current repository branch. This path may be stale. Please use 'search_issues' to find the correct current path or check architecture summary.`;
+            }
+            return `FETCH_FAILED: Failed to fetch file. Status: ${resp.status}`;
         }
 
         const text = await resp.text();

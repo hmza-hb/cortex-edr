@@ -5,6 +5,24 @@ import { supabaseService } from '@/lib/supabase/service';
 import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
 import { executeToolCall } from '@/lib/chat/tools';
+import type { ChatIntent } from '@/lib/chat/intent-classifier';
+
+function getLoopBudget(intent: ChatIntent): number {
+    switch (intent) {
+        case 'vulnerability_detail':
+        case 'fix_guidance':
+            return 7;
+        case 'architecture_advice':
+            return 5;
+        case 'repo_overview':
+            return 4;
+        case 'security_education':
+        case 'followup':
+            return 3;
+        default:
+            return 2;
+    }
+}
 
 function deriveThreadTitle(params: { message: string; repoUrl?: string | null }) {
     const cleaned = (params.message || "").trim().replace(/\s+/g, " ");
@@ -139,7 +157,7 @@ export async function POST(req: NextRequest) {
             .eq('thread_id', resolvedThreadId)
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(14);
+            .limit(30);
 
         const history = (recentMessages || []).reverse();
 
@@ -177,7 +195,8 @@ export async function POST(req: NextRequest) {
         let toolLoops = 0;
         let currentSystemPrompt = orchestrated.systemPrompt;
         let currentUserPrompt = orchestrated.userPrompt;
-        const MAX_TOOL_LOOPS = 4;
+        const toolCache = new Map<string, string>();
+        const MAX_TOOL_LOOPS = getLoopBudget(orchestrated.debug.intent as ChatIntent);
 
         while (toolLoops < MAX_TOOL_LOOPS) {
             aiResult = await callAI(
@@ -219,10 +238,19 @@ export async function POST(req: NextRequest) {
                 console.log(`[Chat] Tool Called (Loop ${toolLoops + 1}):`, toolCallMatch[0].trim());
                 toolLoops++;
 
-                // Execute tool
+                // Execute tool with caching
                 const repoUrl = orchestrated.repoUrl || "";
                 const safeScanId = scanId || "";
-                const toolResult = await executeToolCall(toolCallMatch[0], safeScanId, repoUrl);
+                const toolCallKey = toolCallMatch[0].trim();
+
+                let toolResult = "";
+                if (toolCache.has(toolCallKey)) {
+                    console.log(`[Chat] Tool Cache Hit:`, toolCallKey);
+                    toolResult = toolCache.get(toolCallKey)!;
+                } else {
+                    toolResult = await executeToolCall(toolCallMatch[0], safeScanId, repoUrl);
+                    toolCache.set(toolCallKey, toolResult);
+                }
 
                 console.log(`[Chat] Tool Result:`, toolResult.trim());
 

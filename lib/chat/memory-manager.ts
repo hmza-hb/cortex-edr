@@ -4,7 +4,7 @@
 // + compact summary for older conversation history.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const SLIDING_WINDOW_SIZE = 6; // last N messages sent verbatim
+const SLIDING_WINDOW_SIZE = 10; // last N messages sent verbatim
 const MAX_SUMMARY_LENGTH = 300; // chars for conversation summary
 
 export interface ManagedMemory {

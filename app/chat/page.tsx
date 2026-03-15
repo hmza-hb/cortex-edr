@@ -36,7 +36,9 @@ import {
     TriangleAlert,
     User,
     Send,
-    X
+    X,
+    CheckCircle2,
+    Circle
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -44,27 +46,48 @@ import { cn } from "@/lib/utils";
 
 type ChatRole = "user" | "assistant" | "system";
 
-function extractThinking(text: string) {
-    if (!text) return { thinking: null, rest: "" };
+interface ThinkingTurn {
+    number: number;
+    action: string;
+    content: string;
+}
 
-    const thinkingBlocks: string[] = [];
+function extractThinking(text: string) {
+    if (!text) return { turns: [], rest: "", isStreaming: false };
+
+    const turns: ThinkingTurn[] = [];
     const thinkingRegex = /<thinking>([\s\S]*?)<\/thinking>/gi;
     let match;
+    let turnCount = 0;
 
-    // 1. Extract all closed thinking blocks
+    // 1. Extract and parse all closed thinking blocks
     while ((match = thinkingRegex.exec(text)) !== null) {
-        thinkingBlocks.push(match[1].trim());
+        turnCount++;
+        const content = match[1].trim();
+        const labelMatch = content.match(/^\[Turn (\d+): (.*?)\]/i);
+
+        turns.push({
+            number: labelMatch ? parseInt(labelMatch[1]) : turnCount,
+            action: labelMatch ? labelMatch[2] : `Step ${turnCount}`,
+            content: content.replace(/^\[Turn \d+:.*?\]/i, "").trim()
+        });
     }
 
     // 2. Handle open-ended tag for streaming
     const lastTagIndex = text.lastIndexOf('<thinking>');
     const lastClosingIndex = text.lastIndexOf('</thinking>');
+    const isStreaming = lastTagIndex > lastClosingIndex;
 
-    let currentThinking = thinkingBlocks.join("\n\n---\n\n");
-    if (lastTagIndex > lastClosingIndex) {
+    if (isStreaming) {
+        turnCount++;
         const partial = text.slice(lastTagIndex + 10).trim();
-        if (currentThinking) currentThinking += "\n\n---\n\n";
-        currentThinking += partial;
+        const labelMatch = partial.match(/^\[Turn (\d+): (.*?)\]/i);
+
+        turns.push({
+            number: labelMatch ? parseInt(labelMatch[1]) : turnCount,
+            action: labelMatch ? labelMatch[2] : `Analyzing...`,
+            content: partial.replace(/^\[Turn \d+:.*?\]/i, "").trim()
+        });
     }
 
     // 3. Strip tags from display text
@@ -76,8 +99,9 @@ function extractThinking(text: string) {
         .trim();
 
     return {
-        thinking: currentThinking || null,
-        rest: rest || (lastTagIndex > lastClosingIndex ? "" : text)
+        turns,
+        rest: rest || (isStreaming ? "" : text),
+        isStreaming
     };
 }
 
@@ -1030,20 +1054,49 @@ function ChatHomeInner() {
                                             )}
                                         >
                                             {m.role === "assistant" ? (() => {
-                                                const { thinking, rest } = extractThinking(m.content);
+                                                const { turns, rest, isStreaming } = extractThinking(m.content);
                                                 return (
                                                     <div className="min-w-0">
-                                                        {thinking && (
-                                                            <details className="mb-3 group/thinking">
-                                                                <summary className="text-xs font-medium text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors flex items-center gap-1.5 list-none select-none">
-                                                                    <Sparkles className="h-3.5 w-3.5" />
-                                                                    <span>Analyzed codebase & context</span>
-                                                                    <div className="flex-1 h-px bg-zinc-800/60 ml-2" />
-                                                                </summary>
-                                                                <div className="mt-2 p-3 rounded-lg border border-white/5 bg-white/[0.02] text-[13px] text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">
-                                                                    {thinking}
+                                                        {turns.length > 0 && (
+                                                            <div className="mb-4 space-y-3">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <Sparkles className="h-4 w-4 text-purple-400" />
+                                                                    <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">Reasoning Chain</span>
                                                                 </div>
-                                                            </details>
+                                                                <div className="relative pl-2 space-y-4 border-l border-zinc-800 ml-2">
+                                                                    {turns.map((turn, tIdx) => {
+                                                                        const isLast = tIdx === turns.length - 1;
+                                                                        const isCurrent = isLast && isStreaming;
+
+                                                                        return (
+                                                                            <div key={tIdx} className="relative pl-6">
+                                                                                {/* Timeline dot */}
+                                                                                <div className={cn(
+                                                                                    "absolute -left-[13px] top-1.5 h-3 w-3 rounded-full border-2",
+                                                                                    isCurrent ? "bg-purple-500 border-purple-500 animate-pulse" :
+                                                                                        "bg-zinc-950 border-zinc-700"
+                                                                                )}>
+                                                                                    {!isCurrent && <div className="absolute inset-0.5 bg-zinc-400 rounded-full" />}
+                                                                                </div>
+
+                                                                                <details
+                                                                                    className="group/turn"
+                                                                                    open={isLast} // Expand last turn by default
+                                                                                >
+                                                                                    <summary className="text-[14px] font-medium text-zinc-300 cursor-pointer hover:text-white transition-colors flex items-center gap-2 list-none select-none">
+                                                                                        <span>{turn.action}</span>
+                                                                                        <div className="flex-1" />
+                                                                                        <span className="text-[10px] text-zinc-500 font-mono">STEP {turn.number}</span>
+                                                                                    </summary>
+                                                                                    <div className="mt-2 p-3 rounded-xl border border-white/5 bg-white/[0.02] text-[13px] text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">
+                                                                                        {turn.content}
+                                                                                    </div>
+                                                                                </details>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
                                                         )}
                                                         {rest && (
                                                             <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
@@ -1217,23 +1270,47 @@ function ChatHomeInner() {
                         )}
 
                         {isStreaming && (() => {
-                            const { thinking, rest } = extractThinking(streamingMessage);
+                            const { turns, rest, isStreaming: isCurrentlyThinking } = extractThinking(streamingMessage);
                             return (
                                 <div className="flex justify-start">
-                                    <div className="flex flex-col items-start max-w-[92%] md:max-w-[78%]">
+                                    <div className="flex flex-col items-start max-w-[92%] md:max-w-[82%]">
                                         <div className="rounded-2xl px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap text-zinc-200 w-full min-w-0">
-                                            {thinking && (
-                                                <details className="mb-3 group/thinking" open>
-                                                    <summary className="text-xs font-medium text-zinc-500 cursor-pointer hover:text-zinc-300 transition-colors flex items-center gap-1.5 list-none select-none">
-                                                        <Sparkles className="h-3.5 w-3.5" />
-                                                        <span>Analyzed codebase & context</span>
-                                                        <div className="flex-1 h-px bg-zinc-800/60 ml-2" />
-                                                    </summary>
-                                                    <div className="mt-2 p-3 rounded-lg border border-white/5 bg-white/[0.02] text-[13px] text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">
-                                                        {thinking}
-                                                        {!rest && <span className="animate-pulse">|</span>}
+                                            {turns.length > 0 && (
+                                                <div className="mb-4 space-y-3">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Sparkles className="h-4 w-4 text-purple-400" />
+                                                        <span className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">Reasoning Chain</span>
                                                     </div>
-                                                </details>
+                                                    <div className="relative pl-2 space-y-4 border-l border-zinc-800 ml-2">
+                                                        {turns.map((turn, tIdx) => {
+                                                            const isLast = tIdx === turns.length - 1;
+                                                            const isCurrent = isLast && isCurrentlyThinking;
+
+                                                            return (
+                                                                <div key={tIdx} className="relative pl-6">
+                                                                    <div className={cn(
+                                                                        "absolute -left-[13px] top-1.5 h-3 w-3 rounded-full border-2",
+                                                                        isCurrent ? "bg-purple-500 border-purple-500 animate-pulse" :
+                                                                            "bg-zinc-950 border-zinc-700"
+                                                                    )}>
+                                                                        {!isCurrent && <div className="absolute inset-0.5 bg-zinc-400 rounded-full" />}
+                                                                    </div>
+
+                                                                    <details className="group/turn" open={isLast}>
+                                                                        <summary className="text-[14px] font-medium text-zinc-300 cursor-pointer hover:text-white transition-colors flex items-center gap-2 list-none select-none">
+                                                                            <span>{turn.action}</span>
+                                                                            <div className="flex-1" />
+                                                                        </summary>
+                                                                        <div className="mt-2 p-3 rounded-xl border border-white/5 bg-white/[0.02] text-[13px] text-zinc-400 leading-relaxed font-mono whitespace-pre-wrap">
+                                                                            {turn.content}
+                                                                            {isCurrent && <span className="animate-pulse">|</span>}
+                                                                        </div>
+                                                                    </details>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                             )}
                                             {rest && (
                                                 <div className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2 prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl prose-pre:p-3 prose-headings:my-2 prose-headings:tracking-tight prose-headings:text-zinc-100 prose-strong:text-zinc-100">
@@ -1253,7 +1330,7 @@ function ChatHomeInner() {
                                                     <span className="animate-pulse absolute bottom-[22px] ml-1">|</span>
                                                 </div>
                                             )}
-                                            {!thinking && !rest && (
+                                            {turns.length === 0 && !rest && (
                                                 <span className="animate-pulse">|</span>
                                             )}
                                         </div>

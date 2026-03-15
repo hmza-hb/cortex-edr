@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         // Lookup profile by email (same as dashboard)
         const { data: profile, error: profileError } = await supabaseService
             .from('profiles')
-            .select('tier, plan_tier, scans_remaining, email')
+            .select('plan_tier, scans_remaining, email')
             .eq('email', userEmail)
             .maybeSingle();
 
