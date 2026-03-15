@@ -69,65 +69,83 @@ export const authOptions: NextAuthOptions = {
         async signIn({ user, account }) {
             console.log(`[Auth] signIn - provider: ${account?.provider}, email: ${user?.email}`);
 
-            // For OAuth providers, sync user to DB in background — NEVER block sign-in
-            if (account && account.provider !== "credentials") {
-                (async () => {
-                    try {
-                        const { data: existingUser } = await supabaseAdmin
+            // For OAuth providers, sync user to DB
+            if (account && account.provider !== "credentials" && user.email) {
+                try {
+                    // Check for existing user by email
+                    const { data: existingUser, error: fetchErr } = await supabaseAdmin
+                        .from("users")
+                        .select("id")
+                        .eq("email", user.email)
+                        .maybeSingle();
+
+                    if (fetchErr) throw fetchErr;
+
+                    let targetUserId = existingUser?.id;
+
+                    if (!existingUser) {
+                        // Create new user in public.users
+                        const { data: newUser, error: createErr } = await supabaseAdmin
                             .from("users")
-                            .select("id")
-                            .eq("email", user.email!)
-                            .maybeSingle();
+                            .insert({
+                                email: user.email,
+                                name: user.name,
+                                image: user.image,
+                            })
+                            .select()
+                            .single();
 
-                        if (!existingUser) {
-                            const { data: newUser, error: createErr } = await supabaseAdmin
-                                .from("users")
-                                .insert({
-                                    email: user.email,
-                                    name: user.name,
-                                    image: user.image,
-                                })
-                                .select()
-                                .single();
-
-                            if (createErr) {
-                                console.error("[Auth] Failed to create OAuth user (non-fatal):", createErr);
-                                return;
-                            }
-
+                        if (createErr) {
+                            console.error("[Auth] Failed to create OAuth user:", createErr);
+                            // Even if creation fails, we allow sign-in to avoid blocking the user
+                        } else if (newUser) {
+                            targetUserId = newUser.id;
                             user.id = newUser.id;
 
-                            // Send welcome email (non-fatal)
+                            // Send welcome email (non-blocking after this point)
                             try {
                                 const welcomeEmail = templates.welcome(user.name || "User");
                                 await resend.emails.send({
                                     from: `Cortex EDR <${SYSTEM_EMAIL}>`,
-                                    to: user.email!,
+                                    to: user.email,
                                     subject: welcomeEmail.subject,
                                     html: welcomeEmail.html,
                                 });
                             } catch (emailErr) {
-                                console.error("[Auth] Welcome email failed (non-fatal):", emailErr);
+                                console.error("[Auth] Welcome email failed:", emailErr);
                             }
-                        } else {
-                            user.id = existingUser.id;
                         }
+                    } else {
+                        // Update NextAuth user object with our DB ID
+                        user.id = existingUser.id;
+                        targetUserId = existingUser.id;
+                    }
 
-                        // Sync profile (non-fatal)
-                        await supabaseAdmin
+                    // Sync/Update profile in profiles table
+                    if (targetUserId) {
+                        const { error: profileErr } = await supabaseAdmin
                             .from("profiles")
                             .upsert(
-                                { id: user.id, email: user.email, updated_at: new Date().toISOString() },
+                                {
+                                    id: targetUserId,
+                                    email: user.email,
+                                    updated_at: new Date().toISOString()
+                                },
                                 { onConflict: "id" }
                             );
 
-                    } catch (err) {
-                        console.error("[Auth] OAuth background sync failed (non-fatal):", err);
+                        if (profileErr) {
+                            console.error("[Auth] Profile sync failed:", profileErr);
+                        }
                     }
-                })();
+
+                } catch (err) {
+                    console.error("[Auth] OAuth sync process failed:", err);
+                    // Silently fail sync but return true to allow sign-in session
+                }
             }
 
-            // Always allow sign-in — never return false
+            // Always allow sign-in — never return false for authenticated OAuth
             return true;
         },
 
