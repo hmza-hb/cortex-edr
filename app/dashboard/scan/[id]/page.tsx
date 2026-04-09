@@ -10,6 +10,7 @@ import { ArrowLeft, AlertTriangle, X, FileText, Loader2, Bug } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { BackgroundMusic } from "@/components/scan/BackgroundMusic";
 
 export default function LiveScanPage() {
     const params = useParams();
@@ -159,6 +160,10 @@ export default function LiveScanPage() {
                 </div>
 
                 <div className="flex items-center gap-6">
+                    <div className="text-right">
+                        <BackgroundMusic status={status as any} />
+                    </div>
+
                     <div className="hidden lg:flex flex-col items-end opacity-40">
                         <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">Session identifier</span>
                         <span className="text-[10px] font-mono text-zinc-400">{scanId?.substring(0, 16).toUpperCase()}</span>

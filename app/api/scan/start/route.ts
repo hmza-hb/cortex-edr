@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Repository URL is required' }, { status: 400 });
     }
 
+    console.log(`[API/Scan/Start] Debug — userId: ${userId} (${typeof userId}), userEmail: ${userEmail}`);
+
     try {
         console.log(`[API/Scan/Start] Initiating scan for ${userEmail} - ${repo_url}`);
 
@@ -100,7 +102,15 @@ export async function POST(req: NextRequest) {
             .select()
             .single();
 
-        if (scanError) throw scanError;
+        if (scanError) {
+            console.error('[API/Scan/Start] Database insert failed:', {
+                message: scanError.message,
+                details: scanError.details,
+                hint: scanError.hint,
+                code: scanError.code
+            });
+            throw scanError;
+        }
 
         await supabaseService
             .from('profiles')

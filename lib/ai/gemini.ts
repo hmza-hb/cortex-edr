@@ -11,7 +11,7 @@ const DEFAULT_CONFIG: GenerationConfig = {
     responseMimeType: "application/json",
 };
 
-export async function askGemini(prompt: string, model: string = "gemini-1.5-flash") {
+export async function askGemini(prompt: string, model: string = "gemini-1.5-flash-latest") {
     if (!API_KEY) {
         throw new Error('GEMINI_API_KEY is not defined in environment variables');
     }

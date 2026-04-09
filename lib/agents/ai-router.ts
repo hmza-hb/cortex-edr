@@ -47,7 +47,7 @@ export async function callAI(
             name: 'Gemini',
             func: async () => {
                 const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-                return coerceToText(await askGemini(fullPrompt, 'gemini-1.5-flash'));
+                return coerceToText(await askGemini(fullPrompt, 'gemini-1.5-flash-latest'));
             }
         },
         {
