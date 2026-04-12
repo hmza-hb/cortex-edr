@@ -146,6 +146,13 @@ export const Footer = () => {
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
+                        <a href="https://sellwithboost.com" target="_blank" rel="noopener noreferrer">
+                            <img
+                                src="https://sellwithboost.com/badge/listing-dark.svg"
+                                alt="Listed on Sell With Boost"
+                                style={{ height: '40px', width: 'auto' }}
+                            />
+                        </a>
                         <Link href="/legal/security" className="text-sm text-white/50 hover:text-white transition-colors">Security Disclosure</Link>
                         <Link href="/legal/status" className="text-sm text-white/50 hover:text-white transition-colors">Operational Status</Link>
                     </div>
