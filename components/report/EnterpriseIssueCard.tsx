@@ -110,7 +110,7 @@ export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.SCOUT }: Ent
                                 <Info className="w-4 h-4 text-blue-400" />
                             </div>
                             <h4 className="text-[12px] font-black text-white tracking-[0.2em] uppercase">
-                                Audit Discovery
+                                udit Discovery
                             </h4>
                         </div>
                         <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
