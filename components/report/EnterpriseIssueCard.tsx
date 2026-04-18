@@ -120,7 +120,7 @@ export function EnterpriseIssueCard({ issue, rank, tierKey = TierId.SCOUT }: Ent
                                     <p className="text-sm font-bold text-white mb-2">Detailed Explanations Locked</p>
                                     <Link href="/pricing">
                                         <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-full transition-all">
-                                            Upgrade to Sennel Tier
+                                            Upgrade to Sentinel Tier
                                         </button>
                                     </Link>
                                 </div>
