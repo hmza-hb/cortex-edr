@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server';
 import { supabaseService } from '@/lib/supabase/service';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
+import { createAuditLog } from '@/lib/security/auditLog';
 
 export async function GET(
     req: NextRequest,
@@ -9,6 +12,25 @@ export async function GET(
 
     if (!scanId) {
         return new Response('Scan ID is required', { status: 400 });
+    }
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        await createAuditLog({ action: 'scan_status_blocked', actor_id: 'anonymous', resource_id: scanId, status: 'denied' });
+        return new Response('Unauthorized', { status: 401 });
+    }
+    const userId = (session.user as any).id;
+
+    // Verify ownership before opening stream
+    const { data: scanCheck } = await supabaseService
+        .from('scans')
+        .select('user_id')
+        .eq('id', scanId)
+        .single();
+        
+    if (!scanCheck || scanCheck.user_id !== userId) {
+        await createAuditLog({ action: 'scan_status_blocked', actor_id: userId, actor_email: session.user.email || undefined, resource_id: scanId, status: 'denied' });
+        return new Response('Forbidden', { status: 403 });
     }
 
     const responseHeaders = {

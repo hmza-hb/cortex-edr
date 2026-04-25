@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Repository URL is required' }, { status: 400 });
     }
 
-    console.log(`[API/Scan/Start] Debug — userId: ${userId} (${typeof userId}), userEmail: ${userEmail}`);
+    // Debug log removed for privacy compliance
 
     try {
         console.log(`[API/Scan/Start] Initiating scan for ${userEmail} - ${repo_url}`);

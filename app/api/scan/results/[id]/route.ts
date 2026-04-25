@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseService } from '@/lib/supabase/service';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
+import { createAuditLog } from '@/lib/security/auditLog';
 
 export async function GET(
     req: NextRequest,
@@ -10,6 +13,13 @@ export async function GET(
     if (!scanId) {
         return NextResponse.json({ error: 'Scan ID is required' }, { status: 400 });
     }
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        await createAuditLog({ action: 'scan_results_blocked', actor_id: 'anonymous', resource_id: scanId, status: 'denied' });
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = (session.user as any).id;
 
     try {
         // 1. Fetch scan metadata
@@ -22,6 +32,12 @@ export async function GET(
         if (scanError || !scan) {
             console.error(`[RESULTS API] Scan ${scanId} not found or error:`, scanError);
             return NextResponse.json({ error: 'Scan not found' }, { status: 404 });
+        }
+
+        // Enforce access control
+        if (scan.user_id !== userId) {
+            await createAuditLog({ action: 'scan_results_blocked', actor_id: userId, actor_email: session.user.email || undefined, resource_id: scanId, status: 'denied' });
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // 2. Fetch user profile for tier info

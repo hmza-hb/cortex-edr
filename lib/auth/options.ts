@@ -67,7 +67,7 @@ export const authOptions: NextAuthOptions = {
     },
     callbacks: {
         async signIn({ user, account }) {
-            console.log(`[Auth] signIn - provider: ${account?.provider}, email: ${user?.email}`);
+            // Logs removed for security/PCI/GDPR compliance
 
             // For OAuth providers, sync user to DB
             if (account && account.provider !== "credentials" && user.email) {

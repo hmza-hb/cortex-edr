@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 
 import { resend, SYSTEM_EMAIL, templates } from '@/lib/email/resend';
+import { rateLimit } from '@/lib/security/rateLimit';
+import { createAuditLog } from '@/lib/security/auditLog';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -83,16 +85,23 @@ export async function completeRegistration(email: string, code: string, signupDa
     }
 
     try {
+        // 0. Rate limiting (Brute-force protection)
+        const rl = rateLimit(`otp_verify_${email}`, 20, 15 * 60 * 1000); // Max 20 attempts per 15 minutes globally per IP/email
+        if (!rl.success) {
+            await createAuditLog({ action: 'otp_brute_force_blocked', actor_id: 'anonymous', actor_email: email, status: 'denied' });
+            return { error: "Too many verification attempts. Please try again later." };
+        }
+
         // 1. Verify OTP
         const { data: authCode, error: fetchError } = await supabaseAdmin
             .from('auth_codes')
             .select('*')
             .eq('email', email)
-            .maybeSingle();  // use maybeSingle to avoid error when no row exists
+            .maybeSingle();
 
         if (fetchError) {
-            console.error('[OTP] Fetch error:', fetchError);
-            return { error: `Database error: ${fetchError.message}` };
+            console.error('[OTP] Fetch error (sanitized)');
+            return { error: "Unable to complete verification at this time." }; // Sanitized
         }
 
         if (!authCode) {
@@ -101,6 +110,13 @@ export async function completeRegistration(email: string, code: string, signupDa
 
         if (new Date(authCode.expires_at) < new Date()) {
             return { error: "Verification code has expired. Please request a new one." };
+        }
+
+        if (authCode.attempts >= 5) {
+            await createAuditLog({ action: 'otp_max_attempts_exceeded', actor_id: 'anonymous', actor_email: email, status: 'denied' });
+            // Lock out to prevent brute-forcing
+            await supabaseAdmin.from('auth_codes').delete().eq('email', email);
+            return { error: "Too many incorrect attempts. Your code has been invalidated. Please request a new one." };
         }
 
         if (authCode.code !== code) {
@@ -229,6 +245,12 @@ export async function requestPasswordReset(email: string) {
 
 export async function resendVerificationCode(email: string) {
     if (!email) return { error: "Identity discovery required" };
+
+    const rl = rateLimit(`otp_resend_${email}`, 3, 10 * 60 * 1000); // 3 resends per 10 mins
+    if (!rl.success) {
+        await createAuditLog({ action: 'otp_resend_blocked', actor_id: 'anonymous', actor_email: email, status: 'denied' });
+        return { error: "Too many resend requests. Please wait a few minutes." };
+    }
 
     try {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
