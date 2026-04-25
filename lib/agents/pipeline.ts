@@ -43,7 +43,7 @@ function getOpenAIClient() {
 async function emit(scanId: string, agentId: number, agentName: string, eventType: string, message: string, data: any = {}) {
     try {
         console.log(`[EMIT] Agent ${agentId} - ${eventType}: ${message}`);
-        await supabase.from('agent_events').insert({
+        const { error } = await supabase.from('agent_events').insert({
             scan_id: scanId,
             agent_id: agentId,
             agent_name: agentName,
@@ -52,12 +52,14 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
             data,
             created_at: new Date().toISOString()
         });
+        if (error) console.error(`[EMIT DB ERROR] agent_events insert failed:`, error.message);
 
         if (eventType === 'started') {
-            await supabase.from('scans').update({
+            const { error: scanError } = await supabase.from('scans').update({
                 current_agent: agentId,
                 status: 'processing'
             }).eq('id', scanId);
+            if (scanError) console.error(`[EMIT DB ERROR] scans.current_agent update failed:`, scanError.message);
         }
     } catch (error) {
         console.error(`[EMIT ERROR] Agent ${agentId}:`, error);
@@ -682,7 +684,7 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
         }
 
         // Store in shared memory
-        await supabase.from('scans').update({
+        const { error: updateError } = await supabase.from('scans').update({
             recon_data: {
                 fileTree: importantFiles.map(f => f.replace(repoPath, '')),
                 annotatedFileTree: analysis.annotatedFileTree || [],
@@ -691,6 +693,7 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
                 totalLines: totalLines
             }
         }).eq('id', scanId);
+        if (updateError) console.error(`[RECON DB ERROR] scans.recon_data update failed:`, updateError.message);
 
         await emit(scanId, 1, 'Reconnaissance', 'completed',
             `Reconnaissance complete. ${analysis.summary || `${importantFiles.length} files mapped.`}`
@@ -1140,7 +1143,7 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
         );
 
         // 5. Update scan with final strategic results
-        await supabase.from('scans').update({
+        const { error: finalUpdateError } = await supabase.from('scans').update({
             status: 'completed',
             score: finalScore,
             total_issues: allIssues?.length || 0,
@@ -1161,10 +1164,11 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
             summary: enterpriseReport.executiveSummary?.overview || '',
             architecture_map: enterpriseReport.architectureMap || findings.recon?.architectureMap || null,
             application_story: enterpriseReport.applicationStory || findings.recon?.applicationStory || null,
-            annotated_file_tree: enterpriseReport.annotatedFileTree || findings.recon?.annotatedFileTree || [],
+            annotated_file_tree: enterpriseReport.annotated_file_tree || enterpriseReport.annotatedFileTree || findings.recon?.annotatedFileTree || [],
             strengths: enterpriseReport.strengths || findings.recon?.strengths || [],
             completed_at: new Date().toISOString()
         }).eq('id', scanId);
+        if (finalUpdateError) console.error(`[ORCHESTRATOR DB ERROR] final scans update failed:`, finalUpdateError.message);
 
         await emit(scanId, 7, 'Synthesis & Report', 'completed',
             `Audit complete! Final score: ${finalScore}/100. ${allIssues?.length || 0} total findings, with architecture mapping.`
