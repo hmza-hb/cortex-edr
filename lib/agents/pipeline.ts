@@ -459,17 +459,34 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         // 1. Fetch default branch
-        const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        let repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        
+        // 🔒 AUTO-FALLBACK: If token is expired/invalid (401), try without it for public repos
+        if (repoResp.status === 401 && token) {
+            console.warn('[GIT CONNECT] GitHub Token Unauthorized. Falling back to public access...');
+            delete headers['Authorization'];
+            repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        }
+
         if (!repoResp.ok) throw new Error(`GitHub API error ${repoResp.status}: ${repoResp.statusText}. Is the repository public?`);
         const repoMeta = await repoResp.json();
         const branch = repoMeta.default_branch || 'main';
 
         // 2. Fetch recursive file tree (single API call)
         await emit(scanId, 0, 'Git Connect', 'processing', 'Fetching repository file tree...');
-        const treeResp = await fetch(
+        let treeResp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
             { headers }
         );
+
+        if (treeResp.status === 401 && headers['Authorization']) {
+            delete headers['Authorization'];
+            treeResp = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+                { headers }
+            );
+        }
+
         if (!treeResp.ok) throw new Error(`Could not fetch tree: ${treeResp.status}`);
         const treeData = await treeResp.json();
 
