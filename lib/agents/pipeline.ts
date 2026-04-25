@@ -57,7 +57,7 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
         if (eventType === 'started') {
             const { error: scanError } = await supabase.from('scans').update({
                 current_agent: agentId,
-                status: 'processing'
+                status: 'running' // Changed from 'processing' to match DB constraints
             }).eq('id', scanId);
             if (scanError) console.error(`[EMIT DB ERROR] scans.current_agent update failed:`, scanError.message);
         }

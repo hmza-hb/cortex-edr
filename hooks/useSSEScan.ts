@@ -45,7 +45,7 @@ export function useSSEScan(scanId: string) {
                 const newStates: Record<number, AgentStatus> = {};
                 for (let i = 0; i <= 7; i++) {
                     if (scan.current_agent > i) newStates[i] = 'completed';
-                    else if (scan.current_agent === i && scan.status === 'processing') newStates[i] = 'active';
+                    else if (scan.current_agent === i && (scan.status === 'processing' || scan.status === 'running')) newStates[i] = 'active';
                     else newStates[i] = 'idle';
                 }
                 setAgentStates(newStates);
