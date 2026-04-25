@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         // Note: Currently we decrement `scans_remaining`. To be fully dynamic, 
         // we should either reset `scans_remaining` monthly or check total scans in current month.
         // For now, we keep the existing logic but ensure we respect the tier boundaries.
-        if (!profile || profile.scans_remaining <= 0) {
+        if (scanLimit !== "Unlimited" && (!profile || profile.scans_remaining <= 0)) {
             // Trigger Quota Alert Email
             try {
                 const { resend, SYSTEM_EMAIL, templates } = await import('@/lib/email/resend');
@@ -112,10 +112,12 @@ export async function POST(req: NextRequest) {
             throw scanError;
         }
 
-        await supabaseService
-            .from('profiles')
-            .update({ scans_remaining: profile.scans_remaining - 1 })
-            .eq('email', userEmail);
+        if (scanLimit !== "Unlimited") {
+            await supabaseService
+                .from('profiles')
+                .update({ scans_remaining: profile.scans_remaining - 1 })
+                .eq('email', userEmail);
+        }
 
         const scanId = scan.id;
 

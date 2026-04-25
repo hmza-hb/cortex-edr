@@ -20,7 +20,7 @@ export interface TierLimits {
     maxScansPerMonth: number | "Unlimited";
     maxRepositories: number | "Unlimited";
     maxFilesPerScan: number | "Unlimited";
-    retentionHours?: number;
+    retentionHours?: number | "Unlimited";
     retentionDays?: number | "Unlimited";
     teamSeats: number | "Unlimited";
 }
@@ -44,22 +44,22 @@ export const SYSTEM_CONFIG: {
     // ==========================================
     ai: {
         scout: {
-            primary: "gemini-2.0-flash",
-            fallback: "groq-llama-3.3-70b-versatile"
+            primary: "gpt-4o-mini",
+            fallback: "gpt-4o"
         },
         sentinel: {
-            standard: "gemini-2.0-flash",
-            security: "gemini-1.5-pro",
-            orchestrator: "gemini-1.5-pro"
+            standard: "gpt-4o-mini",
+            security: "gpt-4o",
+            orchestrator: "gpt-4o"
         },
         guardian: {
-            standard: "gemini-2.0-flash",
-            security: "claude-3-5-haiku-latest",
-            architecture: "gemini-1.5-pro",
-            orchestrator: "claude-3-5-sonnet-latest"
+            standard: "gpt-4o",
+            security: "gpt-4o",
+            architecture: "gpt-4o",
+            orchestrator: "gpt-4o"
         },
         fortress: {
-            critical: "claude-3-opus-latest",
+            critical: "gpt-4o",
             orchestrator: "gpt-4o"
         }
     },
@@ -74,11 +74,11 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 0,
             priceAnnual: 0,
             limits: {
-                maxScansPerMonth: 10,
-                maxRepositories: 3,
-                maxFilesPerScan: 500, // Increased from 100
-                retentionHours: 24,
-                teamSeats: 1
+                maxScansPerMonth: "Unlimited",
+                maxRepositories: "Unlimited",
+                maxFilesPerScan: "Unlimited", 
+                retentionHours: "Unlimited",
+                teamSeats: "Unlimited"
             },
             features: {
                 watermarkedPdf: true,

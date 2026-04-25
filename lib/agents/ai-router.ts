@@ -1,6 +1,7 @@
 import { callOpenRouter } from '@/lib/openrouter/client';
 import { OPENROUTER_MODELS, FALLBACK_MODELS } from './openrouter-config';
 import { AILogger } from './ai-logger';
+import { askOpenAI } from '@/lib/ai/openai';
 import { askGemini } from '@/lib/ai/gemini';
 import { askGroq } from '@/lib/ai/groq';
 import { askDeepSeek } from '@/lib/ai/deepseek';
@@ -34,6 +35,15 @@ export async function callAI(
 
     // Multi-provider fallback chain
     const providers = [
+        {
+            name: 'OpenAI',
+            func: async () => {
+                const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+                // Use the mapped model, or default to gpt-4o-mini
+                const openAIModel = model.includes('/') ? (agentKey === 'security' || agentKey === 'synthesis' ? 'gpt-4o' : 'gpt-4o-mini') : model;
+                return coerceToText(await askOpenAI(fullPrompt, openAIModel));
+            }
+        },
         {
             name: 'OpenRouter',
             func: async () => {

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Groq from 'groq-sdk';
+import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { AGENT_PROMPTS } from './prompts';
@@ -26,6 +27,14 @@ function getGeminiClient() {
         geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'MISSING_KEY');
     }
     return geminiClient;
+}
+
+let openaiClient: OpenAI | null = null;
+function getOpenAIClient() {
+    if (!openaiClient) {
+        openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'MISSING_KEY' });
+    }
+    return openaiClient;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -67,14 +76,14 @@ function getRoutingForAgent(agentId: number): { primary: string; fallback: strin
     // 6 (AI-Specific), 7 (Orchestrator) -> DeepSeek R1 (OpenRouter)
 
     if ([1, 2, 3, 4, 5].includes(agentId)) {
-        return { primary: 'gemini-2.0-flash', fallback: defaultFallback };
+        return { primary: 'openai-gpt-4o-mini', fallback: 'gemini-2.0-flash' };
     }
 
     if ([6, 7].includes(agentId)) {
-        return { primary: 'deepseek-r1', fallback: defaultFallback };
+        return { primary: 'openai-gpt-4o', fallback: 'deepseek-r1' };
     }
 
-    return { primary: 'gemini-2.0-flash', fallback: defaultFallback };
+    return { primary: 'openai-gpt-4o-mini', fallback: 'gemini-2.0-flash' };
 }
 
 async function callAI(
@@ -126,7 +135,8 @@ function calculateModelCost(modelId: string, promptTokens: number, completionTok
         'deepseek-r1': { prompt: 0.55, completion: 2.19 }, // OpenRouter DeepSeek V3/R1 blend estimate
         'claude-3-5-sonnet-latest': { prompt: 3.00, completion: 15.00 },
         'claude-3-5-haiku-latest': { prompt: 0.80, completion: 4.00 },
-        'gpt-4o': { prompt: 2.50, completion: 10.00 }
+        'gpt-4o': { prompt: 2.50, completion: 10.00 },
+        'gpt-4o-mini': { prompt: 0.15, completion: 0.60 }
     };
 
     // Normalize model ID for pricing lookup
@@ -158,7 +168,22 @@ async function executeAICall(
             let promptTokens = 0;
             let completionTokens = 0;
 
-            if (modelId.startsWith('groq-')) {
+            if (modelId.startsWith('openai-')) {
+                const openai = getOpenAIClient();
+                const completion = await openai.chat.completions.create({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    model: modelId.replace('openai-', ''),
+                    temperature: 0.1,
+                    response_format: { type: 'json_object' }
+                });
+                response = completion.choices[0]?.message?.content || '{}';
+                promptTokens = completion.usage?.prompt_tokens || 0;
+                completionTokens = completion.usage?.completion_tokens || 0;
+            }
+            else if (modelId.startsWith('groq-')) {
                 const groq = getGroqClient();
                 const completion = await groq.chat.completions.create({
                     messages: [
@@ -378,7 +403,7 @@ export async function setupForStep(
     const patterns = STEP_PATTERNS[step] || [];
     const filesToDownload = normalized
         .filter(f => !f.includes('node_modules') && !f.includes('.next') && patterns.some(p => p.test(f)))
-        .slice(0, 25);
+        .slice(0, 100); // Increased from 25 for deeper analysis
 
     // Get default branch
     let branch = 'main';
@@ -515,7 +540,7 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
 
         const filesToDownload = importantFiles
             .filter(f => KEY_PATTERNS.some(p => p.test(f)))
-            .slice(0, 60);
+            .slice(0, 250); // Increased from 60 for comprehensive indexing
 
         // 5. Download key files in parallel batches to /tmp
         const BATCH_SIZE = 10;
@@ -681,7 +706,7 @@ export async function runSecurityScanner(
             f.includes('login') || f.includes('route') ||
             f.includes('middleware') || f.includes('config') ||
             f.includes('server') || f.includes('handler')
-        ).slice(0, 12);
+        ).slice(0, 50); // Increased from 12 for wide-area security audit
 
         await emit(scanId, 2, 'Security Scanner', 'processing',
             `Deep auditing ${criticalFiles.length} critical files in batches...`
