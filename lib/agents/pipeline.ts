@@ -462,7 +462,7 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
 
         // 1. Fetch default branch
         let repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
-        
+
         // 🔒 AUTO-FALLBACK: If token is expired/invalid (401), try without it for public repos
         if (repoResp.status === 401 && token) {
             console.warn('[GIT CONNECT] GitHub Token Unauthorized. Falling back to public access...');
@@ -1260,7 +1260,7 @@ export async function runPipeline(scanId: string, repoUrl: string, tierKey: Tier
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getAllFiles(dirPath: string, files: string[] = []): string[] {
     // If a .cortex-tree manifest exists (written by GitHub API mode), use it.
-    // This gives agents the full virtual file list even though only key files
+    // This gives agents the full virtual file list eve though only key files
     // were physically downloaded to /tmp.
     if (files.length === 0) {
         const manifest = path.join(dirPath, '.cortex-tree');

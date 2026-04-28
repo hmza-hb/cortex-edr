@@ -79,6 +79,7 @@ async function findActiveScan(
             .from('scans')
             .select('id, repo_url, score, status, created_at')
             .eq('id', scanId)
+            .in('user_id', userIds) // FIXED: Enforce ownership check to prevent Chat IDOR
             .single();
 
         if (data) return data;

@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { resend, SYSTEM_EMAIL, templates } from '@/lib/email/resend';
 import { rateLimit } from '@/lib/security/rateLimit';
 import { createAuditLog } from '@/lib/security/auditLog';
+import { validateInput, signupDataSchema } from '@/lib/security/inputValidation';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,13 +31,22 @@ export async function checkEmail(email: string) {
 }
 
 export async function initiateRegistration(formData: FormData) {
-    const email = formData.get('email') as string;
-    const name = formData.get('name') as string;
-    const password = formData.get('password') as string;
+    const rawEmail = formData.get('email');
+    const rawName = formData.get('name');
+    const rawPassword = formData.get('password');
 
-    if (!email || !name || !password) {
-        return { error: "Missing required fields" };
+    // 0. Ensure strictly valid payloads via Zod
+    const validation = validateInput(signupDataSchema, { 
+        email: rawEmail, 
+        name: rawName, 
+        password: rawPassword 
+    });
+
+    if (!validation.success) {
+        return { error: `Validation Failed: ${validation.error}` };
     }
+
+    const { email, name, password } = validation.data;
 
     try {
         // 1. Generate 6-digit OTP

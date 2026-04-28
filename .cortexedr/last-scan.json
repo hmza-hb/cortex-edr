@@ -1,0 +1,149 @@
+{
+  "scannedAt": "2026-04-28T06:15:15.105Z",
+  "projectPath": "/home/hamza/Code/cortex-edr",
+  "projectInfo": {
+    "framework": "Next.js",
+    "language": "typescript",
+    "fileCount": 171,
+    "packageCount": 49
+  },
+  "findings": [
+    {
+      "ruleId": "CX-010",
+      "ruleName": "Hardcoded Secret",
+      "severity": "HIGH",
+      "file": "app/docs/api/endpoints/page.tsx",
+      "line": 248,
+      "column": 3,
+      "snippet": "apiKey: 'your-api-key'",
+      "message": "Secret value is hardcoded. Use process.env or a secrets manager instead."
+    },
+    {
+      "ruleId": "CX-010",
+      "ruleName": "Hardcoded Secret",
+      "severity": "HIGH",
+      "file": "app/docs/api/endpoints/page.tsx",
+      "line": 265,
+      "column": 28,
+      "snippet": "client = cortex_edr.Client(api_key='your-api-key')",
+      "message": "Secret value is hardcoded. Use process.env or a secrets manager instead."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "app/api/chat/message/route.ts",
+      "line": 117,
+      "column": 9,
+      "snippet": "console.log(`[Chat Replay] Orchestrated — Intent: ${orchestrated.debug.intent} | Tokens: ~${orchestrated.debug.tokenEstimate.total}`);",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "app/api/chat/route.ts",
+      "line": 192,
+      "column": 9,
+      "snippet": "console.log(`[Chat] Orchestrated — Intent: ${orchestrated.debug.intent} | Tokens: ~${orchestrated.debug.tokenEstimate.total}`);",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "app/pricing/page.tsx",
+      "line": 120,
+      "column": 9,
+      "snippet": "console.log(\"[Paddle] Initializing...\", { environment: isLive ? \"production\" : \"sandbox\", hasToken: !!token });",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "lib/agents/ai-logger.ts",
+      "line": 81,
+      "column": 13,
+      "snippet": "console.log(`[AI] PROMPT (${interaction.promptTokens} tokens): ${prompt.substring(0, 200)}...`);",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "lib/agents/ai-logger.ts",
+      "line": 82,
+      "column": 13,
+      "snippet": "console.log(`[AI] RESPONSE (${interaction.responseTokens} tokens): ${response.substring(0, 300)}...`);",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "lib/agents/pipeline.ts",
+      "line": 222,
+      "column": 21,
+      "snippet": "console.warn('[AI ROUTER] OPENROUTER_API_KEY missing. Diverting DeepSeek request to Groq Llama.');",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "lib/agents/pipeline.ts",
+      "line": 468,
+      "column": 13,
+      "snippet": "console.warn('[GIT CONNECT] GitHub Token Unauthorized. Falling back to public access...');",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "lib/email/resend.ts",
+      "line": 4,
+      "column": 5,
+      "snippet": "console.warn(\"RESEND_API_KEY is missing. Email notifications will be disabled.\");",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    },
+    {
+      "ruleId": "CX-021",
+      "ruleName": "Sensitive Data in console.log",
+      "severity": "MEDIUM",
+      "file": "lib/openrouter/client.ts",
+      "line": 96,
+      "column": 13,
+      "snippet": "console.log(`[OpenRouter Usage] Model: ${model}, Tokens: ${data.usage.total_tokens}, Cost: $${calculateCost(model, data.usage).toFixed(4)}`);",
+      "message": "Sensitive data reference in console output. Remove before production deployment."
+    }
+  ],
+  "dependencyFindings": [
+    {
+      "ruleId": "CX-DEP-001",
+      "ruleName": "Vulnerable Dependency",
+      "severity": "HIGH",
+      "file": "package.json",
+      "line": 33,
+      "snippet": "next@15.4.10",
+      "message": "{\"cves\":[\"GHSA-3x4c-7xq6-9pq8\",\"GHSA-9g9p-9gw9-jx7f\",\"GHSA-ggv3-7p47-pfv8\",\"GHSA-h25m-26qc-wcjf\",\"GHSA-q4gf-8mx6-v5v3\"],\"fix\":\"no patch available\"}"
+    },
+    {
+      "ruleId": "CX-DEP-001",
+      "ruleName": "Vulnerable Dependency",
+      "severity": "HIGH",
+      "file": "package.json",
+      "line": 46,
+      "snippet": "simple-git@3.31.1",
+      "message": "{\"cves\":[\"GHSA-jcxm-m3jx-f287\",\"GHSA-r275-fr43-pm7q\"],\"fix\":\"no patch available\"}"
+    }
+  ],
+  "score": 15,
+  "summary": {
+    "critical": 0,
+    "high": 4,
+    "medium": 9,
+    "low": 0
+  }
+}
