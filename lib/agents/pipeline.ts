@@ -1259,8 +1259,7 @@ export async function runPipeline(scanId: string, repoUrl: string, tierKey: Tier
 // HELPERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getAllFiles(dirPath: string, files: string[] = []): string[] {
-    // If a .cortex-tree manifest exists (written by GitHub API mode), use it.
-    // This gives agents the full virtual file list even though only key files
+    // If a .cortex-tree manifest exists (written by Gen though only key files
     // were physically downloaded to /tmp.
     if (files.length === 0) {
         const manifest = path.join(dirPath, '.cortex-tree');
