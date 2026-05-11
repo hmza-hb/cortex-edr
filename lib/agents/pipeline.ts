@@ -1269,7 +1269,7 @@ function getAllFiles(dirPath: string, files: string[] = []): string[] {
             return lines.map(f => path.join(dirPath, f));
         }
     }
-    // Fallback: walk the filesystem (local dev / non-API mode)
+    // Fallback: walk the filesstem (local dev / non-API mode)
     try {
         const items = fs.readdirSync(dirPath);
         for (const item of items) {
