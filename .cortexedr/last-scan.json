@@ -16,7 +16,7 @@
       "line": 248,
       "column": 3,
       "snippet": "apiKey: 'your-api-key'",
-      "message": "Secret value is hardcoded. Use process.env or a secrets manager instead."
+      "message": "Secret value is hardcoded. Use process.ev or a secrets manager instead."
     },
     {
       "ruleId": "CX-010",
