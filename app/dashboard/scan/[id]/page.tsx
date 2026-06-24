@@ -21,6 +21,7 @@ export default function LiveScanPage() {
     const { status, activityFeed } = useSSEScan(scanId);
     const latestEvent = activityFeed[activityFeed.length - 1];
     const [isIslandHovered, setIsIslandHovered] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
 
     // Debug panel state
     const [showDebug, setShowDebug] = useState(false);
@@ -184,21 +185,34 @@ export default function LiveScanPage() {
                                     }}
                                 >
                                     <Button
-                                        onClick={() => router.push(`/dashboard/report/${scanId}`)}
-                                        className="h-10 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] tracking-wider rounded-xl transition-all duration-300 shadow-lg shadow-indigo-500/25 flex items-center gap-2.5 group overflow-hidden relative"
+                                        onClick={() => {
+                                            setIsNavigating(true);
+                                            router.push(`/dashboard/report/${scanId}`);
+                                        }}
+                                        disabled={isNavigating}
+                                        className="h-10 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] tracking-wider rounded-xl transition-all duration-300 shadow-lg shadow-indigo-500/25 flex items-center gap-2.5 group overflow-hidden relative disabled:opacity-90"
                                     >
-                                        <motion.div
-                                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"
-                                            style={{ backgroundSize: '200% 100%' }}
-                                        />
-                                        <FileText className="w-4 h-4" />
-                                        <span>GET STRATEGY REPORT</span>
-                                        <motion.div
-                                            animate={{ x: [0, 4, 0] }}
-                                            transition={{ repeat: Infinity, duration: 1.5 }}
-                                        >
-                                            <ArrowLeft className="w-4 h-4 rotate-180" />
-                                        </motion.div>
+                                        {isNavigating ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                <span>Loading Report...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <motion.div
+                                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"
+                                                    style={{ backgroundSize: '200% 100%' }}
+                                                />
+                                                <FileText className="w-4 h-4" />
+                                                <span>GET STRATEGY REPORT</span>
+                                                <motion.div
+                                                    animate={{ x: [0, 4, 0] }}
+                                                    transition={{ repeat: Infinity, duration: 1.5 }}
+                                                >
+                                                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                                                </motion.div>
+                                            </>
+                                        )}
                                     </Button>
                                 </motion.div>
                             ) : (
