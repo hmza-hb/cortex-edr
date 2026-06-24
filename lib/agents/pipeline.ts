@@ -721,19 +721,20 @@ export async function runSecurityScanner(
     try {
         await emit(scanId, 2, 'Security Scanner', 'started', 'Initializing deep security audit...');
 
+        // Only audit security-critical files — bounded to 15 to stay within token limits
         const criticalFiles = fileTree.filter(f =>
             f.includes('api') || f.includes('auth') ||
             f.includes('login') || f.includes('route') ||
             f.includes('middleware') || f.includes('config') ||
             f.includes('server') || f.includes('handler')
-        ).slice(0, 50); // Increased from 12 for wide-area security audit
+        ).slice(0, 15);
 
         await emit(scanId, 2, 'Security Scanner', 'processing',
-            `Deep auditing ${criticalFiles.length} critical files in batches...`
+            `Auditing ${criticalFiles.length} security-critical files...`
         );
 
         let allVulnerabilities: any[] = [];
-        const BATCH_SIZE = 3;
+        const BATCH_SIZE = 2; // Smaller batches = more focused context per call
 
         for (let i = 0; i < criticalFiles.length; i += BATCH_SIZE) {
             const batch = criticalFiles.slice(i, i + BATCH_SIZE);
@@ -741,23 +742,43 @@ export async function runSecurityScanner(
                 const fileName = filePath.replace(repoPath, '');
                 try {
                     const code = fs.readFileSync(filePath, 'utf-8');
-                    if (code.length > 50000 || code.length < 20) return [];
+                    // Skip very small files (not enough code) or huge files (too noisy)
+                    if (code.length < 50 || code.length > 30000) return [];
                     const aiResponse = await callAI(
                         AGENT_PROMPTS.security.systemPrompt,
                         AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
                         2, 'Security Scanner', logger, tierKey, userId, scanId
                     );
                     const vulns = parseAIResponse(aiResponse, []);
-                    return Array.isArray(vulns) ? vulns.map(v => ({ ...v, fileName })) : [];
+                    if (!Array.isArray(vulns)) return [];
+                    // Confidence gate: discard any finding without a line number or code snippet
+                    // (these are hallucinations — the model is guessing, not confirming)
+                    const confirmed = vulns.filter(v =>
+                        v.title && v.severity &&
+                        (v.line > 0 || v.codeSnippet) &&
+                        ['critical', 'high', 'medium', 'low'].includes(v.severity)
+                    );
+                    return confirmed.map(v => ({ ...v, fileName }));
                 } catch { return []; }
             }));
             allVulnerabilities.push(...batchResults.flat());
 
-            // ANTI-RATE-LIMIT: Wait 1.5s between batches to cool down Groq/Gemini tokens
             if (i + BATCH_SIZE < criticalFiles.length) {
                 await new Promise(r => setTimeout(r, 1500));
             }
         }
+
+        // Deduplicate: same title + same file = keep highest severity only
+        const seen = new Map<string, any>();
+        for (const v of allVulnerabilities) {
+            const key = `${(v.title || '').toLowerCase().trim()}|${v.fileName}`;
+            const existing = seen.get(key);
+            const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+            if (!existing || (severityRank[v.severity] || 0) > (severityRank[existing.severity] || 0)) {
+                seen.set(key, v);
+            }
+        }
+        allVulnerabilities = Array.from(seen.values());
 
         for (const vuln of allVulnerabilities) {
             await supabase.from('issues').insert({
@@ -766,12 +787,12 @@ export async function runSecurityScanner(
                 category: 'security',
                 severity: vuln.severity || 'medium',
                 title: vuln.title,
-                description: `${vuln.vulnerability}\n\nEXPLOIT: ${vuln.exploitScenario || 'N/A'}\n\nIMPACT: ${vuln.impact || 'N/A'}`,
+                description: `${vuln.vulnerability || ''}\n\nEXPLOIT: ${vuln.exploitScenario || 'N/A'}\n\nIMPACT: ${vuln.impact || 'N/A'}`,
                 file_path: vuln.fileName || '',
                 line_number: vuln.line || 0,
-                code_snippet: vuln.codeSnippet,
+                code_snippet: vuln.codeSnippet || null,
                 fix_suggestion: `${vuln.fixExplanation || ''}\n\nFIX CODE:\n${vuln.fixCode || ''}`,
-                ai_prompt: vuln.aiPrompt,
+                ai_prompt: vuln.aiPrompt || null,
                 metadata: { cwe: vuln.cwe, owasp: vuln.owasp }
             });
             await emit(scanId, 2, 'Security Scanner', 'found_issue',
@@ -834,7 +855,14 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
         console.log(`[Architecture] Extracted ${Array.isArray(issues) ? issues.length : 0} issues`);
 
         if (Array.isArray(issues)) {
-            for (const issue of issues) {
+            // Cap at 5 architecture issues — only keep the most severe
+            const severityRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
+            const topIssues = issues
+                .filter(i => i.title && i.problem && i.location)
+                .sort((a, b) => (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0))
+                .slice(0, 5);
+
+            for (const issue of topIssues) {
                 try {
                     const { error } = await supabase.from('issues').insert({
                         scan_id: scanId,
@@ -842,14 +870,10 @@ export async function runArchitecture(scanId: string, repoPath: string, fileTree
                         category: 'architecture',
                         severity: issue.severity || 'medium',
                         title: issue.title || 'Architecture Issue',
-                        description: `${issue.problem || issue.description || ''}\n\nCONSEQUENCES: ${issue.consequences || 'N/A'}`,
+                        description: `${issue.problem || ''}\n\nCONSEQUENCES: ${issue.consequences || 'N/A'}`,
                         file_path: issue.location || issue.file || '',
                         fix_suggestion: issue.solution || issue.fix || '',
-                        metadata: {
-                            category: issue.category,
-                            refactoringEffort: issue.refactoringEffort,
-                            priority: issue.priority
-                        }
+                        metadata: { category: issue.category, refactoringEffort: issue.refactoringEffort }
                     });
                     if (error) console.error('[Architecture] DB insert error:', error.message);
                     else await emit(scanId, 3, 'Architecture', 'found_issue',
@@ -902,26 +926,29 @@ export async function runCodeQuality(scanId: string, repoPath: string, fileTree:
         console.log(`[Code Quality] Extracted ${Array.isArray(issues) ? issues.length : 0} issues`);
 
         if (Array.isArray(issues)) {
-            for (const issue of issues) {
+            // Only persist medium+ severity quality issues, capped at 5
+            const topIssues = issues
+                .filter(i => i.title && i.problem && i.severity !== 'low')
+                .slice(0, 5);
+
+            for (const issue of topIssues) {
                 try {
                     const { error } = await supabase.from('issues').insert({
                         scan_id: scanId,
                         agent_id: 4,
                         category: 'quality',
-                        severity: issue.severity || 'low',
+                        severity: issue.severity || 'medium',
                         title: issue.title || 'Code Quality Issue',
                         description: issue.problem || issue.description || '',
                         file_path: issue.file || '',
                         line_number: issue.line || 0,
-                        fix_suggestion: issue.suggestion || issue.fix || issue.exampleFix || '',
+                        fix_suggestion: issue.suggestion || issue.exampleFix || '',
                         metadata: { type: issue.type }
                     });
                     if (error) console.error('[Code Quality] DB insert error:', error.message);
-                    else if (issue.severity === 'high' || issue.severity === 'critical') {
-                        await emit(scanId, 4, 'Code Quality', 'found_issue',
-                            `${(issue.severity || 'low').toUpperCase()}: ${issue.title}`
-                        );
-                    }
+                    else await emit(scanId, 4, 'Code Quality', 'found_issue',
+                        `${(issue.severity || 'medium').toUpperCase()}: ${issue.title}`
+                    );
                 } catch (e: any) { console.error('[Code Quality] Insert failed:', e.message); }
             }
         }
@@ -970,13 +997,18 @@ export async function runTechnicalDebt(scanId: string, repoPath: string, fileTre
         console.log(`[Technical Debt] Extracted ${Array.isArray(debts) ? debts.length : 0} items`);
 
         if (Array.isArray(debts)) {
-            for (const debt of debts) {
+            // Only persist confirmed debt items, capped at 5
+            const topDebts = debts
+                .filter(d => d.title && (d.debt || d.description))
+                .slice(0, 5);
+
+            for (const debt of topDebts) {
                 try {
                     const { error } = await supabase.from('issues').insert({
                         scan_id: scanId,
                         agent_id: 5,
                         category: 'tech_debt',
-                        severity: debt.severity || 'low',
+                        severity: debt.severity || 'medium',
                         title: debt.title || 'Technical Debt',
                         description: `${debt.debt || debt.description || ''}\n\nRISK: ${debt.risk || 'N/A'}`,
                         file_path: debt.file || '',
@@ -1037,7 +1069,12 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
         console.log(`[AI-Engine] Extracted ${Array.isArray(patterns) ? patterns.length : 0} patterns`);
 
         if (Array.isArray(patterns)) {
-            for (const pattern of patterns) {
+            // AI patterns are informational — cap at 3, require evidence field
+            const topPatterns = patterns
+                .filter(p => p.title && p.evidence && p.problem)
+                .slice(0, 3);
+
+            for (const pattern of topPatterns) {
                 try {
                     const { error } = await supabase.from('issues').insert({
                         scan_id: scanId,
@@ -1045,7 +1082,7 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
                         category: 'ai_specific',
                         severity: pattern.severity || 'low',
                         title: pattern.title || 'AI Code Pattern',
-                        description: `${pattern.evidence || pattern.description || ''}\n\nPROBLEM: ${pattern.problem || 'N/A'}`,
+                        description: `${pattern.evidence || ''}\n\nPROBLEM: ${pattern.problem || 'N/A'}`,
                         file_path: pattern.file || '',
                         line_number: pattern.line || 0,
                         fix_suggestion: pattern.fix || '',
@@ -1072,10 +1109,10 @@ export async function runAIEngineReview(scanId: string, repoPath: string, fileTr
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export async function runOrchestrator(scanId: string, logger: AILogger, tierKey: TierId = TierId.SCOUT, userId?: string) {
     try {
-        await emit(scanId, 7, 'Synthesis & Report', 'started', 'Initializing executive synthesis...');
+        await emit(scanId, 7, 'Synthesis & Report', 'started', 'Deduplicating findings and initializing executive synthesis...');
 
         // 1. Fetch all findings from DB
-        const { data: allIssues } = await supabase
+        const { data: rawIssues } = await supabase
             .from('issues')
             .select('*')
             .eq('scan_id', scanId)
@@ -1087,18 +1124,39 @@ export async function runOrchestrator(scanId: string, logger: AILogger, tierKey:
             .eq('id', scanId)
             .single();
 
+        // 2. DEDUPLICATION PASS — remove issues that share the same title+file
+        //    Keep the highest-severity version of each duplicate
+        const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+        const deduped = new Map<string, any>();
+        for (const issue of (rawIssues || [])) {
+            const key = `${(issue.title || '').toLowerCase().trim()}|${issue.file_path || ''}`;
+            const existing = deduped.get(key);
+            if (!existing || (severityRank[issue.severity] || 0) > (severityRank[existing.severity] || 0)) {
+                deduped.set(key, issue);
+            }
+        }
+        const allIssues = Array.from(deduped.values());
+
+        // 3. Delete duplicate rows from DB so the report count is accurate
+        const keptIds = new Set(allIssues.map(i => i.id));
+        const dupIds = (rawIssues || []).filter(i => !keptIds.has(i.id)).map(i => i.id);
+        if (dupIds.length > 0) {
+            await supabase.from('issues').delete().in('id', dupIds);
+            console.log(`[ORCHESTRATOR] Removed ${dupIds.length} duplicate issues from DB.`);
+        }
+
         await emit(scanId, 7, 'Synthesis & Report', 'processing',
-            `Analyzing ${allIssues?.length || 0} findings from all agents...`
+            `${allIssues.length} unique findings after deduplication (${dupIds.length} duplicates removed). Synthesising report...`
         );
 
-        // 2. Organize findings by category
+        // 4. Organize findings by category
         const findings = {
             recon: scan?.recon_data?.analysis || {},
-            security: (allIssues || []).filter((i: any) => i.category === 'security'),
-            architecture: (allIssues || []).filter((i: any) => i.category === 'architecture'),
-            quality: (allIssues || []).filter((i: any) => i.category === 'quality'),
-            debt: (allIssues || []).filter((i: any) => i.category === 'tech_debt'),
-            aiSpecific: (allIssues || []).filter((i: any) => i.category === 'ai_specific')
+            security: allIssues.filter((i: any) => i.category === 'security'),
+            architecture: allIssues.filter((i: any) => i.category === 'architecture'),
+            quality: allIssues.filter((i: any) => i.category === 'quality'),
+            debt: allIssues.filter((i: any) => i.category === 'tech_debt'),
+            aiSpecific: allIssues.filter((i: any) => i.category === 'ai_specific')
         };
 
         const metadata = {
