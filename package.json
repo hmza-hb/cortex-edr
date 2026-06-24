@@ -43,7 +43,7 @@
     "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
     "resend": "^6.9.3",
-    "simple-git": "^3.31.1",
+    "simple-git": "^3.36.0",
     "sonner": "^2.0.7",
     "svix": "^1.86.0",
     "tailwind-merge": "^3.4.1",

@@ -5,6 +5,9 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: ["test_gemini.js", "test-dashboard.html", "database-tier-manager.html"],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
