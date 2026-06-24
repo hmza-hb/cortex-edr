@@ -1,236 +1,464 @@
 import { StyleSheet } from '@react-pdf/renderer';
 
+// ── Brand Palette ────────────────────────────────────────────────────────────
 export const C = {
-    navy: '#0A1628',
-    navyMid: '#0f2040',
-    blue: '#2563EB',
-    blueSoft: '#3b82f6',
-    purple: '#7C3AED',
-    red: '#DC2626',
-    orange: '#EA580C',
-    amber: '#D97706',
-    green: '#16A34A',
-    slate: '#1E293B',
-    slateLight: '#334155',
-    muted: '#64748B',
-    mutedLight: '#94A3B8',
-    border: '#E2E8F0',
-    bgLight: '#F8FAFC',
-    bgAlt: '#F1F5F9',
-    white: '#FFFFFF',
-    black: '#000000',
+    navy:        '#0A1628',
+    navyMid:     '#0F2040',
+    navyLight:   '#142850',
+    blue:        '#2563EB',
+    blueBright:  '#3B82F6',
+    blueLight:   '#60A5FA',
+    blueGhost:   '#EFF6FF',
+    purple:      '#7C3AED',
+    purpleLight: '#A78BFA',
+    red:         '#DC2626',
+    redLight:    '#FEF2F2',
+    orange:      '#EA580C',
+    amber:       '#D97706',
+    amberLight:  '#FFFBEB',
+    green:       '#16A34A',
+    greenLight:  '#F0FDF4',
+    slate:       '#1E293B',
+    slateLight:  '#334155',
+    muted:       '#64748B',
+    mutedLight:  '#94A3B8',
+    border:      '#E2E8F0',
+    bgLight:     '#F8FAFC',
+    bgAlt:       '#F1F5F9',
+    white:       '#FFFFFF',
+    codeBlack:   '#0D1117',
+    codeFg:      '#79C0FF',
+    codeGreen:   '#3FB950',
+    codeAmber:   '#F2CC60',
 };
 
+// NOTE: @react-pdf/renderer does NOT support CSS shorthand syntax.
+// ✗ border: '1 solid #000'          → use borderWidth + borderStyle + borderColor
+// ✗ borderLeft: '3 solid #000'      → use borderLeftWidth + borderLeftStyle + borderLeftColor
+// ✗ padding: '8 12'                 → use paddingVertical + paddingHorizontal
+// ✗ borderRadius: '4 4 0 0'         → use a single number or individual corner props
+
 export const styles = StyleSheet.create({
-    // ── Pages ──────────────────────────────────────────────
-    coverPage: { backgroundColor: C.navy, padding: 0, position: 'relative' },
-    page: { padding: '40 50', backgroundColor: C.white, fontFamily: 'Helvetica', fontSize: 9 },
 
-    // ── Watermark ──────────────────────────────────────────
-    watermark: {
-        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-        justifyContent: 'center', alignItems: 'center', opacity: 0.04,
+    // ── Pages ─────────────────────────────────────────────────────────────────
+    coverPage: {
+        backgroundColor: C.navy,
+        padding: 0,
+        position: 'relative',
     },
-    watermarkText: {
-        fontSize: 90, color: C.navy, fontFamily: 'Helvetica-Bold',
-        transform: 'rotate(-45deg)',
+    page: {
+        paddingTop: 44,
+        paddingBottom: 44,
+        paddingLeft: 52,
+        paddingRight: 52,
+        backgroundColor: C.white,
+        fontFamily: 'Helvetica',
+        fontSize: 10,
     },
 
-    // ── Cover ───────────────────────────────────────────────
-    coverBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-    coverAccent: {
-        position: 'absolute', top: 0, right: 0, width: 200, bottom: 0,
-        backgroundColor: C.blue, opacity: 0.12,
+    // ── Page Header / Footer ──────────────────────────────────────────────────
+    pageHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1.5,
+        borderBottomStyle: 'solid',
+        borderBottomColor: C.navy,
+        paddingBottom: 12,
+        marginBottom: 24,
     },
-    coverContent: { padding: '70 60', flex: 1 },
-    coverLogo: { width: 60, height: 60, marginBottom: 10 },
-    coverOrgName: {
-        fontSize: 28, fontFamily: 'Helvetica-Bold', color: C.white,
-        letterSpacing: 3, marginBottom: 4,
+    brand: {
+        fontSize: 12,
+        fontFamily: 'Helvetica-Bold',
+        color: C.navy,
+        letterSpacing: 2,
     },
-    coverTagline: { fontSize: 10, color: '#93C5FD', letterSpacing: 2, marginBottom: 80 },
-    coverEngTitle: {
-        fontSize: 22, fontFamily: 'Helvetica-Bold', color: C.white,
-        marginBottom: 16, lineHeight: 1.3,
+    brandTag: {
+        fontSize: 7,
+        color: C.blue,
+        fontFamily: 'Helvetica-Bold',
+        letterSpacing: 1.5,
+        marginTop: 2,
     },
-    coverDivider: { height: 3, width: 60, backgroundColor: C.blue, marginBottom: 40 },
-    coverMetaRow: { flexDirection: 'row', marginBottom: 10, gap: 12 },
-    coverMetaLabel: { fontSize: 8, color: '#60A5FA', letterSpacing: 1, width: 100, fontFamily: 'Helvetica-Bold' },
-    coverMetaValue: { fontSize: 9, color: C.white, flex: 1 },
-    coverClassBadge: {
-        marginTop: 60, alignSelf: 'flex-start',
-        paddingHorizontal: 14, paddingVertical: 6,
-        backgroundColor: '#991B1B', borderRadius: 4,
-    },
-    coverClassText: { fontSize: 10, color: C.white, fontFamily: 'Helvetica-Bold', letterSpacing: 1 },
-    coverFooter: {
-        position: 'absolute', bottom: 30, left: 60, right: 60,
-        borderTop: `1 solid rgba(255,255,255,0.15)`, paddingTop: 12,
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    },
-    coverFooterText: { fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 },
-
-    // ── TOC ─────────────────────────────────────────────────
-    tocTitle: { fontSize: 22, fontFamily: 'Helvetica-Bold', color: C.navy, marginBottom: 4 },
-    tocSubtitle: { fontSize: 9, color: C.muted, letterSpacing: 1, marginBottom: 32 },
-    tocItem: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: 9, borderBottom: `0.5 solid ${C.border}`,
-    },
-    tocItemMain: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-    tocNum: { fontSize: 9, color: C.blue, fontFamily: 'Helvetica-Bold', width: 24 },
-    tocLabel: { fontSize: 10, color: C.slate, flex: 1 },
-    tocPage: { fontSize: 9, color: C.muted },
-    tocSection: {
-        marginTop: 18, marginBottom: 4, paddingBottom: 6,
-        borderBottom: `1.5 solid ${C.navy}`,
-    },
-    tocSectionLabel: { fontSize: 8, color: C.muted, letterSpacing: 2, fontFamily: 'Helvetica-Bold' },
-
-    // ── Page Header ─────────────────────────────────────────
-    header: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        borderBottom: `2 solid ${C.navy}`, paddingBottom: 14, marginBottom: 24,
-    },
-    brand: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: C.navy, letterSpacing: 2 },
-    brandTag: { fontSize: 7, color: C.blue, fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginTop: 2 },
     headerRight: { textAlign: 'right' },
-    headerMeta: { fontSize: 8, color: C.muted, marginBottom: 2 },
+    headerMeta: {
+        fontSize: 8,
+        color: C.muted,
+        marginBottom: 2,
+        letterSpacing: 0.5,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 22,
+        left: 52,
+        right: 52,
+        borderTopWidth: 0.5,
+        borderTopStyle: 'solid',
+        borderTopColor: C.border,
+        paddingTop: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    footerText: {
+        fontSize: 7,
+        color: C.mutedLight,
+        letterSpacing: 1,
+    },
 
-    // ── Section Headings ────────────────────────────────────
+    // ── Section Typography ────────────────────────────────────────────────────
     sectionHeading: {
-        fontSize: 16, fontFamily: 'Helvetica-Bold', color: C.navy,
+        fontSize: 18,
+        fontFamily: 'Helvetica-Bold',
+        color: C.navy,
+        marginBottom: 3,
+        letterSpacing: 0.5,
+    },
+    sectionSubtitle: {
+        fontSize: 8,
+        color: C.muted,
+        letterSpacing: 2,
+        marginBottom: 22,
+        fontFamily: 'Helvetica-Bold',
+    },
+    subHeading: {
+        fontSize: 12,
+        fontFamily: 'Helvetica-Bold',
+        color: C.slate,
+        marginTop: 20,
+        marginBottom: 8,
+        paddingBottom: 5,
+        borderBottomWidth: 0.5,
+        borderBottomStyle: 'solid',
+        borderBottomColor: C.border,
+    },
+    label: {
+        fontSize: 8,
+        fontFamily: 'Helvetica-Bold',
+        color: C.muted,
+        letterSpacing: 1.5,
         marginBottom: 4,
     },
-    sectionSub: { fontSize: 9, color: C.muted, letterSpacing: 1, marginBottom: 20 },
-    subHeading: {
-        fontSize: 11, fontFamily: 'Helvetica-Bold', color: C.slate,
-        marginTop: 18, marginBottom: 8, paddingBottom: 4,
-        borderBottom: `0.5 solid ${C.border}`,
+
+    // ── Body Text ─────────────────────────────────────────────────────────────
+    body: {
+        fontSize: 10,
+        color: C.slateLight,
+        lineHeight: 1.7,
+        marginBottom: 8,
     },
-    subSubHeading: {
-        fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.blue,
-        textTransform: 'uppercase', letterSpacing: 1,
-        marginTop: 12, marginBottom: 6,
+    bodySmall: {
+        fontSize: 9,
+        color: C.muted,
+        lineHeight: 1.6,
     },
 
-    // ── Score / Stat Boxes ───────────────────────────────────
-    scoreGrid: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    scoreBox: {
-        flex: 1, padding: 14, backgroundColor: C.bgLight,
-        border: `1 solid ${C.border}`, borderRadius: 8,
+    // ── Bullet Lists ──────────────────────────────────────────────────────────
+    bulletRow: {
+        flexDirection: 'row',
+        marginBottom: 6,
     },
-    scoreMain: { fontSize: 30, fontFamily: 'Helvetica-Bold', color: C.navy },
-    scoreLabel: { fontSize: 7, color: C.muted, fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginTop: 4 },
+    bullet: {
+        fontSize: 10,
+        color: C.blue,
+        width: 12,
+        lineHeight: 1.7,
+        marginRight: 8,
+    },
+    bulletText: {
+        fontSize: 10,
+        color: C.slateLight,
+        flex: 1,
+        lineHeight: 1.7,
+    },
 
-    // ── Severity Badges ─────────────────────────────────────
+    // ── Severity Badges ───────────────────────────────────────────────────────
     badge: {
-        paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
-        fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.white,
+        paddingHorizontal: 9,
+        paddingVertical: 4,
+        borderRadius: 4,
+        fontFamily: 'Helvetica-Bold',
+        fontSize: 8,
+        color: C.white,
+        letterSpacing: 1,
     },
 
-    // ── Body Text ───────────────────────────────────────────
-    bodyText: { fontSize: 9, color: C.slateLight, lineHeight: 1.6, marginBottom: 6 },
-    bulletRow: { flexDirection: 'row', gap: 6, marginBottom: 5 },
-    bullet: { fontSize: 9, color: C.blue, width: 10 },
-    bulletText: { fontSize: 9, color: C.slateLight, flex: 1, lineHeight: 1.5 },
+    // ── Score Boxes ───────────────────────────────────────────────────────────
+    scoreGrid: { flexDirection: 'row', marginBottom: 22 },
+    scoreBox: {
+        flex: 1,
+        paddingVertical: 14,
+        paddingHorizontal: 14,
+        backgroundColor: C.bgLight,
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: C.border,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    scoreMain: {
+        fontSize: 28,
+        fontFamily: 'Helvetica-Bold',
+        color: C.navy,
+    },
+    scoreLabel: {
+        fontSize: 7,
+        color: C.muted,
+        fontFamily: 'Helvetica-Bold',
+        letterSpacing: 1.5,
+        marginTop: 4,
+    },
 
-    // ── Tables ──────────────────────────────────────────────
-    table: { marginBottom: 16 },
+    // ── Tables ────────────────────────────────────────────────────────────────
+    table: { marginBottom: 18 },
     tableHead: {
-        flexDirection: 'row', backgroundColor: C.navy,
-        padding: '7 10',
+        flexDirection: 'row',
+        backgroundColor: C.navy,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 4,
     },
-    tableHeadCell: { fontSize: 8, color: C.white, fontFamily: 'Helvetica-Bold', flex: 1 },
+    tableHeadCell: {
+        fontSize: 8,
+        color: C.white,
+        fontFamily: 'Helvetica-Bold',
+        flex: 1,
+        letterSpacing: 0.5,
+    },
     tableRow: {
-        flexDirection: 'row', padding: '6 10', borderBottom: `0.5 solid ${C.border}`,
+        flexDirection: 'row',
+        paddingVertical: 7,
+        paddingHorizontal: 12,
+        borderBottomWidth: 0.5,
+        borderBottomStyle: 'solid',
+        borderBottomColor: C.border,
     },
     tableRowAlt: { backgroundColor: C.bgLight },
-    tableCell: { fontSize: 8, color: C.slate, flex: 1 },
+    tableCell: {
+        fontSize: 9,
+        color: C.slate,
+        flex: 1,
+        lineHeight: 1.5,
+    },
 
-    // ── Info Row (label: value) ──────────────────────────────
-    infoGrid: { marginBottom: 12 },
-    infoRow: { flexDirection: 'row', marginBottom: 5 },
-    infoLabel: { width: 110, fontSize: 8, color: C.muted, fontFamily: 'Helvetica-Bold' },
-    infoValue: { flex: 1, fontSize: 8, color: C.slate },
+    // ── Code Block ────────────────────────────────────────────────────────────
+    codeBlock: {
+        backgroundColor: C.codeBlack,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 6,
+        marginBottom: 10,
+    },
+    codeText: {
+        fontSize: 8,
+        color: C.codeFg,
+        fontFamily: 'Courier',
+        lineHeight: 1.6,
+    },
 
-    // ── Finding Card ────────────────────────────────────────
+    // ── Alert / Callout Boxes ─────────────────────────────────────────────────
+    infoBox: {
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 6,
+        borderLeftWidth: 3,
+        borderLeftStyle: 'solid',
+        borderLeftColor: C.blue,
+        backgroundColor: C.blueGhost,
+        marginBottom: 10,
+    },
+    warnBox: {
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 6,
+        borderLeftWidth: 3,
+        borderLeftStyle: 'solid',
+        borderLeftColor: C.red,
+        backgroundColor: C.redLight,
+        marginBottom: 10,
+    },
+    successBox: {
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 6,
+        borderLeftWidth: 3,
+        borderLeftStyle: 'solid',
+        borderLeftColor: C.green,
+        backgroundColor: C.greenLight,
+        marginBottom: 10,
+    },
+    boxTitle: {
+        fontSize: 8,
+        fontFamily: 'Helvetica-Bold',
+        letterSpacing: 1,
+        marginBottom: 5,
+    },
+    boxText: {
+        fontSize: 9,
+        color: C.slateLight,
+        lineHeight: 1.6,
+    },
+
+    // ── Cursor Prompt Box ─────────────────────────────────────────────────────
+    cursorBox: {
+        backgroundColor: '#0D1117',
+        borderRadius: 6,
+        marginBottom: 10,
+        overflow: 'hidden',
+    },
+    cursorHeader: {
+        backgroundColor: '#161B22',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: '#21262D',
+    },
+    cursorDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+    },
+    cursorLabel: {
+        fontSize: 7,
+        fontFamily: 'Helvetica-Bold',
+        color: '#58A6FF',
+        letterSpacing: 1.5,
+    },
+    cursorBody: {
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+    },
+    cursorText: {
+        fontSize: 8,
+        color: '#E6EDF3',
+        fontFamily: 'Courier',
+        lineHeight: 1.7,
+    },
+
+    // ── Finding Card ──────────────────────────────────────────────────────────
     findingCard: {
-        border: `1 solid ${C.border}`, borderRadius: 6, marginBottom: 0,
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: C.border,
+        borderRadius: 8,
+        marginBottom: 18,
         overflow: 'hidden',
     },
     findingHeader: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10 14', backgroundColor: C.navy,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor: C.navy,
     },
-    findingId: { fontSize: 8, color: '#93C5FD', fontFamily: 'Helvetica-Bold', marginBottom: 3 },
-    findingTitle: { fontSize: 12, color: C.white, fontFamily: 'Helvetica-Bold', flex: 1 },
-    findingBody: { padding: '12 14' },
-
-    // ── Code Block ──────────────────────────────────────────
-    codeBlock: {
-        backgroundColor: '#0F172A', padding: 10, borderRadius: 4, marginBottom: 8,
+    findingId: {
+        fontSize: 8,
+        color: C.blueLight,
+        fontFamily: 'Helvetica-Bold',
+        letterSpacing: 1,
+        marginBottom: 4,
     },
-    code: { fontSize: 7, color: '#38BDF8', fontFamily: 'Courier', lineHeight: 1.5 },
-
-    // ── Alert / Highlight Boxes ──────────────────────────────
-    alertBox: {
-        padding: 10, borderRadius: 6, marginBottom: 10, borderLeft: `3 solid ${C.blue}`,
-        backgroundColor: '#EFF6FF',
+    findingTitle: {
+        fontSize: 13,
+        color: C.white,
+        fontFamily: 'Helvetica-Bold',
+        flex: 1,
+        lineHeight: 1.3,
     },
-    alertTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.blue, marginBottom: 4 },
-    alertText: { fontSize: 8, color: C.slateLight, lineHeight: 1.5 },
-
-    warnBox: {
-        padding: 10, borderRadius: 6, marginBottom: 10, borderLeft: `3 solid ${C.red}`,
-        backgroundColor: '#FEF2F2',
-    },
-    warnTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.red, marginBottom: 4 },
-
-    successBox: {
-        padding: 10, borderRadius: 6, marginBottom: 10, borderLeft: `3 solid ${C.green}`,
-        backgroundColor: '#F0FDF4',
+    findingBody: {
+        paddingVertical: 14,
+        paddingHorizontal: 16,
     },
 
-    // ── Maturity bar ────────────────────────────────────────
+    // ── Maturity Bars ─────────────────────────────────────────────────────────
     maturityRow: { marginBottom: 12 },
-    maturityLabel: { fontSize: 9, color: C.slate, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
+    maturityLabel: {
+        fontSize: 9,
+        color: C.slate,
+        fontFamily: 'Helvetica-Bold',
+        marginBottom: 4,
+    },
     maturityBarBg: {
-        height: 8, backgroundColor: C.bgAlt, borderRadius: 4,
-        marginBottom: 2, overflow: 'hidden',
+        height: 7,
+        backgroundColor: C.bgAlt,
+        borderRadius: 4,
+        marginBottom: 3,
+        overflow: 'hidden',
     },
-    maturityBarFill: { height: 8, backgroundColor: C.blue, borderRadius: 4 },
-    maturityBarLevel: { fontSize: 7, color: C.muted },
-
-    // ── Footer ──────────────────────────────────────────────
-    footer: {
-        position: 'absolute', bottom: 24, left: 50, right: 50,
-        borderTop: `0.5 solid ${C.border}`, paddingTop: 8,
-        flexDirection: 'row', justifyContent: 'space-between',
+    maturityBarFill: {
+        height: 7,
+        backgroundColor: C.blue,
+        borderRadius: 4,
     },
-    footerText: { fontSize: 7, color: C.mutedLight, letterSpacing: 1 },
 
-    // ── Misc ────────────────────────────────────────────────
-    divider: { borderBottom: `1 solid ${C.border}`, marginVertical: 16 },
-    spacer: { marginBottom: 16 },
-    row: { flexDirection: 'row', gap: 10 },
+    // ── Info Rows ─────────────────────────────────────────────────────────────
+    infoRow: {
+        flexDirection: 'row',
+        marginBottom: 6,
+        alignItems: 'flex-start',
+    },
+    infoLabel: {
+        width: 120,
+        fontSize: 8,
+        color: C.muted,
+        fontFamily: 'Helvetica-Bold',
+        letterSpacing: 0.5,
+        paddingTop: 1,
+    },
+    infoValue: {
+        flex: 1,
+        fontSize: 9,
+        color: C.slate,
+        lineHeight: 1.5,
+    },
+
+    // ── Dividers ──────────────────────────────────────────────────────────────
+    divider: {
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: C.border,
+        marginTop: 18,
+        marginBottom: 18,
+    },
+    thinDivider: {
+        borderBottomWidth: 0.5,
+        borderBottomStyle: 'solid',
+        borderBottomColor: C.border,
+        marginTop: 10,
+        marginBottom: 10,
+    },
+
+    row: { flexDirection: 'row' },
     col: { flex: 1 },
 });
 
-export const severityColor = (s?: string) => {
-    switch (s?.toLowerCase()) {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+export const severityColor = (s?: string): string => {
+    switch ((s || '').toLowerCase()) {
         case 'critical': return '#DC2626';
-        case 'high': return '#EA580C';
-        case 'medium': return '#D97706';
-        case 'low': return '#2563EB';
-        default: return '#64748B';
+        case 'high':     return '#EA580C';
+        case 'medium':   return '#D97706';
+        case 'low':      return '#2563EB';
+        default:         return '#64748B';
     }
 };
 
-export const maturityColor = (level: number) => {
-    if (level <= 1) return '#DC2626';
-    if (level <= 2) return '#D97706';
-    if (level <= 3) return '#2563EB';
-    if (level <= 4) return '#059669';
-    return '#7C3AED';
+export const severityBg = (s?: string): string => {
+    switch ((s || '').toLowerCase()) {
+        case 'critical': return '#FEF2F2';
+        case 'high':     return '#FFF7ED';
+        case 'medium':   return '#FFFBEB';
+        case 'low':      return '#EFF6FF';
+        default:         return '#F8FAFC';
+    }
 };
+
+export const launchStatusColor = (status?: string): string =>
+    status === 'RED_FLAG' ? '#DC2626' : '#16A34A';
+
+export const launchStatusBg = (status?: string): string =>
+    status === 'RED_FLAG' ? '#FEF2F2' : '#F0FDF4';
