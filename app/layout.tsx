@@ -21,10 +21,10 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Cortex EDR',
-    template: '%s | Cortex EDR'
+    default: 'Cortex — Nothing Ships Broken',
+    template: '%s | Cortex'
   },
-  description: 'Scan your codebase for security vulnerabilities in seconds. Cortex EDR uses a 7-agent AI pipeline for deep-pass code intelligence, automated vulnerability detection, and actionable fix suggestions. Free to start.',
+  description: 'Cortex is an AI application security analyst. Paste your GitHub repo and get a complete security audit in 2–5 minutes. Finds vulnerabilities, architecture issues, and technical debt. Your AI coded it, we audit it. Free to start.',
   keywords: [
     'Cortex EDR',
     'code security scanner',
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Hamza Hafeez', url: 'https://github.com/hamza-hafeez82' }],
   creator: 'Cortex EDR',
   publisher: 'Cortex EDR',
-  metadataBase: new URL('https://cortex-edr.com'),
+  metadataBase: new URL('https://app.cortex-edr.com'),
   alternates: {
     canonical: '/',
   },
@@ -63,9 +63,9 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://cortex-edr.com',
-    title: 'Cortex EDR | AI-Powered Code Security & Vulnerability Scanner',
-    description: 'Scan your codebase for security vulnerabilities in seconds. 7-agent AI pipeline for deep-pass code intelligence and automated vulnerability detection. Free to start.',
-    siteName: 'Cortex EDR',
+    title: 'Cortex — AI Application Security Analyst',
+    description: 'Cortex audits your codebase for security vulnerabilities, architecture issues, and technical debt. 7-agent AI pipeline. Nothing Ships Broken. Free to start.',
+    siteName: 'Cortex',
     images: [
       {
         url: '/assets/og-image.png',
@@ -77,9 +77,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cortex EDR | AI-Powered Code Security & Vulnerability Scanner',
-    description: 'Scan your codebase for security vulnerabilities in seconds. 7-agent AI pipeline for deep-pass code intelligence. Free to start.',
-    creator: '@hamza_hafeez',
+    title: 'Cortex — AI Application Security Analyst',
+    description: 'AI application security analyst. Paste your GitHub repo, get a full security audit in 2–5 minutes. Nothing Ships Broken.',
+    creator: '@cortex_edr',
     images: ['/assets/og-image.png'],
   },
   icons: {
@@ -100,9 +100,10 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      "name": "Cortex EDR",
-      "alternateName": ["CortexEDR", "Cortex Security", "Cortex"],
+      "name": "Cortex",
+      "alternateName": ["Cortex EDR", "Cortex Security"],
       "url": "https://cortex-edr.com",
+      "description": "Nothing Ships Broken.",
       "potentialAction": {
         "@type": "SearchAction",
         "target": {
@@ -114,8 +115,10 @@ const jsonLd = {
     },
     {
       "@type": "Organization",
-      "name": "Cortex EDR",
+      "name": "Cortex",
+      "legalName": "Cortex EDR",
       "url": "https://cortex-edr.com",
+      "slogan": "Nothing Ships Broken",
       "logo": {
         "@type": "ImageObject",
         "url": "https://cortex-edr.com/assets/logo.png",
@@ -123,26 +126,28 @@ const jsonLd = {
         "height": 512
       },
       "image": "https://cortex-edr.com/assets/og-image.png",
-      "description": "AI-powered code security and vulnerability scanning platform. Scan your codebase with a 7-agent AI pipeline for deep-pass intelligence.",
+      "description": "Cortex is an AI application security analyst. Your AI coded it, we audit it.",
       "founder": {
         "@type": "Person",
-        "name": "Hamza Hafeez",
+        "name": "Hamza Hafeez Bhatti",
         "sameAs": [
           "https://github.com/hamza-hafeez82",
-          "https://www.linkedin.com/in/hamza-hafeez"
+          "https://www.linkedin.com/in/hamza-hafeez82"
         ]
       },
       "sameAs": [
-        "https://github.com/hamza-hafeez82/cortex-edr"
+        "https://github.com/hmza-hb/cortex-edr",
+        "https://linkedin.com/company/cortex-edr"
       ]
     },
     {
       "@type": "WebApplication",
-      "name": "Cortex EDR",
-      "description": "AI-powered code security scanner with 7-agent pipeline for deep vulnerability detection, automated fix suggestions, and comprehensive security reports.",
-      "applicationCategory": "DeveloperApplication",
+      "name": "Cortex",
+      "alternateName": "Cortex EDR",
+      "description": "AI application security analyst. Paste your GitHub repository and Cortex runs a 7-agent AI pipeline to find security vulnerabilities, architecture issues, and technical debt in 2–5 minutes.",
+      "applicationCategory": "SecurityApplication",
       "operatingSystem": "Web",
-      "url": "https://cortex-edr.com",
+      "url": "https://app.cortex-edr.com",
       "screenshot": "https://cortex-edr.com/assets/og-image.png",
       "offers": {
         "@type": "Offer",
