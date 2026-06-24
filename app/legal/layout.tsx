@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Footer } from "@/components/landing/footer";
 
 export default function LegalLayout({
     children,
@@ -13,7 +12,7 @@ export default function LegalLayout({
             {/* Header - Shared across legal pages */}
             <header className="fixed top-6 left-0 right-0 z-[100] flex justify-center px-4">
                 <div className="bg-black/40 backdrop-blur-xl border border-white/[0.1] rounded-full px-6 py-3 flex items-center justify-between w-full max-w-4xl shadow-2xl">
-                    <Link href="/" className="flex items-center gap-2 font-bold text-white hover:opacity-80 transition-opacity">
+                    <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white hover:opacity-80 transition-opacity">
                         <ArrowLeft className="h-4 w-4" />
                         <span className="font-mono text-[10px] tracking-widest uppercase">BACK_TO_SYSTEM</span>
                     </Link>
@@ -33,7 +32,11 @@ export default function LegalLayout({
                 </div>
             </div>
 
-            <Footer />
+            <footer className="py-8 border-t border-white/5 text-center bg-black/40 backdrop-blur-sm relative z-10">
+                <p className="text-[10px] font-mono tracking-widest text-white/30 uppercase">
+                    © {new Date().getFullYear()} Cortex EDR // ALL SYSTEM RIGHTS RESERVED
+                </p>
+            </footer>
         </main>
     );
 }
