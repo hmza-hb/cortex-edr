@@ -6,7 +6,9 @@ import bcrypt from "bcryptjs";
 import { createClient } from "@supabase/supabase-js";
 import { resend, SYSTEM_EMAIL, templates } from "@/lib/email/resend";
 
-const APP_URL = process.env.NEXTAUTH_URL || 'https://app.cortex-edr.com';
+// Always resolve to the app subdomain. This is critical so that OAuth callbacks
+// from Google/GitHub land on app.cortex-edr.com/api/auth/callback/* not cortex-edr.com.
+const APP_URL = 'https://app.cortex-edr.com';
 
 // Supabase admin client for server-side operations
 const supabaseAdmin = createClient(
@@ -23,12 +25,24 @@ export const authOptions: NextAuthOptions = {
         GitHubProvider({
             clientId: process.env.GITHUB_ID || "",
             clientSecret: process.env.GITHUB_SECRET || "",
-            authorization: { params: { prompt: "select_account" } },
+            // Explicitly set the callback URL so Vercel NEXTAUTH_URL misconfig can't break OAuth
+            authorization: {
+                params: {
+                    prompt: "select_account",
+                    redirect_uri: `${APP_URL}/api/auth/callback/github`,
+                }
+            },
         }),
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-            authorization: { params: { prompt: "select_account" } },
+            // Explicitly set the callback URL so Vercel NEXTAUTH_URL misconfig can't break OAuth
+            authorization: {
+                params: {
+                    prompt: "select_account",
+                    redirect_uri: `${APP_URL}/api/auth/callback/google`,
+                }
+            },
         }),
         CredentialsProvider({
             name: "Credentials",
@@ -151,6 +165,21 @@ export const authOptions: NextAuthOptions = {
 
             // Always allow sign-in — never return false for authenticated OAuth
             return true;
+        },
+
+        async redirect({ url, baseUrl }) {
+            // Guarantee all redirects resolve relative to app.cortex-edr.com,
+            // not whatever baseUrl Vercel/NextAuth resolves from NEXTAUTH_URL.
+            const resolvedBase = APP_URL;
+            if (url.startsWith('/')) return `${resolvedBase}${url}`;
+            if (url.startsWith(resolvedBase)) return url;
+            // For external callbackUrls (e.g. passed from signIn()), allow them
+            // only if they are on our app domain.
+            try {
+                const parsed = new URL(url);
+                if (parsed.hostname === 'app.cortex-edr.com') return url;
+            } catch {}
+            return `${resolvedBase}/dashboard`;
         },
 
         async jwt({ token, user }) {
