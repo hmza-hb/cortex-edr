@@ -25,24 +25,12 @@ export const authOptions: NextAuthOptions = {
         GitHubProvider({
             clientId: process.env.GITHUB_ID || "",
             clientSecret: process.env.GITHUB_SECRET || "",
-            // Explicitly set the callback URL so Vercel NEXTAUTH_URL misconfig can't break OAuth
-            authorization: {
-                params: {
-                    prompt: "select_account",
-                    redirect_uri: `${APP_URL}/api/auth/callback/github`,
-                }
-            },
+            authorization: { params: { prompt: "select_account" } },
         }),
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-            // Explicitly set the callback URL so Vercel NEXTAUTH_URL misconfig can't break OAuth
-            authorization: {
-                params: {
-                    prompt: "select_account",
-                    redirect_uri: `${APP_URL}/api/auth/callback/google`,
-                }
-            },
+            authorization: { params: { prompt: "select_account" } },
         }),
         CredentialsProvider({
             name: "Credentials",
