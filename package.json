@@ -24,7 +24,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.34.0",
+    "framer-motion": "^12.41.0",
     "groq-sdk": "^0.37.0",
     "inngest": "^3.52.6",
     "jsonwebtoken": "^9.0.3",
