@@ -42,7 +42,7 @@ export const TopBar = ({ user, scanCount = 0, scanLimit = 1, planTier = "SCOUT" 
                             <img src="/assets/logo.png" alt="CortexEDR Logo" className="h-7 w-7 object-contain transition-all group-hover:scale-110" />
                         </div>
                         <span className="font-semibold text-lg tracking-tight hidden md:block text-zinc-100 ml-2">
-                            CortexEDR
+                            Cortex
                         </span>
                     </Link>
 

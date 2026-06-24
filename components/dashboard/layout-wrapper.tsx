@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { MobileHeader } from "@/components/dashboard/mobile-header";
+import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -67,6 +68,10 @@ export const DashboardLayoutWrapper = ({
 
     return (
         <div className="flex h-screen bg-black text-white overflow-hidden">
+            {/* Global navigation progress bar */}
+            <Suspense fallback={null}>
+                <NavigationProgress />
+            </Suspense>
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (

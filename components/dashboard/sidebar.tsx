@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,7 +25,8 @@ import {
     Activity,
     HardDrive,
     Building,
-    MessageCircle
+    MessageCircle,
+    Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -118,11 +119,20 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1,
 
     const NavLink = ({ item }: { item: any }) => {
         const isActive = pathname === item.href;
+        const [isPending, setIsPending] = useState(false);
+
+        // Reset pending state once the route actually changes
+        useEffect(() => {
+            setIsPending(false);
+        }, [pathname]);
 
         const handleClick = (e: React.MouseEvent) => {
             if (item.locked) {
                 e.preventDefault();
                 return;
+            }
+            if (!isActive) {
+                setIsPending(true);
             }
             if (isMobile && onNavigate) {
                 onNavigate();
@@ -139,8 +149,10 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1,
                         ? "bg-indigo-500/10 text-white border border-indigo-500/20 shadow-sm cursor-pointer"
                         : item.locked
                             ? "text-zinc-600 cursor-not-allowed"
-                            : "text-zinc-400 hover:text-white hover:bg-white/[0.03] cursor-pointer",
-                    item.highlight && !isActive && "bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border border-indigo-500/20 text-indigo-100 hover:border-indigo-500/40 cursor-pointer"
+                            : isPending
+                                ? "bg-white/[0.04] text-zinc-200 cursor-pointer"
+                                : "text-zinc-400 hover:text-white hover:bg-white/[0.03] cursor-pointer",
+                    item.highlight && !isActive && !isPending && "bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border border-indigo-500/20 text-indigo-100 hover:border-indigo-500/40 cursor-pointer"
                 )}
                 onClick={handleClick}
                 title={isCollapsed ? item.label : undefined}
@@ -148,13 +160,23 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1,
                 {isActive && !item.locked && (
                     <div className="absolute left-0 top-2 bottom-2 w-[2px] bg-indigo-500 rounded-r-full" />
                 )}
-                <item.icon className={cn(
-                    "h-[18px] w-[18px] shrink-0",
-                    isActive ? "text-indigo-400" : item.locked ? "text-zinc-700" : "text-zinc-500 group-hover:text-zinc-300"
-                )} />
+
+                {/* Icon — swapped for spinner while loading */}
+                {isPending && !isActive ? (
+                    <Loader2 className="h-[18px] w-[18px] shrink-0 text-indigo-400 animate-spin" />
+                ) : (
+                    <item.icon className={cn(
+                        "h-[18px] w-[18px] shrink-0",
+                        isActive ? "text-indigo-400" : item.locked ? "text-zinc-700" : "text-zinc-500 group-hover:text-zinc-300"
+                    )} />
+                )}
+
                 {!isCollapsed && (
                     <>
-                        <span className="text-sm font-medium truncate transition-colors">{item.label}</span>
+                        <span className={cn(
+                            "text-sm font-medium truncate transition-colors",
+                            isPending && !isActive && "text-white"
+                        )}>{item.label}</span>
                         {item.locked && (
                             <span className="ml-auto text-[10px] font-semibold text-zinc-700 uppercase tracking-tight">Pro</span>
                         )}
@@ -195,7 +217,7 @@ export const Sidebar = ({ user, planTier = "free", scanCount = 0, scanLimit = 1,
                 )}>
                     {!isCollapsed && (
                         <div className="text-xs font-medium text-zinc-500 tracking-tight">
-                            CortexEDR, Leave the TERROR behind
+                            Leave the TERROR behind
                         </div>
                     )}
                     <button
