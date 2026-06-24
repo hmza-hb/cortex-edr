@@ -73,7 +73,9 @@ export default function BillingPage() {
             id: TierId.SENTINEL,
             name: "Sentinel",
             tagline: "For professional developers",
-            price: "$9",
+            price: "$0",
+            originalPrice: "$9",
+            note: "Free for next 3 months",
             features: ["20 Deep Scans / month", "Detailed logic analysis", "Priority AI routing"],
             cta: "Get Sentinel"
         },
@@ -81,7 +83,9 @@ export default function BillingPage() {
             id: TierId.GUARDIAN,
             name: "Guardian",
             tagline: "For scaling teams",
-            price: "$49",
+            price: "$0",
+            originalPrice: "$49",
+            note: "Free for next 3 months",
             popular: true,
             features: ["100 Deep Scans / month", "5 team seats", "Enterprise security checks"],
             cta: "Get Guardian"
@@ -90,7 +94,9 @@ export default function BillingPage() {
             id: TierId.FORTRESS,
             name: "Fortress",
             tagline: "For global infrastructure",
-            price: "$299",
+            price: "$0",
+            originalPrice: "$299",
+            note: "Free for next 3 months",
             features: ["5,000 Deep Scans / month", "Military-grade compliance", "Dedicated support"],
             cta: "Get Fortress"
         }
@@ -130,7 +136,7 @@ export default function BillingPage() {
                                         ? "bg-green-500/10 border-green-500/20 text-green-500"
                                         : "bg-zinc-500/10 border-zinc-500/20 text-zinc-500"
                                 )}>
-                                    {profile?.payment_status || 'Inactive'}
+                                    {profile?.payment_status === 'paid' ? 'Active' : 'Free Trial'}
                                 </span>
                             </h2>
                         </div>
@@ -217,12 +223,20 @@ export default function BillingPage() {
                                     <p className="text-xs text-zinc-500 font-medium">{plan.tagline}</p>
                                 </div>
 
-                                <div className="text-3xl font-bold text-white tracking-tighter">
-                                    {plan.price}
-                                    <span className="text-sm text-zinc-500 font-medium tracking-normal ml-1">/mo</span>
+                                <div className="space-y-1">
+                                    <div className="text-3xl font-bold text-white tracking-tighter flex items-baseline gap-2">
+                                        {plan.price}
+                                        {plan.originalPrice && (
+                                            <span className="text-sm text-zinc-500 font-semibold line-through">{plan.originalPrice}</span>
+                                        )}
+                                        <span className="text-sm text-zinc-500 font-medium tracking-normal">/mo</span>
+                                    </div>
+                                    {plan.note && (
+                                        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{plan.note}</p>
+                                    )}
                                 </div>
 
-                                <ul className="space-y-3">
+                                <ul className="space-y-3 pt-4">
                                     {plan.features.map((feature, i) => (
                                         <li key={i} className="flex items-center gap-3 text-[11px] text-zinc-400 font-medium">
                                             <CheckCircle2 className="h-3.5 w-3.5 text-zinc-600 shrink-0" />
