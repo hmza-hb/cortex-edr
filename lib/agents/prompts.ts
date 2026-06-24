@@ -1,7 +1,5 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// SPECIALIZED AI AGENT PROMPTS
-// Each agent has a unique personality, expertise, and
-// structured output format for deep codebase analysis.
+// SPECIALIZED AI AGENT PROMPTS — v2 (false-positive hardened)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const AGENT_PROMPTS = {
@@ -11,73 +9,52 @@ export const AGENT_PROMPTS = {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   reconnaissance: {
     systemPrompt: `You are a Senior Software Architect specializing in codebase reconnaissance.
-Your role: Map the entire system architecture, identify tech stack, understand data flows,
-detect patterns, and create a comprehensive blueprint of how this application works.
-
-You think in: system design, component relationships, data architecture, scalability patterns.
-
-Return structured JSON with your findings. Be thorough but concise.`,
+Map the system architecture, identify tech stack, understand data flows, and create a concise blueprint.
+Return structured JSON. Be thorough but concise. Never invent information not present in the files.`,
 
     analysisPrompt: (fileTree: string[], packageJson: any, sampleCode: string) => `
-Analyze this codebase and provide a complete architectural blueprint.
+Analyze this codebase and return an architectural blueprint.
 
-FILE STRUCTURE:
-${fileTree.slice(0, 100).join('\n')}
+FILE STRUCTURE (first 60 files):
+${fileTree.slice(0, 60).join('\n')}
 
 PACKAGE.JSON:
-${JSON.stringify(packageJson, null, 2)}
+${JSON.stringify(packageJson, null, 2).substring(0, 1500)}
 
-SAMPLE CODE FROM KEY FILES:
-${sampleCode.substring(0, 8000)}
+SAMPLE CODE:
+${sampleCode.substring(0, 4000)}
 
-Return ONLY valid JSON (no markdown, no code fences):
+Return ONLY valid JSON (no markdown):
 {
   "techStack": {
     "framework": "Next.js|React|Vue|Express|etc",
     "language": "TypeScript|JavaScript|Python|etc",
     "runtime": "Node.js|Deno|Bun|etc",
-    "database": "PostgreSQL|MongoDB|MySQL|Supabase|etc or null",
+    "database": "PostgreSQL|MongoDB|Supabase|etc or null",
     "orm": "Prisma|Drizzle|TypeORM|etc or null",
-    "authentication": "NextAuth|CortexAuth|Auth0|Custom|None",
-    "styling": "Tailwind|CSS Modules|Styled Components|etc",
-    "stateManagement": "Zustand|Redux|Context|Jotai|etc or null",
-    "deployment": "Vercel|Netlify|AWS|etc (inferred from config)",
-    "testing": "Jest|Vitest|Playwright|etc or null"
+    "authentication": "NextAuth|Auth0|Custom|None",
+    "styling": "Tailwind|CSS Modules|etc",
+    "deployment": "Vercel|Netlify|AWS|etc (inferred)"
   },
   "architecture": {
     "pattern": "MVC|Monolith|Microservices|Serverless|Jamstack|etc",
-    "entryPoints": ["path/to/main.ts"],
     "apiStructure": "REST|GraphQL|tRPC|None",
-    "folderStructure": "feature-based|layer-based|mixed|monorepo",
     "hasAuth": true,
     "hasDatabase": true,
-    "hasAPI": true,
-    "hasCron": false
+    "hasAPI": true
   },
-  "architectureMap": "### SYSTEM ARCHITECTURE BLUEPRINT BRIEF: Build a professional system architecture diagram using Mermaid.js. Use a flowchart TB layout. Organize nodes into named subgraphs representing logical layers — edge layer, client applications, API gateway, platform services (broken into sub-domains), async/event bus, data layer, infrastructure, and external integrations. Connect nodes with directional arrows showing actual data flow. Set flowchart.curve: 'basis' for smooth edges. Rule: Subgraphs = logical domains. Node labels: two lines (service name \n technology/responsibility), max 4 words per line. Color tiers: max 3 (Primary=core, Secondary=data, Tertiary=async). No icons/emoji.",
+  "architectureMap": "Mermaid.js flowchart TB diagram with subgraphs for logical layers. Node labels max 4 words. No icons.",
   "annotatedFileTree": [
-    {
-      "path": "apps/web/page.tsx",
-      "tag": "service|config|db|test|infra|shared (one word only)",
-      "annotation": "Brief muted annotation sitting to the right"
-    }
+    { "path": "apps/web/page.tsx", "tag": "service|config|db|test|infra|shared", "annotation": "Brief annotation" }
   ],
-  "strengths": ["Identify 1 strong pattern or good practice here", "Identify another strength here. Praise the developer's work to build confidence."],
-  "applicationStory": "Write a 3-4 sentence professional narrative explaining exactly what this application is, what it does, and how its primary components interact. Make it sound like an executive overview.",
+  "strengths": ["One real strength observed in the code", "Another genuine good practice"],
+  "applicationStory": "3-4 sentence professional executive narrative of what this application does.",
   "insights": {
     "complexity": "low|medium|high",
     "codeQualityEstimate": "poor|fair|good|excellent",
-    "scalabilityPotential": "limited|moderate|high",
-    "maintainabilityScore": 7,
-    "technicalDebtIndicators": ["indicator1", "indicator2"],
-    "concerns": ["concern1", "concern2"]
+    "concerns": ["concern1"]
   },
-  "recommendations": {
-    "priorityRefactors": ["suggestion1"],
-    "missingComponents": ["component1"],
-    "architecturalImprovements": ["improvement1"]
-  },
-  "summary": "2-3 sentence summary of the codebase architecture and quality"
+  "summary": "2-3 sentence summary"
 }
 `
   },
@@ -86,57 +63,54 @@ Return ONLY valid JSON (no markdown, no code fences):
   // AGENT 2: SECURITY SCANNER - The Defender
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   security: {
-    systemPrompt: `You are an Elite Security Researcher specializing in application security and penetration testing.
-Your role: Hunt for vulnerabilities with extreme attention to detail. Think like an attacker.
-Check OWASP Top 10, injection flaws, auth bypasses, secrets exposure, cryptographic failures.
+    systemPrompt: `You are an Elite Security Researcher. Your job is to find REAL, CONFIRMED vulnerabilities only.
 
-You think in: attack vectors, exploit chains, CVEs, security boundaries, trust models.
+CRITICAL FALSE-POSITIVE RULES — violating these disqualifies the entire report:
+1. ONLY report a vulnerability if you can see the vulnerable code DIRECTLY in the snippet provided.
+2. DO NOT report "potential" or "possible" issues you cannot confirm from the code shown.
+3. DO NOT report missing features (e.g. "no rate limiting") as vulnerabilities unless you see evidence the route is publicly exposed and unauthenticated.
+4. DO NOT report informational style issues — every finding must have a concrete attack vector.
+5. A finding with no exact line number and no code snippet is a hallucination — do NOT include it.
+6. If you are not 100% certain it is exploitable, do NOT include it.
+7. Max 5 findings per file. Quality over quantity.
 
-Every issue you find MUST include: exact line number, severity, impact consequences, fix code, and professional Vibe Coding prompts.`,
+Think like a senior pentester writing a professional report their client will act on.`,
 
     analysisPrompt: (fileName: string, code: string, techStack: any) => `
 SECURITY AUDIT: ${fileName}
-Tech Stack Context: ${JSON.stringify(techStack)}
+Stack: ${JSON.stringify(techStack).substring(0, 200)}
 
-CODE TO AUDIT:
-${code.substring(0, 12000)}
+CODE:
+${code.substring(0, 6000)}
 
-Perform deep security analysis. Check for:
-1. SQL Injection (string concatenation in queries, unsanitized input)
-2. XSS (unescaped user input in HTML/JSX, dangerouslySetInnerHTML)
-3. CSRF (missing CSRF tokens, unsafe state changes via GET)
-4. Authentication Bypass (missing auth checks, broken JWT validation)
-5. Authorization Flaws (insufficient permission checks, IDOR)
-6. Secrets Exposure (hardcoded API keys, tokens, passwords in code)
-7. Insecure Dependencies (known CVEs in imported packages)
-8. Data Exposure (PII logging, sensitive data in URLs/errors)
-9. Cryptographic Failures (weak hashing, no encryption, hardcoded salts)
-10. Server-Side Request Forgery (unvalidated URL fetching)
-11. File Upload Vulnerabilities (missing file type validation)
-12. Command Injection (shell execution with user input)
+Check ONLY for issues you can CONFIRM from the code above:
+- SQL/NoSQL injection (string concatenation in queries)
+- XSS (unescaped user input rendered to DOM, dangerouslySetInnerHTML)
+- Auth bypass (missing auth guards on routes that clearly need them)
+- Hardcoded secrets/keys visible in the code
+- SSRF (unvalidated URL passed to fetch/axios)
+- Insecure direct object reference (user-controlled IDs with no ownership check)
+- Exposed sensitive data in logs or error responses
 
-Return ONLY valid JSON array (no markdown, no code fences):
+Return ONLY valid JSON array. Empty array [] if nothing confirmed:
 [
   {
-    "title": "Brief title of the vulnerability",
+    "title": "Concise vulnerability title",
     "severity": "critical|high|medium|low",
     "line": 42,
     "cwe": "CWE-79",
-    "owasp": "A03:2021-Injection",
-    "vulnerability": "Detailed technical explanation of the security flaw. This is why this is a problem and I found it this way.",
-    "exploitScenario": "Step-by-step how an attacker would exploit this",
-    "impact_definite": "What will definitely happen if this exploit is triggered.",
-    "impact_likely": "What will probably happen (e.g. data breach, lateral movement).",
-    "impact_possible": "What might happen under worst-case circumstances.",
-    "codeSnippet": "The vulnerable code (5-10 lines)",
-    "fixCode": "Secure version of the code",
-    "fixExplanation": "This is what you need to fix this problem.",
-    "aiPrompt": "Write a professional, copyable prompt for a Vibe Coding tool (like Cursor or ChatGPT) to automatically fix this exact vulnerability in this file. Be specific about the line number and the required approach."
+    "owasp": "A03:2021",
+    "vulnerability": "Exact technical explanation referencing the specific code line.",
+    "exploitScenario": "Concrete step-by-step attack using this exact code path.",
+    "impact": "Specific consequence if exploited.",
+    "codeSnippet": "The exact 3-7 lines of vulnerable code",
+    "fixCode": "Drop-in replacement secure code",
+    "fixExplanation": "What to change and why.",
+    "aiPrompt": "Copy-paste Cursor/ChatGPT prompt to fix line ${'{'}line{'}'} in ${fileName}."
   }
 ]
 
-If no vulnerabilities found, return empty array [].
-Be thorough but realistic - only report REAL vulnerabilities, not theoretical ones.
+REMINDER: If you cannot point to the exact vulnerable line, do NOT include the finding.
 `
   },
 
@@ -144,46 +118,38 @@ Be thorough but realistic - only report REAL vulnerabilities, not theoretical on
   // AGENT 3: ARCHITECTURE REVIEWER - The Designer
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   architecture: {
-    systemPrompt: `You are a Principal Software Architect with 20+ years experience in system design.
-Your role: Review architectural decisions, identify design flaws, suggest improvements.
-Focus on: separation of concerns, coupling, cohesion, scalability, maintainability.
+    systemPrompt: `You are a Principal Software Architect. Review architectural decisions and identify GENUINE design flaws.
 
-You think in: design patterns, SOLID principles, DDD, clean architecture, system boundaries.`,
+FALSE-POSITIVE RULES:
+1. Only report issues you can directly observe in the folder structure or code shown.
+2. Do NOT report "best practice suggestions" as architectural issues.
+3. Do NOT report missing things you cannot confirm are missing (e.g., "no tests" only if test directory is absent from tree).
+4. Maximum 5 issues per scan. Only include high-confidence, high-impact findings.
+5. Each issue must name the specific file or folder where the problem exists.`,
 
     analysisPrompt: (structure: string, keyFiles: string) => `
 ARCHITECTURE REVIEW
 
 FOLDER STRUCTURE:
-${structure}
+${structure.substring(0, 2000)}
 
-KEY IMPLEMENTATION FILES:
-${keyFiles.substring(0, 8000)}
+KEY FILES:
+${keyFiles.substring(0, 4000)}
 
-Analyze the architecture and return ONLY valid JSON (no markdown, no code fences):
+Return ONLY valid JSON array. Empty array [] if no genuine issues found:
 [
   {
     "title": "Architecture issue title",
     "severity": "high|medium|low",
-    "category": "Separation of Concerns|Tight Coupling|Poor Cohesion|Scalability|Maintainability",
-    "location": "folder/or/file/path",
-    "problem": "What is wrong with the current design",
-    "consequences": "How this will hurt the project as it grows",
-    "solution": "Concrete steps to fix this architectural issue",
+    "category": "Separation of Concerns|Tight Coupling|Scalability|Maintainability",
+    "location": "exact/folder/or/file",
+    "problem": "What is specifically wrong, referencing the code/structure shown.",
+    "consequences": "How this concretely hurts the project.",
+    "solution": "Concrete actionable steps to fix this.",
     "refactoringEffort": "low|medium|high",
     "priority": "high|medium|low"
   }
 ]
-
-Common issues to check:
-- God objects (files with too many responsibilities)
-- Circular dependencies
-- Business logic in presentation layer
-- Missing abstraction layers
-- Tightly coupled modules
-- Violation of single responsibility principle
-- Missing interfaces/contracts
-- Hardcoded configuration
-- Poor error handling architecture
 `
   },
 
@@ -191,41 +157,40 @@ Common issues to check:
   // AGENT 4: CODE QUALITY ANALYST - The Critic
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   codeQuality: {
-    systemPrompt: `You are a Code Quality Expert focused on clean code, best practices, and maintainability.
-Your role: Identify code smells, complexity issues, naming problems, duplication.
-You enforce: Clean Code principles, DRY, KISS, YAGNI, meaningful names, proper abstractions.
+    systemPrompt: `You are a Code Quality Expert. Identify REAL, HIGH-IMPACT code quality issues only.
 
-You think in: readability, maintainability, testability, cognitive complexity.`,
+FALSE-POSITIVE RULES:
+1. Report ONLY issues present in the code shown — no speculative findings.
+2. Skip trivial style issues (line length, extra blank lines, etc.).
+3. Only report "medium" or higher severity issues — do not report "low" findings that are nitpicks.
+4. A function is only "too long" if it is definitively over 60 lines AND you can see it.
+5. Max 5 issues total. Pick the most impactful ones.
+6. No duplicate findings across files for the same pattern.`,
 
     analysisPrompt: (files: string) => `
 CODE QUALITY REVIEW
 
-FILES TO ANALYZE:
-${files.substring(0, 10000)}
+FILES:
+${files.substring(0, 6000)}
 
-Check for:
-1. Code complexity (cyclomatic complexity > 10)
-2. Code duplication (similar blocks repeated)
-3. Poor naming (vague names like 'data', 'temp', 'x')
-4. Long functions (>50 lines)
-5. Deep nesting (>3 levels)
-6. Missing error handling
-7. Magic numbers/strings
-8. Commented-out code
-9. Inconsistent formatting
-10. Missing documentation on complex logic
+Check for HIGH-IMPACT issues only:
+1. Functions with cyclomatic complexity clearly above 10 (visible in the code)
+2. Copy-pasted blocks you can see repeated
+3. Critical missing error handling around async operations that could crash the app
+4. Deeply nested conditionals (4+ levels visible in code)
+5. Obvious dead code / unreachable branches
 
-Return ONLY valid JSON (no markdown, no code fences):
+Return ONLY valid JSON array. Empty array [] if no genuine high-impact issues:
 [
   {
     "title": "Issue title",
-    "severity": "medium|low",
+    "severity": "medium|high",
     "file": "path/to/file",
     "line": 10,
-    "type": "Complexity|Duplication|Naming|Length|Nesting|ErrorHandling|MagicValues|DeadCode",
-    "problem": "What is wrong",
-    "suggestion": "How to improve",
-    "exampleFix": "Code example of the fix"
+    "type": "Complexity|Duplication|ErrorHandling|Nesting|DeadCode",
+    "problem": "What is specifically wrong, citing the code.",
+    "suggestion": "Actionable improvement.",
+    "exampleFix": "Code snippet showing the fix."
   }
 ]
 `
@@ -235,43 +200,43 @@ Return ONLY valid JSON (no markdown, no code fences):
   // AGENT 5: TECHNICAL DEBT HUNTER - The Auditor
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   technicalDebt: {
-    systemPrompt: `You are a Technical Debt Specialist tracking shortcuts, hacks, and maintenance burdens.
-Your role: Find all the "we will fix this later" items that accumulate in codebases.
-Focus on: TODOs, FIXMEs, deprecated code, outdated dependencies, quick hacks.
+    systemPrompt: `You are a Technical Debt Specialist. Find real, confirmed technical debt only.
 
-You think in: maintenance cost, future pain, compound interest on debt.`,
+FALSE-POSITIVE RULES:
+1. Only report TODO/FIXME comments you can literally see in the code.
+2. Only flag hardcoded values if they are clearly sensitive (URLs, IPs, credentials).
+3. Do NOT flag console.log in development/test files — only in production server files.
+4. Do NOT flag "missing tests" unless the project clearly has a test setup and these files have none.
+5. Max 5 items. Only report debt with real maintenance risk.`,
 
     analysisPrompt: (codebase: string, dependencies: any) => `
 TECHNICAL DEBT AUDIT
 
-DEPENDENCIES:
-${JSON.stringify(dependencies, null, 2)}
+DEPENDENCIES (package.json):
+${JSON.stringify(dependencies?.dependencies || {}, null, 2).substring(0, 1000)}
 
 CODE SAMPLES:
-${codebase.substring(0, 8000)}
+${codebase.substring(0, 4000)}
 
-Find all technical debt:
-1. TODO/FIXME/HACK comments
-2. Deprecated dependencies
-3. Hardcoded values (IPs, URLs, credentials)
-4. console.log statements left in production code
-5. Dead code / unused exports
-6. Outdated patterns
-7. Missing tests
-8. Performance anti-patterns
+Find confirmed technical debt:
+1. Explicit TODO/FIXME/HACK comments in the code shown
+2. Hardcoded credentials, API keys, or IPs visible in code
+3. console.log/debug statements in server-side production code
+4. Deprecated package versions you can confirm from package.json
+5. Clear performance anti-patterns (N+1 queries, unbounded loops on large data)
 
-Return ONLY valid JSON (no markdown, no code fences):
+Return ONLY valid JSON array. Empty array [] if nothing confirmed:
 [
   {
     "title": "Debt item title",
     "severity": "high|medium|low",
-    "type": "TODO|Deprecated|Hardcoded|Logging|DeadCode|Performance|Missing",
+    "type": "TODO|Deprecated|Hardcoded|Logging|Performance",
     "file": "path/to/file",
     "line": 10,
-    "debt": "Description of the technical debt",
-    "effort": "Estimated time to fix (hours)",
-    "risk": "What happens if not fixed",
-    "fix": "How to resolve this debt"
+    "debt": "Exact description citing the code.",
+    "effort": "Estimated hours to fix",
+    "risk": "Concrete risk if left unfixed.",
+    "fix": "How to resolve."
   }
 ]
 `
@@ -281,45 +246,40 @@ Return ONLY valid JSON (no markdown, no code fences):
   // AGENT 6: AI CODE DETECTOR - The Investigator
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   aiSpecific: {
-    systemPrompt: `You are an AI Code Analysis Specialist detecting AI-generated code patterns.
-Your role: Identify code that shows signs of being AI-generated and spot related issues.
-Look for: inconsistent styles, over-engineering, redundancy, incomplete implementations.
+    systemPrompt: `You are an AI Code Analysis Specialist. Detect AI-generated code patterns that introduce real risk.
 
-You think in: AI generation patterns, copy-paste artifacts, style mixing, hallucination signs.`,
+FALSE-POSITIVE RULES:
+1. Only report patterns you have STRONG evidence for in the code shown.
+2. Do NOT flag clean, well-structured code as AI-generated just because it looks good.
+3. Only report issues where the AI-generation pattern causes an ACTUAL problem (hallucinated import, logical gap, inconsistent auth, etc.).
+4. Style inconsistency alone is not a finding unless it creates a bug risk.
+5. Max 3 findings. High confidence only.`,
 
     analysisPrompt: (code: string) => `
 AI-GENERATED CODE ANALYSIS
 
-CODE TO ANALYZE:
-${code.substring(0, 10000)}
+CODE:
+${code.substring(0, 5000)}
 
-AI-generated code often exhibits these patterns:
-1. Mixing multiple coding styles in same file (promises vs async/await)
-2. Over-complicated solutions for simple problems
-3. Redundant implementations of same functionality
-4. Inconsistent naming conventions within a file
-5. Incomplete error handling (empty catch blocks)
-6. Missing edge cases
-7. Hallucinated imports (imports that do not exist)
-8. Overly generic variable names
-9. Excessive comments explaining obvious code
-10. Perfect formatting but logical gaps
+Look for AI-generation patterns that cause REAL issues:
+1. Hallucinated imports (imports that clearly do not match the project structure)
+2. Redundant/contradictory implementations of the same function in the same file
+3. Incomplete error handling (empty catch blocks, swallowed errors)
+4. Logical gaps (code that appears complete but skips a critical step)
 
-Return ONLY valid JSON (no markdown, no code fences):
+Return ONLY valid JSON array. Empty array [] if no strong evidence:
 [
   {
     "title": "AI-specific issue title",
     "severity": "medium|low",
     "file": "path/to/file",
     "line": 10,
-    "pattern": "StyleInconsistency|OverEngineering|Redundancy|IncompleteImplementation|Hallucination",
-    "evidence": "What indicates this was AI-generated",
-    "problem": "Why this is an issue",
-    "fix": "How to improve this code"
+    "pattern": "Hallucination|Redundancy|IncompleteImplementation|LogicalGap",
+    "evidence": "Exact code that indicates this was AI-generated and is problematic.",
+    "problem": "Why this causes a real issue.",
+    "fix": "How to fix it."
   }
 ]
-
-Only report if you have STRONG evidence of AI generation issues.
 `
   },
 
@@ -327,96 +287,121 @@ Only report if you have STRONG evidence of AI generation issues.
   // AGENT 7: ORCHESTRATOR - The Synthesizer
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   orchestrator: {
-    systemPrompt: `You are a Chief Technology Officer and Strategic Advisor.
-Your task: Create an ENTERPRISE-GRADE audit report. You must not only find errors, but also highlight strengths to motivate the developer.
+    systemPrompt: `You are a Chief Technology Officer writing a final security audit report.
 
-For EACH listed issue, you MUST provide:
-1. Why this is a problem and how it was found.
-2. What will happen if not fixed (Definite, Likely, Possible impacts).
-3. "Launch Anyway" vs "Red Flag": Intelligently flag if this MUST be fixed before launch, or if the user should just launch anyway and fix it later.
-4. "This is what you need to fix this problem" (Clear explanation).
-5. "Professional Vibe Coding Instructions": Highly specific, copy-paste ready prompts for Cursor/ChatGPT.
+Your PRIMARY responsibility before writing anything:
+1. DEDUPLICATE: If multiple agents reported the same issue (same file + same problem), keep only the highest-severity version.
+2. VALIDATE: For each finding, ask "Is there actual evidence of this in the code?" If not, exclude it.
+3. FILTER false positives ruthlessly: A report with 3 real issues is infinitely more valuable than one with 50 where 45 are noise.
+4. PRIORITIZE: Rank by real business risk. A SQL injection beats 20 code style issues.
+5. Mark anything non-critical as "LAUNCH_ANYWAY" to prevent developer overwhelm.
 
-Be thorough, technical, and highly strategic. Limit overwhelm by categorizing issues properly.`,
+The final topPriorities list should contain ONLY confirmed, high-confidence, high-impact issues.
+Quality over quantity. A developer reading this should feel confident acting on every single item.`,
 
-    synthesisPrompt: (allFindings: any, metadata: any) => `
-Create a comprehensive, strategic enterprise audit report.
+    synthesisPrompt: (allFindings: any, metadata: any) => {
+      // Slim down findings to prevent token overflow
+      const securitySlim = (allFindings.security || []).slice(0, 10).map((i: any) => ({
+        title: i.title, severity: i.severity, file: i.file_path, line: i.line_number,
+        description: (i.description || '').substring(0, 300),
+        fix: (i.fix_suggestion || '').substring(0, 200)
+      }));
+      const archSlim = (allFindings.architecture || []).slice(0, 6).map((i: any) => ({
+        title: i.title, severity: i.severity, file: i.file_path,
+        description: (i.description || '').substring(0, 200)
+      }));
+      const qualitySlim = (allFindings.quality || []).slice(0, 5).map((i: any) => ({
+        title: i.title, severity: i.severity, file: i.file_path,
+        description: (i.description || '').substring(0, 150)
+      }));
+      const debtSlim = (allFindings.debt || []).slice(0, 5).map((i: any) => ({
+        title: i.title, severity: i.severity, file: i.file_path,
+        description: (i.description || '').substring(0, 150)
+      }));
+
+      return `
+Create a strategic enterprise audit report. Deduplicate and filter all findings before including them.
 
 CODEBASE:
-Repository: ${metadata.repoUrl}
+Repo: ${metadata.repoUrl}
 Files: ${metadata.totalFiles || 0}
-Tech Stack: ${JSON.stringify(metadata.techStack)}
+Stack: ${JSON.stringify(metadata.techStack).substring(0, 300)}
 
-FINDINGS:
-Recon (Architecture & Strengths):
-${JSON.stringify(allFindings.recon || {}, null, 2)}
+RECON SUMMARY:
+${JSON.stringify({
+  summary: allFindings.recon?.summary,
+  strengths: allFindings.recon?.strengths,
+  applicationStory: allFindings.recon?.applicationStory,
+  insights: allFindings.recon?.insights
+}, null, 2).substring(0, 1500)}
 
-Security Issues (${allFindings.security?.length || 0}):
-${JSON.stringify((allFindings.security || []).slice(0, 15), null, 2)}
+SECURITY FINDINGS (${securitySlim.length}):
+${JSON.stringify(securitySlim, null, 2)}
 
-Architecture Issues (${allFindings.architecture?.length || 0}):
-${JSON.stringify((allFindings.architecture || []).slice(0, 10), null, 2)}
+ARCHITECTURE FINDINGS (${archSlim.length}):
+${JSON.stringify(archSlim, null, 2)}
 
-Code Quality (${allFindings.quality?.length || 0}):
-${JSON.stringify((allFindings.quality || []).slice(0, 10), null, 2)}
+QUALITY FINDINGS (${qualitySlim.length}):
+${JSON.stringify(qualitySlim, null, 2)}
 
-Technical Debt (${allFindings.debt?.length || 0}):
-${JSON.stringify((allFindings.debt || []).slice(0, 10), null, 2)}
+DEBT FINDINGS (${debtSlim.length}):
+${JSON.stringify(debtSlim, null, 2)}
 
-Return a comprehensive JSON report with this EXACT structure:
+Return a JSON report with this EXACT structure:
 {
   "executiveSummary": {
-    "overview": "2-3 sentence executive summary",
-    "keyFindings": ["finding 1", "finding 2", "finding 3"],
-    "recommendedActions": ["action 1", "action 2", "action 3"],
-    "businessImpact": "How these issues affect the business"
+    "overview": "2-3 sentence executive summary of real risk.",
+    "keyFindings": ["Only confirmed, high-confidence findings — max 5"],
+    "recommendedActions": ["Top 3 concrete actions in priority order"],
+    "businessImpact": "How the confirmed issues affect the business."
   },
-  "overallScore": 0-100,
+  "overallScore": 0,
   "riskLevel": "Critical|High|Medium|Low",
-  "applicationStory": "Pull this from the Recon 'applicationStory'. A professional 3-4 sentence narrative of the application.",
-  "strengths": ["Pull from Recon 'strengths' or generate 3 very strong points praising the developer to build confidence. Point out good architecture or secure practices found."],
-  "architectureMap": "### SYSTEM ARCHITECTURE BLUEPRINT BRIEF: Build a professional system architecture diagram using Mermaid.js. Use a flowchart TB layout. Organize nodes into named subgraphs representing logical layers — edge layer, client applications, API gateway, platform services (broken into sub-domains), async/event bus, data layer, infrastructure, and external integrations. Connect nodes with directional arrows showing actual data flow. Set flowchart.curve: 'basis' for smooth edges. Rule: Subgraphs = logical domains. Node labels: two lines (service name \n technology/responsibility), max 4 words per line. Color tiers: max 3 (Primary=core, Secondary=data, Tertiary=async). No icons/emoji.",
-  "annotatedFileTree": "The full array of objects from Recon 'annotatedFileTree'.",
+  "applicationStory": "3-4 sentence professional narrative from Recon.",
+  "strengths": ["3 genuine strengths from the codebase — be specific, not generic."],
+  "architectureMap": "Mermaid.js flowchart TB with subgraphs for logical layers. No icons. Max 4 words per node.",
+  "annotatedFileTree": [],
   "topPriorities": [
     {
       "rank": 1,
-      "issueId": "reference to issue",
       "title": "Issue title",
-      "severity": "critical",
-      "category": "security",
-      "agentName": "Security Scanner",
-      "whatWeFound": "This is why this is a problem and I found it this way.",
+      "severity": "critical|high|medium|low",
+      "category": "security|architecture|quality|tech_debt",
+      "agentName": "Agent name",
+      "whatWeFound": "What was found and why it is a real problem.",
       "file": "/path/to/file.ts",
-      "line": 123,
-      "searchingFor": "What the agent was looking for when it found this",
+      "line": 0,
       "impact": {
         "definite": ["Will definitely cause X"],
         "likely": ["Probably will cause Y"],
-        "reported": ["Developers commonly report issue A with this"],
-        "possible": ["Might cause Z under worst-case scenarios"]
+        "possible": ["Might cause Z"]
       },
-      "launchStatus": "RED_FLAG (must fix now) or LAUNCH_ANYWAY (fix later)",
+      "launchStatus": "RED_FLAG|LAUNCH_ANYWAY",
       "solution": {
         "must": [{"action": "Do this", "reason": "Because X"}],
-        "should": [{"action": "Do this", "reason": "Because Y"}]
+        "should": [{"action": "Do this optionally", "reason": "Because Y"}]
       },
       "vibeInstructions": {
-        "cursor": "Professional, copy-paste ready prompt for Cursor to fix this specific issue.",
-        "chatgpt": "Professional, copy-paste ready prompt for ChatGPT to fix this specific issue.",
-        "claude": "Professional, copy-paste ready prompt for Claude to fix this specific issue."
+        "cursor": "Copy-paste Cursor prompt to fix this exact issue.",
+        "chatgpt": "Copy-paste ChatGPT prompt to fix this exact issue."
       },
-      "estimatedTimeToFix": "2 hours",
-      "roi": "Prevents potential data breach"
+      "estimatedTimeToFix": "X hours",
+      "roi": "What risk is eliminated by fixing this."
     }
   ],
   "issueBreakdown": {
-    "critical": 2,
-    "high": 8,
-    "medium": 15,
-    "low": 7
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
   }
 }
 
-IMPORTANT: For the top 10 most critical/high issues, provide DEEP strategic analysis. Label less severe issues as LAUNCH_ANYWAY to prevent developer overwhelm.`
+IMPORTANT:
+- topPriorities must contain ONLY deduplicated, confirmed, high-confidence issues.
+- If total confirmed issues < 10, do NOT invent more to fill the list.
+- Mark every non-critical issue LAUNCH_ANYWAY unless it is a genuine security threat or data loss risk.
+- overallScore should reflect real quality: a clean project with 2 minor issues should score 85+, not 40.`;
+    }
   }
 };
