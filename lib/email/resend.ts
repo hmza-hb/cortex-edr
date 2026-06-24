@@ -1,17 +1,26 @@
 import { Resend } from 'resend';
 
 if (!process.env.RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY is missing. Email notifications will be disabled.");
+    console.warn("[Email] RESEND_API_KEY is missing. Email notifications will be disabled.");
 }
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const ADMIN_EMAIL = "cortexedr@gmail.com";
-export const SYSTEM_EMAIL = "no-reply@cortex-edr.com";
+
+// SYSTEM_EMAIL must use a domain that is verified in your Resend account at https://resend.com/domains
+// If cortex-edr.com is not yet verified, set RESEND_FROM_EMAIL=onboarding@resend.dev in .env
+// as a temporary fallback (only delivers to your Resend account owner's email in sandbox mode).
+export const SYSTEM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+if (SYSTEM_EMAIL === "onboarding@resend.dev") {
+    console.warn("[Email] Using Resend sandbox sender. Emails will only deliver to the Resend account owner. Verify cortex-edr.com at https://resend.com/domains and set RESEND_FROM_EMAIL=no-reply@cortex-edr.com to fix this.");
+}
 
 // Constants for branding
-const LOGO_URL = "https://wkugzsqxrsorvcmzavvo.supabase.co/storage/v1/object/public/system_assets/logo_wide_dark.png"; // We'll need to upload the logo to a public bucket
-const APP_URL = "https://www.cortex-edr.com";
+const LOGO_URL = "https://wkugzsqxrsorvcmzavvo.supabase.co/storage/v1/object/public/system_assets/logo_wide_dark.png";
+const APP_URL = "https://app.cortex-edr.com";
+
 
 /**
  * Renders the professional base wrapper for all emails
