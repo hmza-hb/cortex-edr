@@ -67,7 +67,7 @@ export function CortexUserButton() {
                 </div>
                 <DropdownMenuSeparator className="bg-zinc-900 mx-2" />
                 <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={() => signOut({ callbackUrl: 'https://cortex-edr.com' })}
                     className="flex items-center gap-3 p-3 rounded-xl focus:bg-red-950 focus:text-red-400 text-red-500 cursor-pointer transition-colors m-1"
                 >
                     <LogOut className="h-4 w-4" />
