@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs";
 import { createClient } from "@supabase/supabase-js";
 import { resend, SYSTEM_EMAIL, templates } from "@/lib/email/resend";
 
+const APP_URL = process.env.NEXTAUTH_URL || 'https://app.cortex-edr.com';
+
 // Supabase admin client for server-side operations
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,10 +23,12 @@ export const authOptions: NextAuthOptions = {
         GitHubProvider({
             clientId: process.env.GITHUB_ID || "",
             clientSecret: process.env.GITHUB_SECRET || "",
+            authorization: { params: { prompt: "select_account" } },
         }),
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+            authorization: { params: { prompt: "select_account" } },
         }),
         CredentialsProvider({
             name: "Credentials",

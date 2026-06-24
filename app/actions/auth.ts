@@ -13,6 +13,19 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+/**
+ * In Resend sandbox mode (unverified domain), emails can only be delivered to the
+ * account owner. This helper redirects the `to` address when that restriction is active.
+ * In production with a verified domain, it returns the real recipient unchanged.
+ */
+const RESEND_SANDBOX_OVERRIDE = process.env.RESEND_SANDBOX_OVERRIDE_EMAIL || null;
+function resolveRecipient(email: string): string {
+    if (SYSTEM_EMAIL === 'onboarding@resend.dev' && RESEND_SANDBOX_OVERRIDE) {
+        return RESEND_SANDBOX_OVERRIDE;
+    }
+    return email;
+}
+
 export async function checkEmail(email: string) {
     if (!email) return { exists: false };
 
@@ -67,9 +80,11 @@ export async function initiateRegistration(formData: FormData) {
 
         // 3. Send Email
         const emailTemplate = templates.otp(otp);
+        const recipient = resolveRecipient(email);
+        console.log(`[Auth] OTP for ${email}: ${otp} (sending to: ${recipient})`);
         const { error: emailError } = await resend.emails.send({
-            from: `Cortex EDR <${SYSTEM_EMAIL}>`,
-            to: email,
+            from: `Cortex <${SYSTEM_EMAIL}>`,
+            to: recipient,
             subject: emailTemplate.subject,
             html: emailTemplate.html,
         });
@@ -237,12 +252,14 @@ export async function requestPasswordReset(email: string) {
 
         if (otpError) throw otpError;
 
-        // 4. Send Recovery Email (Using a new template if needed, or OTP template)
-        const emailTemplate = templates.otp(otp); // We'll reuse OTP template for simplicity in this MVP
+        // 4. Send Recovery Email
+        const emailTemplate = templates.otp(otp);
+        const recipient = resolveRecipient(email);
+        console.log(`[Auth] Password reset OTP for ${email}: ${otp} (sending to: ${recipient})`);
         await resend.emails.send({
-            from: `Cortex Security <${SYSTEM_EMAIL}>`,
-            to: email,
-            subject: "Security Alert: Password Recovery Protocol",
+            from: `Cortex <${SYSTEM_EMAIL}>`,
+            to: recipient,
+            subject: "Password Reset — Verification Code",
             html: emailTemplate.html,
         });
 
@@ -273,10 +290,12 @@ export async function resendVerificationCode(email: string) {
         if (otpError) throw otpError;
 
         const emailTemplate = templates.otp(otp);
+        const recipient = resolveRecipient(email);
+        console.log(`[Auth] Resend OTP for ${email}: ${otp} (sending to: ${recipient})`);
         await resend.emails.send({
-            from: `Cortex EDR <${SYSTEM_EMAIL}>`,
-            to: email,
-            subject: "Identity Verification: New Code Dispatched",
+            from: `Cortex <${SYSTEM_EMAIL}>`,
+            to: recipient,
+            subject: "Your new verification code — Cortex",
             html: emailTemplate.html,
         });
 
