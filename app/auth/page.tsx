@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect, Suspense } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Mail,
@@ -18,11 +18,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { checkEmail, initiateRegistration, completeRegistration, requestPasswordReset, resendVerificationCode } from '@/app/actions/auth';
 import { MarketingScroller } from '@/components/ui/marketing-scroller';
-
-type AuthState = 'IDENTIFY' | 'SIGNIN' | 'SIGNUP' | 'VERIFY' | 'SUCCESS' | 'RECOVER';
 
 const GoogleIcon = () => (
     <svg viewBox="0 0 24 24" width="18" height="18">
@@ -72,14 +70,14 @@ const FloatingLabelInput = ({
                         initial={false}
                         animate={{
                             y: (isFocused || hasValue) ? -28 : 0,
-                            scale: (isFocused || hasValue) ? 0.75 : 1,
-                            x: (isFocused || hasValue) ? -8 : 0,
+                            scale: (isFocused || hasValue) ? 0.85 : 1,
+                            x: (isFocused || hasValue) ? -6 : 0,
                         }}
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                         className={`
                             absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none font-medium transition-colors duration-300 z-50 px-3
                             ${(isFocused || hasValue)
-                                ? 'text-white bg-black font-bold uppercase tracking-[0.2em]'
+                                ? 'text-white bg-black md:bg-[#050505] font-semibold text-xs tracking-normal'
                                 : 'text-zinc-500 text-sm'}
                         `}
                     >
@@ -95,7 +93,7 @@ const FloatingLabelInput = ({
                         onBlur={() => setIsFocused(false)}
                         placeholder={isFocused ? placeholder : ""}
                         required={required}
-                        className="w-full h-full bg-transparent border-none outline-none text-white text-sm placeholder:text-zinc-700"
+                        className="w-full h-full bg-transparent border-none outline-none text-white text-sm placeholder:text-zinc-600"
                     />
                 </div>
 
@@ -113,8 +111,15 @@ const FloatingLabelInput = ({
     );
 };
 
-export default function UnifiedAuthPage() {
-    const [state, setState] = useState<'IDENTIFY' | 'SIGNIN' | 'SIGNUP' | 'VERIFY' | 'SUCCESS' | 'RECOVER'>('IDENTIFY');
+function AuthPageContent() {
+    const { data: session, status } = useSession();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    const mode = searchParams ? searchParams.get('mode') : null;
+
+    const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+    const [state, setState] = useState<'FORM' | 'VERIFY' | 'SUCCESS' | 'RECOVER'>('FORM');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
@@ -124,7 +129,22 @@ export default function UnifiedAuthPage() {
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    const router = useRouter();
+
+    // Sync query parameter mode to local activeTab
+    useEffect(() => {
+        if (mode === 'signup') {
+            setActiveTab('signup');
+        } else {
+            setActiveTab('signin');
+        }
+    }, [mode]);
+
+    // Client-side session redirect
+    useEffect(() => {
+        if (status === 'authenticated') {
+            router.push('/dashboard');
+        }
+    }, [status, router]);
 
     // Auto-focus OTP inputs
     useEffect(() => {
@@ -133,25 +153,6 @@ export default function UnifiedAuthPage() {
             if (firstInput) firstInput.focus();
         }
     }, [state]);
-
-    const handleIdentify = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const { exists } = await checkEmail(email);
-            if (exists) {
-                setState('SIGNIN');
-            } else {
-                setState('SIGNUP');
-            }
-        } catch (err) {
-            setError("Unable to verify identity. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -165,35 +166,49 @@ export default function UnifiedAuthPage() {
         });
 
         if (result?.error) {
-            setError("Invalid credentials. Please verify your access key.");
+            setError("Invalid credentials. Please verify your email and password.");
             setIsLoading(false);
         } else {
-            router.push('/dashboard');
+            setState('SUCCESS');
+            setTimeout(() => router.push('/dashboard'), 1500);
         }
     };
 
     const handleInitiateSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         if (password !== confirmPassword) {
-            setError("Access keys do not match.");
+            setError("Passwords do not match.");
             return;
         }
 
         setIsLoading(true);
         setError(null);
 
-        const formData = new FormData();
-        formData.append('email', email);
-        formData.append('name', name);
-        formData.append('password', password);
+        try {
+            // First verify if email already exists
+            const { exists } = await checkEmail(email);
+            if (exists) {
+                setError("An account with this email already exists. Please Sign In instead.");
+                setIsLoading(false);
+                return;
+            }
 
-        const result = await initiateRegistration(formData);
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('name', name);
+            formData.append('password', password);
 
-        if (result.error) {
-            setError(result.error);
-            setIsLoading(false);
-        } else {
-            setState('VERIFY');
+            const result = await initiateRegistration(formData);
+
+            if (result.error) {
+                setError(result.error);
+                setIsLoading(false);
+            } else {
+                setState('VERIFY');
+                setIsLoading(false);
+            }
+        } catch (err) {
+            setError("Failed to initialize registration. Please try again.");
             setIsLoading(false);
         }
     };
@@ -219,8 +234,9 @@ export default function UnifiedAuthPage() {
             });
 
             if (loginResult?.error) {
-                setError("Registration successful, but sign-in failed. Please login manually.");
-                setState('SIGNIN');
+                setError("Account created successfully, but auto sign-in failed. Please sign in manually.");
+                setState('FORM');
+                setActiveTab('signin');
                 setIsLoading(false);
             } else {
                 setState('SUCCESS');
@@ -284,8 +300,21 @@ export default function UnifiedAuthPage() {
     };
 
     const handleSocialSignIn = (provider: string) => {
-        signIn(provider, { callbackUrl: '/dashboard' });
+        // Use absolute URL to ensure the redirect lands on the correct domain (app.cortex-edr.com),
+        // not the marketing site. A relative path can be misresolved if NEXTAUTH_URL ever differs.
+        const callbackUrl = typeof window !== 'undefined'
+            ? `${window.location.origin}/dashboard`
+            : '/dashboard';
+        signIn(provider, { callbackUrl });
     };
+
+    if (status === 'loading') {
+        return (
+            <div className="min-h-screen w-full flex items-center justify-center bg-black">
+                <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen w-full flex flex-col md:flex-row bg-black overflow-hidden relative font-outfit">
@@ -316,9 +345,9 @@ export default function UnifiedAuthPage() {
                         </div>
                         <div>
                             <h2 className="text-4xl font-black tracking-tighter text-white font-outfit uppercase">
-                                CORTEX<span className="opacity-50">  EDR</span>
+                                CORTEX<span className="opacity-50"> </span>
                             </h2>
-                            <p className="text-[10px] text-white/40 tracking-[0.4em] uppercase font-bold mt-1">Intelligence Orchestration</p>
+                            <p className="text-xs text-white/60 mt-1 font-medium">Codebase Defense Platform</p>
                         </div>
                     </div>
                     <div className="w-full text-left">
@@ -331,62 +360,179 @@ export default function UnifiedAuthPage() {
             <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative z-10 md:bg-[#050505] border-l border-white/5">
                 <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:30px_30px] pointer-events-none" />
 
-                <Link
-                    href="/"
-                    className="absolute left-8 top-8 text-[10px] font-bold uppercase tracking-[0.3em] text-white/60 hover:text-white transition-all flex items-center gap-2 group z-50 p-2"
+                <a
+                    href="https://cortex-edr.com"
+                    className="absolute left-8 top-8 text-xs font-semibold text-zinc-400 hover:text-white transition-all flex items-center gap-1.5 group z-50 p-2"
                 >
-                    <ChevronLeft className="h-3 w-3 transition-transform group-hover:-translate-x-1" />
-                    Return Home
-                </Link>
+                    <ChevronLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+                    Back
+                </a>
 
                 <div className="w-full max-w-[400px] relative z-20">
                     <AnimatePresence mode="wait">
-                        {/* 1. IDENTITY DISCOVERY */}
-                        {state === 'IDENTIFY' && (
+                        {state === 'FORM' && (
                             <motion.div
-                                key="identify"
+                                key="auth-form"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="space-y-8"
                             >
                                 <div className="space-y-2 text-center">
-                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Signin to Cortex EDR</h1>
-                                    <p className="text-zinc-500 text-sm">Authentication required to access dashboard.</p>
+                                    <h1 className="text-3xl font-bold tracking-tight text-white">
+                                        {activeTab === 'signin' ? 'Sign in to your account' : 'Create your account'}
+                                    </h1>
+                                    <p className="text-zinc-400 text-sm">
+                                        {activeTab === 'signin'
+                                            ? 'Enter your details below to access the secure dashboard.'
+                                            : 'Sign up to get started with Cortex.'}
+                                    </p>
+                                </div>
+
+                                {/* Tab Selector */}
+                                <div className="grid grid-cols-2 p-1 bg-zinc-950/80 border border-white/5 rounded-full mb-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setActiveTab('signin'); setError(null); }}
+                                        className={`py-2.5 text-xs font-semibold rounded-full transition-all duration-300 ${activeTab === 'signin' ? 'bg-white text-black shadow-md font-bold' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        Sign In
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setActiveTab('signup'); setError(null); }}
+                                        className={`py-2.5 text-xs font-semibold rounded-full transition-all duration-300 ${activeTab === 'signup' ? 'bg-white text-black shadow-md font-bold' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        Create Account
+                                    </button>
                                 </div>
 
                                 <div className="space-y-6">
-                                    <form onSubmit={handleIdentify} className="space-y-6">
-                                        <FloatingLabelInput
-                                            label="Email Address"
-                                            value={email}
-                                            onChange={setEmail}
-                                            id="email"
-                                            type="email"
-                                            icon={Mail}
-                                            placeholder="name@example.com"
-                                            required
-                                        />
+                                    {activeTab === 'signin' ? (
+                                        <form onSubmit={handleSignIn} className="space-y-6">
+                                            <div className="space-y-4">
+                                                <FloatingLabelInput
+                                                    label="Email Address"
+                                                    value={email}
+                                                    onChange={setEmail}
+                                                    id="email"
+                                                    type="email"
+                                                    icon={Mail}
+                                                    placeholder="name@example.com"
+                                                    required
+                                                />
 
-                                        {error && (
-                                            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-[11px] justify-center transition-all animate-in fade-in slide-in-from-top-2">
-                                                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                                <p className="font-medium">{error}</p>
+                                                <FloatingLabelInput
+                                                    label="Password"
+                                                    value={password}
+                                                    onChange={setPassword}
+                                                    id="password"
+                                                    type="password"
+                                                    icon={Lock}
+                                                    placeholder="Enter your password"
+                                                    required
+                                                    showPasswordToggle
+                                                    showPassword={showPassword}
+                                                    onTogglePassword={() => setShowPassword(!showPassword)}
+                                                />
+
+                                                <div className="flex justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setState('RECOVER'); setError(null); }}
+                                                        className="text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+                                                    >
+                                                        Forgot your password?
+                                                    </button>
+                                                </div>
                                             </div>
-                                        )}
 
-                                        <button
-                                            disabled={isLoading}
-                                            className="w-full h-14 bg-white text-black font-bold rounded-full flex items-center justify-center gap-2 transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50 shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
-                                        >
-                                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue'}
-                                            {!isLoading && <ArrowRight className="w-5 h-5" />}
-                                        </button>
-                                    </form>
+                                            {error && (
+                                                <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-xs justify-center transition-all animate-in fade-in slide-in-from-top-2">
+                                                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                                    <p className="font-medium">{error}</p>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                disabled={isLoading}
+                                                className="w-full h-14 bg-white text-black font-bold rounded-full flex items-center justify-center gap-2 transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50 shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
+                                            >
+                                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign in'}
+                                                {!isLoading && <ArrowRight className="w-5 h-5" />}
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        <form onSubmit={handleInitiateSignup} className="space-y-4">
+                                            <FloatingLabelInput
+                                                label="Full Name"
+                                                value={name}
+                                                onChange={setName}
+                                                id="name"
+                                                icon={User}
+                                                placeholder="John Doe"
+                                                required
+                                            />
+
+                                            <FloatingLabelInput
+                                                label="Email Address"
+                                                value={email}
+                                                onChange={setEmail}
+                                                id="signup-email"
+                                                type="email"
+                                                icon={Mail}
+                                                placeholder="name@example.com"
+                                                required
+                                            />
+
+                                            <FloatingLabelInput
+                                                label="Password"
+                                                value={password}
+                                                onChange={setPassword}
+                                                id="signup-password"
+                                                type="password"
+                                                icon={Lock}
+                                                placeholder="Enter password (min. 8 characters)"
+                                                required
+                                                showPasswordToggle
+                                                showPassword={showPassword}
+                                                onTogglePassword={() => setShowPassword(!showPassword)}
+                                            />
+
+                                            <FloatingLabelInput
+                                                label="Confirm Password"
+                                                value={confirmPassword}
+                                                onChange={setConfirmPassword}
+                                                id="confirm-password"
+                                                type="password"
+                                                icon={CheckCircle2}
+                                                placeholder="Confirm your password"
+                                                required
+                                                showPasswordToggle
+                                                showPassword={showPassword}
+                                                onTogglePassword={() => setShowPassword(!showPassword)}
+                                            />
+
+                                            {error && (
+                                                <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-xs">
+                                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                                    <p className="font-medium">{error}</p>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                disabled={isLoading}
+                                                className="w-full h-14 bg-white text-black font-semibold rounded-full flex items-center justify-center gap-2 transition-all hover:bg-zinc-300 active:scale-[0.98] disabled:opacity-50 shadow-[0_4px_20px_rgba(255,255,255,0.1)] mt-4"
+                                            >
+                                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create account'}
+                                                {!isLoading && <ArrowRight className="w-5 h-5" />}
+                                            </button>
+                                        </form>
+                                    )}
 
                                     <div className="relative py-4">
                                         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                                        <div className="relative flex justify-center text-[11px] uppercase font-bold tracking-[0.2em]"><span className="bg-black md:bg-[#050505] px-4 text-zinc-500">Fast Access</span></div>
+                                        <div className="relative flex justify-center text-xs font-medium"><span className="bg-black md:bg-[#050505] px-4 text-zinc-400">Or continue with</span></div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3">
@@ -409,143 +555,7 @@ export default function UnifiedAuthPage() {
                             </motion.div>
                         )}
 
-                        {/* 2A. SIGN IN */}
-                        {state === 'SIGNIN' && (
-                            <motion.div
-                                key="signin"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="space-y-8"
-                            >
-                                <div className="space-y-2 text-center">
-                                    <button onClick={() => setState('IDENTIFY')} className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-white flex items-center gap-2 mx-auto transition-colors">
-                                        <ChevronLeft className="w-3 h-3" /> Back
-                                    </button>
-                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Unlock Archive</h1>
-                                    <p className="text-zinc-500 text-sm">Validated identity: <span className="text-zinc-300">{email}</span></p>
-                                </div>
-
-                                <form onSubmit={handleSignIn} className="space-y-6">
-                                    <div className="space-y-4">
-                                        <FloatingLabelInput
-                                            label="Password"
-                                            value={password}
-                                            onChange={setPassword}
-                                            id="password"
-                                            type="password"
-                                            icon={Lock}
-                                            placeholder="Enter secure access key"
-                                            required
-                                            showPasswordToggle
-                                            showPassword={showPassword}
-                                            onTogglePassword={() => setShowPassword(!showPassword)}
-                                        />
-
-                                        <div className="flex justify-end">
-                                            <button
-                                                type="button"
-                                                onClick={() => setState('RECOVER')}
-                                                className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-white transition-colors"
-                                            >
-                                                Lost access key?
-                                            </button>
-                                        </div>
-
-                                        {error && (
-                                            <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-[11px] justify-center transition-all animate-in fade-in slide-in-from-top-2">
-                                                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                                <p className="font-medium">{error}</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <button
-                                        disabled={isLoading}
-                                        className="w-full h-14 bg-white text-black font-bold rounded-full flex items-center justify-center gap-2 transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50 shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
-                                    >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
-                                        {!isLoading && <ArrowRight className="w-5 h-5" />}
-                                    </button>
-                                </form>
-                            </motion.div>
-                        )}
-
-                        {/* 2B. SIGN UP */}
-                        {state === 'SIGNUP' && (
-                            <motion.div
-                                key="signup"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="space-y-8"
-                            >
-                                <div className="space-y-2 text-center">
-                                    <button onClick={() => setState('IDENTIFY')} className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-white flex items-center gap-2 mx-auto transition-colors">
-                                        <ChevronLeft className="w-3 h-3" /> Back
-                                    </button>
-                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Create Account</h1>
-                                    <p className="text-zinc-500 text-sm">Initialize strategic node for <span className="text-zinc-300">{email}</span></p>
-                                </div>
-
-                                <form onSubmit={handleInitiateSignup} className="space-y-4">
-                                    <FloatingLabelInput
-                                        label="Full Name"
-                                        value={name}
-                                        onChange={setName}
-                                        id="name"
-                                        icon={User}
-                                        placeholder="John Doe"
-                                        required
-                                    />
-
-                                    <FloatingLabelInput
-                                        label="Password"
-                                        value={password}
-                                        onChange={setPassword}
-                                        id="signup-password"
-                                        type="password"
-                                        icon={Lock}
-                                        placeholder="Min. 8 characters"
-                                        required
-                                        showPasswordToggle
-                                        showPassword={showPassword}
-                                        onTogglePassword={() => setShowPassword(!showPassword)}
-                                    />
-
-                                    <FloatingLabelInput
-                                        label="Confirm Password"
-                                        value={confirmPassword}
-                                        onChange={setConfirmPassword}
-                                        id="confirm-password"
-                                        type="password"
-                                        icon={CheckCircle2}
-                                        placeholder="Re-enter password"
-                                        required
-                                        showPasswordToggle
-                                        showPassword={showPassword}
-                                        onTogglePassword={() => setShowPassword(!showPassword)}
-                                    />
-
-                                    {error && (
-                                        <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-500 text-xs">
-                                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                            <p className="font-medium">{error}</p>
-                                        </div>
-                                    )}
-
-                                    <button
-                                        disabled={isLoading}
-                                        className="w-full h-14 bg-white text-black font-semibold rounded-full flex items-center justify-center gap-2 transition-all hover:bg-zinc-300 active:scale-[0.98] disabled:opacity-50 shadow-[0_4px_20px_rgba(255,255,255,0.1)] mt-4"
-                                    >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Started'}
-                                        {!isLoading && <ArrowRight className="w-5 h-5" />}
-                                    </button>
-                                </form>
-                            </motion.div>
-                        )}
-
-                        {/* 3. OTP VERIFICATION */}
+                        {/* OTP VERIFICATION */}
                         {state === 'VERIFY' && (
                             <motion.div
                                 key="verify"
@@ -555,12 +565,15 @@ export default function UnifiedAuthPage() {
                                 className="space-y-8 text-center"
                             >
                                 <div className="space-y-2">
+                                    <button onClick={() => setState('FORM')} className="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1.5 mx-auto transition-colors">
+                                        <ChevronLeft className="w-3.5 h-3.5" /> Back to forms
+                                    </button>
                                     <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(255,255,255,0.02)]">
                                         <Shield className="w-10 h-10 text-white" />
                                     </div>
-                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Verification</h1>
-                                    <p className="text-zinc-500 text-sm max-w-[280px] mx-auto">
-                                        Verification code dispatched to <span className="text-zinc-300 font-medium">{email}</span>.
+                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Verify your email</h1>
+                                    <p className="text-zinc-400 text-sm max-w-[280px] mx-auto">
+                                        We sent a 6-digit verification code to <span className="text-white font-semibold">{email}</span>.
                                     </p>
                                 </div>
 
@@ -595,16 +608,16 @@ export default function UnifiedAuthPage() {
                                         <button
                                             disabled={isLoading || resendCooldown > 0}
                                             onClick={() => handleResendOtp()}
-                                            className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 hover:text-white transition-colors block w-full disabled:opacity-30"
+                                            className="text-xs font-medium text-zinc-400 hover:text-white transition-colors block w-full disabled:opacity-30"
                                         >
-                                            {resendCooldown > 0 ? `Retry in ${resendCooldown}s` : 'Resend Verification Code'}
+                                            {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend verification code'}
                                         </button>
                                     </div>
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* 2C. RECOVER PASSWORD */}
+                        {/* RECOVER PASSWORD */}
                         {state === 'RECOVER' && (
                             <motion.div
                                 key="recover"
@@ -614,11 +627,11 @@ export default function UnifiedAuthPage() {
                                 className="space-y-8"
                             >
                                 <div className="space-y-2 text-center">
-                                    <button onClick={() => setState('SIGNIN')} className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-white flex items-center gap-2 mx-auto transition-colors">
-                                        <ChevronLeft className="w-3 h-3" /> Back to Sign In
+                                    <button onClick={() => setState('FORM')} className="text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1.5 mx-auto transition-colors">
+                                        <ChevronLeft className="w-3.5 h-3.5" /> Back to sign in
                                     </button>
-                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Recovery</h1>
-                                    <p className="text-zinc-500 text-sm">Initiate access key restoration for <span className="text-zinc-300">{email}</span></p>
+                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Reset password</h1>
+                                    <p className="text-zinc-400 text-sm">Enter your email address below to receive a password reset link.</p>
                                 </div>
 
                                 <form onSubmit={handlePasswordReset} className="space-y-6">
@@ -630,7 +643,7 @@ export default function UnifiedAuthPage() {
                                             id="recover-email"
                                             type="email"
                                             icon={Mail}
-                                            placeholder="Verify your identity"
+                                            placeholder="Enter your email"
                                             required
                                         />
 
@@ -646,14 +659,14 @@ export default function UnifiedAuthPage() {
                                         disabled={isLoading}
                                         className="w-full h-14 bg-white text-black font-bold rounded-full flex items-center justify-center gap-2 transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50 shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
                                     >
-                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Dispatch Reset Link'}
+                                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send reset link'}
                                         {!isLoading && <ArrowRight className="w-5 h-5" />}
                                     </button>
                                 </form>
                             </motion.div>
                         )}
 
-                        {/* 4. SUCCESS */}
+                        {/* SUCCESS */}
                         {state === 'SUCCESS' && (
                             <motion.div
                                 key="success"
@@ -665,13 +678,13 @@ export default function UnifiedAuthPage() {
                                     <CheckCircle2 className="w-12 h-12 text-green-500" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h1 className="text-3xl font-bold tracking-tighter text-white uppercase">Welcome back</h1>
-                                    <p className="text-zinc-500 text-sm">Identity verified. Redirecting to your dashboard.</p>
+                                    <h1 className="text-3xl font-bold tracking-tighter text-white">Welcome to Cortex</h1>
+                                    <p className="text-zinc-400 text-sm">Verification successful. Redirecting you to the dashboard...</p>
                                 </div>
                                 <div className="pt-8">
-                                    <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-700">
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        Syncing Clusters
+                                    <div className="flex items-center justify-center gap-2 text-xs font-medium text-zinc-400">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Loading your dashboard...
                                     </div>
                                 </div>
                             </motion.div>
@@ -679,8 +692,8 @@ export default function UnifiedAuthPage() {
                     </AnimatePresence>
                 </div>
 
-                <div className="absolute bottom-8 text-center text-[10px] text-zinc-600 font-bold uppercase tracking-[0.3em] opacity-30 select-none hidden md:block">
-                    Cortex Secure Access // Version 2.5
+                <div className="absolute bottom-8 text-center text-xs text-zinc-300 opacity-60 select-none hidden md:block">
+                    © {new Date().getFullYear()} Cortex. All rights reserved.
                 </div>
             </div>
 
@@ -688,5 +701,17 @@ export default function UnifiedAuthPage() {
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 blur-[120px] rounded-full pointer-events-none md:hidden"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-zinc-800/20 blur-[120px] rounded-full pointer-events-none md:hidden"></div>
         </div>
+    );
+}
+
+export default function UnifiedAuthPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen w-full flex items-center justify-center bg-black">
+                <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
+            </div>
+        }>
+            <AuthPageContent />
+        </Suspense>
     );
 }
