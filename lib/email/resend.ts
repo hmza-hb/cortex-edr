@@ -4,7 +4,22 @@ if (!process.env.RESEND_API_KEY) {
     console.warn("[Email] RESEND_API_KEY is missing. Email notifications will be disabled.");
 }
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+function createResendClient(): Resend {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        return {
+            emails: {
+                send: async () => {
+                    console.warn("[Email] RESEND_API_KEY is missing. Email send skipped.");
+                    return { data: null, error: { message: "Email disabled — RESEND_API_KEY not configured", name: "missing_api_key" } };
+                },
+            },
+        } as unknown as Resend;
+    }
+    return new Resend(apiKey);
+}
+
+export const resend = createResendClient();
 
 export const ADMIN_EMAIL = "cortexedr@gmail.com";
 
