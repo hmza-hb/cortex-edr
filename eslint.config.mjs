@@ -6,7 +6,7 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   {
-    ignores: ["test_gemini.js", "test-dashboard.html", "database-tier-manager.html"],
+    ignores: ["scripts/dev/**", "scripts/admin/**"],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
