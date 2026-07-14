@@ -1,10 +1,23 @@
 # CortexEDR
 
+[![CI](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/ci.yml/badge.svg)](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/ci.yml)
+[![Security](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/security.yml/badge.svg)](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/security.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org/)
+
 **AI-powered security auditing platform for modern codebases.**
 
 CortexEDR analyzes GitHub repositories through a multi-agent pipeline, producing structured vulnerability reports, architecture assessments, and a codebase-aware conversational advisor. The system is designed for developers and small teams who need actionable security analysis without enterprise SAST tooling overhead.
 
 **Live:** [cortex-edr.com](https://www.cortex-edr.com) · **App:** [app.cortex-edr.com](https://app.cortex-edr.com)
+
+| | |
+|---|---|
+| [Architecture](ARCHITECTURE.md) | System design, subsystems, trade-offs |
+| [Contributing](CONTRIBUTING.md) | Development workflow and quality gates |
+| [Security](SECURITY.md) | Vulnerability disclosure policy |
+| [CI/CD](.github/workflows/README.md) | Pipeline documentation and deployment secrets |
 
 ---
 
@@ -337,42 +350,10 @@ cortex-edr/
 git clone https://github.com/hamza-hafeez82/cortex-edr.git
 cd cortex-edr
 npm install
+cp .env.example .env.local
 ```
 
-Create `.env.local` with the following required variables:
-
-```env
-# Auth
-NEXTAUTH_SECRET=          # min 32 chars
-NEXTAUTH_URL=http://localhost:3000
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-
-# AI (at least one required)
-OPENAI_API_KEY=
-GEMINI_API_KEY=           # optional, fallback
-GROQ_API_KEY=             # optional, fallback
-OPENROUTER_API_KEY=       # optional, DeepSeek R1 routing
-
-# OAuth (optional)
-GITHUB_ID=
-GITHUB_SECRET=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
-# GitHub (optional, improves rate limits)
-GITHUB_TOKEN=
-
-# Billing (optional)
-PADDLE_API_KEY=
-PADDLE_WEBHOOK_SECRET=
-
-# Email (optional)
-RESEND_API_KEY=
-```
+Fill in `.env.local` with your credentials (see comments in `.env.example`).
 
 Apply database migrations:
 
@@ -395,14 +376,29 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript compiler check |
+| `npm run ci` | Full quality gate (lint + typecheck + build) |
 
-### CI
+### CI/CD
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to `main`:
+Three GitHub Actions workflows run on every push and pull request to `main`:
 
-1. `npm ci`
-2. `npm run lint`
-3. `npm run build`
+| Workflow | Jobs | Purpose |
+|----------|------|---------|
+| **CI** | Lint → Typecheck → Build | Quality gate with build artifact upload |
+| **Security** | npm audit, Gitleaks, CodeQL | Dependency, secret, and static analysis |
+| **Deploy** | Production build → Railway | Auto-deploy after CI passes on `main` |
+
+```
+PR / Push ──▶ CI (lint, typecheck, build)
+                │
+                ▼ (main only, on success)
+             Deploy (Railway)
+```
+
+Weekly security scans run every Monday. Dependabot opens PRs for npm and Actions updates.
+
+See [.github/workflows/README.md](.github/workflows/README.md) for deployment secrets and environment setup.
 
 ---
 
@@ -468,4 +464,6 @@ MIT
 
 ## Contributing
 
-Issues and pull requests are welcome. For security vulnerabilities, follow the process in [SECURITY.md](SECURITY.md) — do not open public issues for security reports.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, quality gates, and code standards.
+
+For security vulnerabilities, follow the process in [SECURITY.md](SECURITY.md) — do not open public issues for security reports.
