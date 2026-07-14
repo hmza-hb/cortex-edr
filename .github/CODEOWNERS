@@ -1,0 +1,18 @@
+# Default owners for all files
+* @hamza-hafeez82
+
+# CI/CD and infrastructure
+/.github/ @hamza-hafeez82
+
+# Core AI systems
+/lib/agents/ @hamza-hafeez82
+/lib/chat/ @hamza-hafeez82
+/lib/ai/ @hamza-hafeez82
+
+# Database schema
+/supabase/ @hamza-hafeez82
+
+# Security-sensitive modules
+/lib/security/ @hamza-hafeez82
+/lib/auth/ @hamza-hafeez82
+/middleware.ts @hamza-hafeez82
