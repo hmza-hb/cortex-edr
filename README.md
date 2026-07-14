@@ -1,763 +1,471 @@
-<div align="center">
+# CortexEDR
 
-<img src="https://img.shields.io/badge/CortexEDR-AI%20Security%20Orchestration-purple?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnoiIGZpbGw9IiNhODU1ZjciLz48L3N2Zz4=" alt="CortexEDR Logo" />
+**AI-powered security auditing platform for modern codebases.**
 
-# 🧠 CortexEDR - Complete Introduction
+CortexEDR analyzes GitHub repositories through a multi-agent pipeline, producing structured vulnerability reports, architecture assessments, and a codebase-aware conversational advisor. The system is designed for developers and small teams who need actionable security analysis without enterprise SAST tooling overhead.
 
-### **AI-Powered Security Auditing Platform**
-
-*Enterprise-grade security analysis at indie prices. Your AI coded it, we audit it.*
-
-[![Website](https://img.shields.io/badge/Website-cortex--edr.com-purple?style=flat-square)](https://www.cortex-edr.com)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%20%26%20Auth-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com/)
-
-[ Live Demo ](https://www.cortex-edr.com) • [ Documentation ](#documentation) • [ Report Issue ](https://github.com/hamza-hafeez82/cortex-edr/issues)
-
-</div>
+**Live:** [cortex-edr.com](https://www.cortex-edr.com) · **App:** [app.cortex-edr.com](https://app.cortex-edr.com)
 
 ---
 
-## 📖 THE BACKGROUND STORY
+## Overview
 
-### The Problem
-In early 2025, the world witnessed a seismic shift in software development. AI coding tools like GitHub Copilot, Cursor, ChatGPT, and Claude became mainstream. Developers were shipping code 10x faster than ever before.
-
-But there was a dark side: AI-generated code was riddled with security vulnerabilities.
-
-Studies showed that 40% of AI-generated code contained at least one critical security flaw. SQL injection, XSS, hardcoded secrets, insecure authentication - the issues were everywhere.
-
-Meanwhile, enterprise security tools cost $500-2,000/month. Tools like Snyk, Checkmarx, and Veracode were built for Fortune 500 companies with dedicated security teams. Indie developers, students, and small startups couldn't afford them.
-
-Then, on February 18, 2025, Anthropic launched Claude Code Security - an AI-powered security analysis tool. Within 24 hours, $15 billion was wiped off cybersecurity stocks. The market validated what many already knew: AI-powered security is the future.
-
-But Anthropic's solution was enterprise-focused, with no pricing for individuals or small teams.
-
-### The Founder
-Hamza Hafeez Bhatti - a 19-year-old computer science student from Lahore, Pakistan - saw the gap.
-
-In November 2025, Hamza published research titled "Project Cortex: A Prefrontal-Cortex-Inspired Orchestrated Architecture for Artificial General Intelligence." The paper proposed a new way to build AI systems - not through massive single models, but through coordinated multi-agent orchestration inspired by how the human prefrontal cortex works.
-
-The human prefrontal cortex doesn't do everything itself. Instead, it orchestrates specialized brain regions:
-
-- Visual cortex handles sight
-- Memory systems store information
-- Motor cortex controls movement
-- The prefrontal cortex coordinates everything
-
-Hamza believed AI should work the same way: specialized agents coordinated by an intelligent orchestrator.
-
-In January 2026, he started building CortexEDR - applying his AGI research to solve the AI code security problem.
-
-By March 2026, CortexEDR was ready to launch.
+| | |
+|---|---|
+| **Problem** | AI-assisted development increases shipping velocity; security review often does not keep pace. Traditional SAST platforms are expensive, slow to configure, and opaque. |
+| **Approach** | Decompose security analysis into specialized agents coordinated by a synthesis stage. Each agent has a narrow mandate, hardened prompts, and structured JSON output. |
+| **Output** | Security score (0–100), CWE/OWASP-classified findings with file/line references, architecture and quality reports, PDF export, and post-scan chat with tool-augmented retrieval. |
+| **Scale** | ~29,000 lines of TypeScript across a single Next.js monolith, 9 versioned database migrations, 12 API route groups. |
 
 ---
 
-## 🎯 WHAT IS CORTEXEDR?
+## Architecture
 
-CortexEDR (Cortex Endpoint Detection & Response) is an AI-powered security auditing platform that analyzes your entire codebase in 2-5 minutes and finds security vulnerabilities, architecture issues, code quality problems, and technical debt.
+### High-Level System Design
 
-### The Core Value Proposition:
+```mermaid
+flowchart TB
+    subgraph Client["Client Layer"]
+        Dashboard["Dashboard / Reports / Chat UI"]
+        AgentViz["Agent Visualization (polling + Supabase Realtime)"]
+    end
 
-**"Enterprise-grade security analysis at indie prices. Your AI coded it, we audit it."**
+    subgraph App["Application Layer — Next.js 15"]
+        API["API Routes"]
+        Actions["Server Actions"]
+        Middleware["Auth Middleware"]
+    end
 
-### Who It's For:
+    subgraph Engine["Analysis Engine"]
+        Pipeline["7-Agent Scan Pipeline"]
+        ChatOrch["Chat Orchestration Engine"]
+        AIRouter["Multi-Provider AI Router"]
+    end
 
-- Indie developers building with AI tools
-- Students learning to code
-- Freelancers shipping client projects
-- Startups building MVPs
-- Small teams without security expertise
+    subgraph Data["Data Layer — Supabase PostgreSQL"]
+        Scans[("scans")]
+        Issues[("issues")]
+        Events[("agent_events")]
+        Chat[("chat_threads / chat_messages")]
+        Profiles[("profiles")]
+        Usage[("usage_logs")]
+    end
 
-### What Makes It Different:
+    subgraph External["External Integrations"]
+        GitHub["GitHub API"]
+        AI["OpenAI · Gemini · Groq · OpenRouter"]
+        Paddle["Paddle Billing"]
+        Resend["Resend Email"]
+        Inngest["Inngest (scheduled jobs)"]
+    end
 
-- Brain-inspired architecture (based on published AGI research)
-- 7 specialized AI agents working together
-- Conversational AI advisor (Cortex Chat)
-- Real-time visualization (watch agents work)
-- $9/month pricing (vs $500+ enterprise tools)
+    Dashboard --> API
+    AgentViz --> Events
+    API --> Pipeline
+    API --> ChatOrch
+    Pipeline --> GitHub
+    Pipeline --> AIRouter
+    ChatOrch --> AIRouter
+    Pipeline --> Scans
+    Pipeline --> Issues
+    Pipeline --> Events
+    AIRouter --> AI
+    API --> Paddle
+    Inngest --> Resend
+```
+
+### Design Principles
+
+1. **Specialized agents over monolithic prompts.** Each analysis dimension (security, architecture, quality, debt, AI-generated patterns) runs in isolation with domain-specific system prompts and false-positive guardrails.
+2. **Sequential pipeline with shared context.** Agents execute in order; later stages consume earlier outputs stored in Supabase (`recon_data`, `executive_report`, etc.).
+3. **Serverless-compatible ingestion.** Repository acquisition uses the GitHub REST API and selective file download — no `git` binary required. This runs on constrained hosting (e.g. Vercel Hobby, Railway).
+4. **Tier-gated resource limits.** File count, scan quotas, and model selection are enforced per subscription tier before and during pipeline execution.
+5. **Provider-agnostic AI routing.** Primary model selection with a deterministic fallback chain (OpenAI → OpenRouter → Gemini → Groq → DeepSeek) and retry logic for rate limits, timeouts, and network failures.
 
 ---
 
-## 🏗️ THE ARCHITECTURE (How It Actually Works)
+## Scan Pipeline
 
-CortexEDR uses a 7-agent orchestration system inspired by the human prefrontal cortex. Each agent is a specialized AI model focused on one cognitive function.
+The core engine lives in `lib/agents/pipeline.ts`. A scan is initiated via `POST /api/scan/start`, which inserts a row and fires `runPipeline()` as a non-blocking background task.
 
-### The 7 Specialized Agents:
+### Agent Stages
 
-### 1. Git Connect Agent
+| Stage | Agent | Function | AI |
+|-------|-------|----------|----|
+| 0 | Git Connect | Fetch repo metadata and recursive file tree via GitHub API; enforce tier file limits | No |
+| 1 | Reconnaissance | Tech stack detection, dependency mapping, Mermaid architecture diagram, annotated file tree | Yes |
+| 2 | Security Scanner | Per-file vulnerability analysis (SQLi, XSS, SSRF, IDOR, hardcoded secrets); CWE/OWASP mapping | Yes |
+| 3 | Architecture | Design pattern review, coupling/scalability assessment | Yes |
+| 4 | Code Quality | Complexity, duplication, error handling, dead code | Yes |
+| 5 | Technical Debt | TODOs, deprecated dependencies, hardcoded values | Yes |
+| 6 | AI-Specific | Detection of LLM-generated code patterns and common AI coding mistakes | Yes |
+| 7 | Orchestrator | Executive synthesis, security score calculation, final report assembly | Yes |
 
-**Role:** Repository acquisition and validation
-**What it does:** Clones your GitHub repository, validates access, maps the file structure
-**AI Model:** Lightweight orchestration (no AI needed - pure code)
-**Output:** Complete repository snapshot, file tree, metadata
+### Pipeline Flow
 
-### 2. Reconnaissance Agent
+```
+POST /api/scan/start
+  → Validate session + tier quota
+  → Insert scan (status: pending)
+  → runPipeline() [background]
+      → Agent 0: GitHub API tree fetch → /tmp/cortexedr-{scanId}
+      → Agent 1–6: Selective file download per step (STEP_PATTERNS) → AI analysis → issues table
+      → Agent 7: Synthesize executive_report, compute score → status: completed
+      → AILogger persists interaction log to Supabase
+      → Cleanup /tmp workspace
+```
 
-**Role:** Codebase mapping and context analysis
-**What it does:**
-- Identifies tech stack (React, Next.js, Python, etc.)
-- Detects frameworks and libraries
-- Maps dependencies (package.json, requirements.txt)
-- Analyzes project structure
-- Estimates complexity
+### Event Streaming
 
-**AI Model:** Gemini Flash / Claude Haiku
-**Output:** Complete tech stack profile, dependency graph, complexity score
+Each agent emits structured events to `agent_events` (`started`, `processing`, `completed`, `issue_found`). The frontend (`hooks/useSSEScan.ts`) polls Supabase and subscribes to Realtime updates to drive the agent canvas visualization.
 
-### 3. Security Scanner Agent ⭐ (Most Critical)
+### Prompt Engineering
 
-**Role:** Deep vulnerability detection
-**What it does:**
-- Scans every file for security issues
-- Detects SQL injection, XSS, CSRF, SSRF
-- Finds hardcoded secrets (API keys, passwords)
-- Identifies insecure authentication
-- Checks for weak encryption
-- Maps to CWE/OWASP standards
+Agent prompts (`lib/agents/prompts.ts`) enforce:
 
-**AI Model:** DeepSeek R1 (reasoning-focused) / Claude Sonnet
-**Output:** Complete vulnerability report with:
-- Severity (Critical/High/Medium/Low)
-- Exact file location and line number
-- Vulnerable code snippet
-- Detailed explanation
-- Fix suggestion
-- AI-generated fix prompt
+- Structured JSON-only responses with schema definitions per agent
+- False-positive hardening rules (e.g. security agent requires exact line numbers and code snippets; empty array `[]` when nothing is confirmed)
+- Token-bounded input windows (file content truncated to 4–6K chars per call)
+- Per-file finding caps to prevent hallucination volume
 
-### 4. Architecture Analyzer Agent
+### AI Observability
 
-**Role:** Design pattern analysis
-**What it does:**
-- Reviews architectural decisions
-- Identifies anti-patterns
-- Checks separation of concerns
-- Analyzes scalability issues
-- Reviews API design
+`AILogger` (`lib/agents/ai-logger.ts`) records every model interaction during a scan:
 
-**AI Model:** Claude Sonnet / Gemini Pro
-**Output:** Architecture assessment, design recommendations
-
-### 5. Code Quality Agent
-
-**Role:** Best practices enforcement
-**What it does:**
-- Checks coding standards
-- Identifies code smells
-- Reviews maintainability
-- Detects duplicate code
-- Analyzes complexity metrics
-
-**AI Model:** Gemini Flash
-**Output:** Code quality score, improvement suggestions
-
-### 6. Technical Debt Agent
-
-**Role:** Maintenance issue detection
-**What it does:**
-- Finds TODO comments
-- Identifies deprecated code
-- Detects hardcoded values
-- Flags commented-out code
-- Reviews dependency versions
-
-**AI Model:** Gemini Flash
-**Output:** Technical debt inventory, prioritization
-
-### 7. AI-Specific Agent (Unique to CortexEDR)
-
-**Role:** AI-generated code pattern analysis
-**What it does:**
-- Detects AI-generated code signatures
-- Identifies common LLM mistakes
-- Flags AI-generated security issues
-- Reviews AI coding patterns
-
-**AI Model:** Claude Sonnet
-**Output:** AI code quality assessment
-
-### The Orchestrator (The Brain)
-
-The Orchestrator coordinates all 7 agents like the prefrontal cortex coordinates brain regions.
-
-**How it works:**
-
-#### Goal Decomposition
-- User submits GitHub URL
-- Orchestrator breaks task into subtasks
-- Assigns each subtask to appropriate agent
-
-#### Sequential Execution
-- Agents execute in order (Git → Reconnaissance → Security → etc.)
-- Each agent's output becomes context for next agent
-- Orchestrator monitors progress in real-time
-
-#### Conflict Resolution
-- When agents disagree (e.g., "Is this a vulnerability?"), Orchestrator arbitrates
-- Uses hierarchical reasoning to synthesize final verdict
-
-#### Synthesis
-- Orchestrator combines all agent outputs
-- Generates unified security report
-- Calculates overall security score (0-100)
-
-#### Memory Management
-- Shared memory system (like working memory in brain)
-- All agents read/write to shared context
-- Ensures consistency across analysis
+- Prompt/response pairs, duration, token counts, estimated cost
+- Persisted to Supabase at pipeline completion
+- Real-time `usage_logs` inserts for per-user cost analytics
 
 ---
 
-## ⚙️ HOW IT WORKS (User Journey)
+## Chat Orchestration Engine
 
-### Step 1: Repository Submission
-**User:** Pastes GitHub URL into CortexEDR
-**System:** Validates URL, checks access permissions
+Post-scan, users interact with **Cortex Chat** — a codebase-aware advisor separate from the scan pipeline.
 
-### Step 2: Live Scanning (2-5 minutes)
-Real-time visualization shows:
-- Which agent is currently active
-- Files being processed
-- Progress percentage
-- Issues found so far
+Entry point: `lib/chat/orchestrate.ts`
 
-**Visual flow:**
-```
-[Git Connect] ✓ Cloning repository...
-  ↓ 31 files detected
-
-[Reconnaissance] ⚙️ Analyzing structure...
-  ↓ Next.js 14, TypeScript, Supabase detected
-
-[Security Scanner] 🔍 Deep security audit...
-  ↓ Found 3 SQL injection vulnerabilities
-  ↓ Found 2 hardcoded API keys
-  ↓ Found 5 XSS vulnerabilities
-
-[Architecture] 🏗️ Reviewing design patterns...
-  ↓ Monolithic architecture detected
-  ↓ Missing error handling
-
-[Code Quality] ✨ Checking best practices...
-  ↓ 127 lines of duplicate code
-
-[Technical Debt] ⚠️ Identifying maintenance issues...
-  ↓ 14 TODO comments
-  ↓ 3 deprecated dependencies
-
-[AI Analysis] 🤖 Detecting AI patterns...
-  ↓ 67% AI-generated code detected
-  ↓ 4 common LLM security mistakes
-
-[Synthesis] 🧠 Generating report...
-  ✓ Scan complete!
+```mermaid
+flowchart LR
+    Input["User Message"] --> Intent["Intent Classifier<br/>(zero LLM calls)"]
+    Intent --> Retrieve["Context Retriever<br/>(intent-driven Supabase queries)"]
+    Retrieve --> Compress["Context Compressor<br/>(token-budgeted formatting)"]
+    Compress --> Memory["Memory Manager<br/>(sliding window + summary)"]
+    Memory --> Prompt["Prompt Builder"]
+    Prompt --> LLM["AI Router"]
+    LLM --> Tools["Tool Loop<br/>(search_issues, get_file_content, get_architecture_summary)"]
+    Tools --> LLM
+    LLM --> Sanitize["Response Sanitizer"]
+    Sanitize --> Output["Assistant Response"]
 ```
 
-### Step 3: Comprehensive Report
+### Components
 
-The **Audit Manifest** includes:
+| Module | File | Responsibility |
+|--------|------|----------------|
+| Intent Classifier | `lib/chat/intent-classifier.ts` | Regex-based classification into 9 intents (vulnerability detail, fix guidance, repo overview, etc.) without an LLM call |
+| Context Retriever | `lib/chat/context-retriever.ts` | Fetches only data relevant to the classified intent — issues, scan metadata, architecture reports |
+| Context Compressor | `lib/chat/context-compressor.ts` | Formats retrieved data within per-intent token budgets (50–3000 tokens) |
+| Memory Manager | `lib/chat/memory-manager.ts` | 10-message sliding window with compressed summary of older history |
+| Tool Loop | `lib/chat/tools.ts` | Agentic tool calls: issue search, live file fetch from GitHub, architecture summary retrieval |
+| Sanitizer | `lib/chat/sanitizer.ts` | Output filtering before persistence |
 
-#### A. Overall Security Score
+Tool loop budgets vary by intent (2–7 iterations). Vulnerability and fix-guidance queries receive the highest iteration allowance.
+
+---
+
+## Technology Stack
+
+| Layer | Technology | Version |
+|-------|------------|---------|
+| Framework | Next.js (App Router, RSC) | 15.4.10 |
+| UI | React, TypeScript, Tailwind CSS | React 19, TS 5 |
+| Database | Supabase (PostgreSQL + RLS) | — |
+| Auth | NextAuth.js (JWT sessions) | 4.24 |
+| Payments | Paddle (webhook-verified subscriptions) | — |
+| Email | Resend (transactional) | — |
+| Background Jobs | Inngest (billing reminder cron) | — |
+| PDF Reports | @react-pdf/renderer | — |
+| Documentation | Nextra | 4.6 |
+| CI | GitHub Actions (lint + build) | Node 20 |
+
+### AI Providers
+
+| Provider | Usage |
+|----------|-------|
+| OpenAI | Primary models (GPT-4o, GPT-4o-mini); tier-mapped per agent |
+| OpenRouter | DeepSeek R1 and fallback model routing |
+| Google Gemini | Secondary fallback |
+| Groq | Emergency fallback (Llama 3.1/3.3) |
+| DeepSeek | Direct API fallback |
+
+Model selection is tier-dependent (`lib/agents/openrouter-config.ts`, `lib/config/system.ts`). Higher tiers route security and synthesis agents to GPT-4o; free tier uses GPT-4o-mini across all agents.
+
+---
+
+## Database Schema
+
+Nine versioned migrations in `supabase/migrations/`:
+
+| Migration | Module | Key Tables |
+|-----------|--------|------------|
+| 001 | Core Auth | `users`, auth triggers |
+| 002 | Identity | `profiles` (plan tier, scan quotas) |
+| 003 | Scanning Engine | `scans`, `issues`, `agent_events`, `repositories` |
+| 004 | Chat | `chat_threads`, `chat_messages`, `chat_shares` |
+| 005 | Financial Ops | `payment_history`, `payment_submissions`, `billing_invoices` |
+| 006 | Optimizations | Realtime publication, composite indices, data purge functions |
+| 007 | Admin | Admin sudo, tier management |
+| 008–009 | Maintenance | Profile column fixes, tier name sync |
+
+All user-facing tables have Row-Level Security enabled. Service-role client is used server-side for pipeline writes and webhook handlers.
+
+### Key `scans` Columns
+
 ```
-Score: 64/100
-Status: NEEDS IMPROVEMENT
-```
-
-#### B. Risk Distribution
-- 🔴 Critical: 2 issues
-- 🟠 High: 7 issues
-- 🟡 Medium: 12 issues
-- 🟢 Low: 10 issues
-
-#### C. Executive Synthesis
-AI-generated summary:
-```
-"The codebase has several critical security issues
-that need immediate attention, including SQL injection
-vulnerabilities in the authentication system and
-hardcoded API keys in configuration files..."
-```
-
-#### D. Detailed Issue List
-Each issue includes:
-
-**Issue #1: SQL Injection in Authentication**
-- **Severity:** CRITICAL
-- **Category:** Security
-- **CWE:** CWE-89 (SQL Injection)
-- **OWASP:** A03:2021-Injection
-- **File:** app/api/auth/route.ts
-- **Line:** 47
-- **Vulnerable Code:**
-  ```typescript
-  const query = `SELECT * FROM users WHERE email = '${userEmail}'`
-  ```
-- **Description:** The application constructs a SQL query using string concatenation with unsanitized user input. An attacker could inject malicious SQL code to bypass authentication or extract sensitive data.
-- **How to Fix:** Use parameterized queries with prepared statements.
-- **Fixed Code:**
-  ```typescript
-  const query = 'SELECT * FROM users WHERE email = ?'
-  const result = await db.query(query, [userEmail])
-  ```
-- **AI Fix Prompt (Copy to Cursor):**
-  ```
-  "Fix the SQL injection vulnerability in app/api/auth/route.ts
-  line 47 by using parameterized queries instead of string
-  concatenation. Ensure all user inputs are sanitized."
-  ```
-
-#### E. Repository Insights
-- **Tech Stack:** Next.js 14, TypeScript, Supabase
-- **Total Files:** 31
-- **Lines of Code:** 4,287
-- **Complexity:** Medium
-- **AI-Generated:** 67%
-- **Frameworks:** React, Tailwind CSS
-- **Dependencies:** 47 packages (3 outdated)
-
-### Step 4: Cortex Chat (AI Advisor)
-
-After scanning, users can chat with Cortex - an AI advisor with complete knowledge of their codebase.
-
-**Example conversation:**
-```
-User: "Why is line 47 flagged?"
-Cortex:
-"Line 47 in your auth route is vulnerable to SQL injection
-because you're building the query with template literals
-using ${userEmail} directly.
-
-Here's what an attacker could do:
-If they input: ' OR '1'='1
-Your query becomes: SELECT * FROM users WHERE email = '' OR '1'='1'
-This returns all users, bypassing authentication.
-
-Fix it by switching to parameterized queries. Want me to
-show you the exact code?"
-
-User: "Yes, show me"
-Cortex:
-"Replace line 47 with:
-typescript
-const query = 'SELECT * FROM users WHERE email = ?'
-const result = await db.query(query, [userEmail])
-
-This ensures userEmail is properly escaped. The database
-treats it as data, not executable code.
-
-You have this same pattern in 3 other files. Want me to
-find them all?"
+status          pending | running | completed | failed
+current_agent   0–7 (live progress tracking)
+executive_report, enterprise_report, recon_data  (JSONB)
+severity_counts, issue_counts                    (JSONB)
+architecture_map, application_story, strengths   (TEXT/JSONB)
 ```
 
 ---
 
-## 🎨 WHAT IT PRODUCES (Deliverables)
+## API Surface
 
-### 1. Security Audit Manifest (Web View)
-- Interactive report in browser
-- Overall score with visual gauge
-- Risk distribution charts
-- Issue cards with expand/collapse
-- Filterable by severity/category
-- Shareable link
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/scan/start` | POST | Session | Initiate scan, enforce quota, trigger pipeline |
+| `/api/scan/status/[id]` | GET | Session | Poll scan progress |
+| `/api/scan/results/[id]` | GET | Session | Fetch completed report |
+| `/api/scans` | GET | Session | List user scan history |
+| `/api/chat` | GET/POST | Session | Thread management and message exchange |
+| `/api/chat/message` | POST | Session | Alternative chat message endpoint |
+| `/api/webhooks/paddle` | POST | Signature | Subscription lifecycle events |
+| `/api/inngest` | POST | Inngest | Background job handler |
+| `/api/admin/*` | Various | Admin | Tier and user management |
 
-### 2. PDF Export
-- Professional security report
-- Company branding (for paid plans)
-- Executive summary
-- Detailed findings
-- Remediation roadmap
-- Compliance mapping (SOC2, ISO 27001)
-
-### 3. Cortex Chat Transcript
-- Complete conversation history
-- AI explanations and recommendations
-- Code examples and fixes
-- Strategic advice
-
-### 4. GitHub Issue Integration (Coming Soon)
-- Auto-create GitHub issues for each vulnerability
-- Assign to team members
-- Track fix progress
-- Link to scan results
-
-### 5. Fix Prompts
-- AI-generated prompts for Cursor/Claude
-- Copy-paste directly into your AI coding tool
-- Specific to your codebase
-- Include file paths and context
+Protected routes are enforced by NextAuth middleware (`middleware.ts`): `/dashboard/*`, `/chat/*`, `/api/scan/*`, `/api/chat/*`.
 
 ---
 
-## 💡 UNIQUE FEATURES
+## Security Posture
 
-### 1. Real-Time Agent Visualization
-Watch AI agents work in real-time:
-- See which agent is active
-- Track file-by-file progress
-- Live issue counter
-- Animated agent transitions
-- No other tool shows you this
+### Implemented
 
-### 2. Cortex Chat (Codebase-Aware AI)
-Talk to an AI that actually knows your code:
-- Ask questions in plain English
-- Get answers with file/line references
-- Discuss architecture decisions
-- Get strategic business advice
-- ChatGPT can't do this
+- **Authentication:** NextAuth.js with GitHub OAuth, Google OAuth, and bcrypt-hashed credentials. JWT sessions (30-day max age).
+- **Authorization:** Supabase RLS on all user data. Admin routes gated by `requireAdmin` middleware.
+- **Input validation:** Zod schemas for email, password, OTP, scan IDs, redirect URLs (`lib/security/inputValidation.ts`).
+- **Webhook verification:** Paddle signature validation via SDK `unmarshal()`.
+- **Audit logging:** Structured JSON audit events with sensitive field redaction (`lib/security/auditLog.ts`).
+- **Chat sanitization:** AI response filtering before persistence.
+- **Environment validation:** Fail-fast startup checks with entropy requirements for secrets (`lib/config/env-validator.ts`).
+- **Responsible disclosure:** Documented in [SECURITY.md](SECURITY.md) (48h acknowledgment, 14-day patch target).
 
-### 3. AI-Generated Code Detection
-First tool to specifically analyze AI-coded projects:
-- Detects Copilot/Cursor/ChatGPT patterns
-- Identifies common LLM security mistakes
-- Flags AI-generated technical debt
-- Built for the AI coding era
+### Known Limitations
 
-### 4. Brain-Inspired Architecture
-Based on published AGI research:
-- Multi-agent orchestration
-- Hierarchical reasoning
-- Shared memory system
-- Conflict resolution
-- More sophisticated than single-model tools
+| Area | Current State |
+|------|---------------|
+| Rate limiting | In-memory sliding window (`lib/security/rateLimit.ts`). Not distributed — suitable for single-instance deployments. |
+| Scan execution | Fire-and-forget in the API process. No dedicated job queue for scans (Inngest handles billing cron only). |
+| Audit logs | Written to stdout JSON. Persistent `audit_logs` table not yet implemented. |
+| Private repositories | Public repos only. `GITHUB_TOKEN` improves rate limits but does not enable private repo access yet. |
+| Automated tests | No test suite in CI. Pipeline validated through lint + production build. |
 
-### 5. Affordable Pricing
-- **Free:** $0 (5 scans/month)
-- **Starter:** $9/month (25 scans)
-- **Team:** $49/month (100 scans)
-- **Enterprise tools:** $500-2000/month
+These are documented trade-offs for an MVP-stage SaaS, not oversights.
 
 ---
 
-## 📊 TECHNICAL STACK
+## Subscription Tiers
 
-### Frontend:
-- **Next.js 14** (App Router, RSC)
-- **TypeScript**
-- **Tailwind CSS**
-- **Framer Motion** (animations)
-- **React Server Components**
+Defined in `lib/config/system.ts`:
 
-### Backend:
-- **Next.js API Routes**
-- **Supabase** (PostgreSQL)
-- **Cortex Custom Auth** (NextAuth.js)
-- **Railway Hosting**
+| Tier | Price | Scans/Month | Notable Limits |
+|------|-------|-------------|----------------|
+| SCOUT | Free | 20 | Watermarked PDF, basic AI prompts |
+| SENTINEL | $9/mo | 15 | Fix suggestions, 1,000 files/scan |
+| GUARDIAN | $49/mo | 50 | API access, execution-ready prompts, 5 seats |
+| FORTRESS | $299/mo | 500 | Premium models, unlimited files |
 
-### AI Infrastructure:
-- **Gemini 2.0 Flash** (free tier, reconnaissance)
-- **DeepSeek R1** (reasoning, security analysis)
-- **Claude 3.5 Sonnet** (premium, synthesis)
-- **Groq Llama** (fallback)
-- **Custom orchestration engine**
+Quota enforcement occurs at scan initiation. Paddle webhooks sync subscription state to `profiles`.
 
-### Database Schema:
-```sql
-- users (NextAuth)
-- profiles (plan, subscription)
-- scans (repo_url, score, status)
-- issues (vulnerability details)
-- scanned_files (code content)
-- chat_messages (Cortex conversations)
+---
+
+## Project Structure
+
+```
+cortex-edr/
+├── app/
+│   ├── api/                  # REST endpoints
+│   ├── dashboard/            # Scan management, billing, analytics, settings
+│   ├── docs/                 # Nextra documentation site
+│   ├── legal/                # Privacy, compliance, refund policies
+│   └── auth/                 # Login, OAuth callbacks, sign-out
+├── components/
+│   ├── scan/                 # AgentCanvas, ActivityFeed, live visualization
+│   └── report/               # Issue cards, PDF generation, Mermaid diagrams
+├── lib/
+│   ├── agents/               # Pipeline, prompts, AI router, interaction logger
+│   ├── chat/                 # Orchestration engine (6 modules)
+│   ├── repo/                 # File tree parser, GitHub cloner (fallback)
+│   ├── security/             # Rate limiting, validation, audit logging
+│   ├── ai/                   # Provider wrappers (OpenAI, Gemini, Groq, DeepSeek)
+│   ├── auth/                 # NextAuth config, admin middleware
+│   ├── config/               # Tier definitions, env validation
+│   ├── email/                # Resend templates
+│   └── inngest/              # Scheduled billing reminders
+├── hooks/                    # useSSEScan (real-time agent state)
+├── supabase/migrations/      # Versioned schema (001–009)
+└── .github/workflows/        # CI pipeline
 ```
 
 ---
 
-## 🎯 THE COMPETITIVE EDGE
-
-| Feature | CortexEDR | Snyk | Checkmarx | GitHub Advanced Security |
-|---------|-----------|------|-----------|------------------------|
-| **Price** | $9/month | $500+/month | $2000+/month | $49/user/month |
-| **Setup Time** | 2 minutes | Days/Weeks | Weeks | Hours |
-| **AI Chat** | ✅ | ❌ | ❌ | ❌ |
-| **Live Viz** | ✅ | ❌ | ❌ | ❌ |
-| **AI Code Detection** | ✅ | ❌ | ❌ | ❌ |
-| **Brain Architecture** | ✅ (7 agents) | ❌ (single scan) | ❌ | ❌ |
-| **Free Tier** | ✅ (5 scans) | ❌ | ❌ | ❌ |
-| **Target User** | Indie devs | Enterprise | Enterprise | Teams |
-
----
-
-## 🚀 THE VISION
-
-### Short-term (2026):
-- Become the #1 security tool for indie developers
-- 10,000 users
-- $50K MRR
-- GitHub Actions integration
-- IDE plugins (VS Code, Cursor)
-
-### Mid-term (2027):
-- Team collaboration features
-- Compliance reporting (SOC2, ISO 27001)
-- Container scanning
-- Infrastructure as Code analysis
-- $500K ARR
-
-### Long-term (2028+):
-- Apply Project Cortex architecture to other domains
-- Automated penetration testing
-- Real-time code scanning (as you type)
-- White-label solution for enterprises
-- $10M ARR
-
----
-
-## 💬 THE TAGLINE
-
-**"Enterprise security. Indie prices. Brain-powered AI."**
-
-or
-
-**"Your AI coded it. We audit it."**
-
-or
-
-**"7 AI agents. 2 minutes. Complete security audit."**
-
----
-
-## 🎓 THE RESEARCH FOUNDATION
-
-CortexEDR is the first commercial application of **Project Cortex** - Hamza's published research on prefrontal-cortex-inspired AGI.
-
-**Key concepts from the research:**
-- **Executive Control:** Orchestrator coordinates agents like prefrontal cortex coordinates brain
-- **Specialized Modules:** Each agent handles one cognitive function
-- **Shared Memory:** All agents access unified knowledge base
-- **Hierarchical Planning:** Complex tasks decomposed into subtasks
-- **Conflict Resolution:** Orchestrator arbitrates when agents disagree
-
-This isn't just marketing - it's real AI research applied to solve real problems.
-
----
-
-## ✅ SUMMARY
-
-CortexEDR is:
-
-- AI-powered security auditing platform
-- 7 specialized agents coordinated by brain-inspired orchestrator
-- Analyzes entire codebases in 2-5 minutes
-- Finds vulnerabilities, architecture issues, code quality problems
-- Includes Cortex Chat - AI advisor with deep codebase knowledge
-- Real-time visualization of agent activity
-- $9/month (vs $500+ enterprise tools)
-- Built by 19-year-old AI researcher from Pakistan
-- Based on published AGI research (Project Cortex)
-- Designed for indie developers using AI coding tools
-
-**The mission:** Democratize security. Make enterprise-grade code analysis accessible to every developer, not just Fortune 500 companies.
-
-**The market opportunity:** With AI tools generating billions of lines of code monthly, and AI-generated code having 40% vulnerability rates, the need for automated security analysis has never been greater.
-
-**The differentiator:** While competitors build single-model scanners, CortexEDR uses brain-inspired multi-agent orchestration to deliver deeper, more intelligent analysis at 98% lower cost.
-
-This is CortexEDR. This is the future of code security. 🧠🚀
-
----
-
-# CortexEDR - Complete Feature Breakdown
-
-Based on everything we've built and discussed, here's what CortexEDR actually has:
-
-## ✅ CURRENT FEATURES (What's Built & Working)
-
-### 1. AI-Powered Security Scanning
-
-**7-Agent Orchestration System:**
-- **Git Connect Agent** - Clones and analyzes repository structure
-- **Reconnaissance Agent** - Maps entire codebase, dependencies, tech stack
-- **Security Scanner Agent** - Deep vulnerability analysis (SQL injection, XSS, SSRF, hardcoded secrets, etc.)
-- **Architecture Analyzer Agent** - Reviews design patterns, identifies architectural issues
-- **Code Quality Agent** - Checks best practices, code smells, maintainability
-- **Technical Debt Agent** - Finds TODOs, deprecated code, hardcoded values, duplications
-- **AI-Specific Agent** - Detects AI-generated code patterns and issues
-- **Orchestrator** - Synthesizes all findings into actionable insights
-
-**What it scans:**
-- GitHub repositories (public & private)
-- Multiple languages (JavaScript, TypeScript, Python, Go, Java, Ruby, PHP, etc.)
-- Full codebase analysis (not just surface-level)
-
-**What it finds:**
-- Security vulnerabilities (CWE/OWASP classified)
-- Architecture problems
-- Code quality issues
-- Technical debt
-- AI-generated code patterns
-
-### 2. Real-Time Scan Visualization
-
-**Live Agent Activity:**
-- Watch each agent work in real-time
-- See file-by-file progress
-- Agent status indicators
-- Estimated time remaining
-- Beautiful animations
-
-**Progress Tracking:**
-- File count processed
-- Current agent active
-- Completion percentage
-- Issues found so far
-
-### 3. Comprehensive Security Reports
-
-**Audit Manifest:**
-- Overall security score (0-100)
-- Risk distribution (Critical/High/Medium/Low)
-- Executive synthesis (AI-generated summary)
-- System verification badge
-- Shareable PDF export
-
-**Issue Details:**
-- Severity classification
-- CWE/OWASP mappings
-- Exact file location (file + line number)
-- Vulnerable code snippet
-- Detailed explanation
-- Fix suggestions
-- AI-generated fix prompt (copy-paste to Cursor/Claude)
-
-**Risk Distribution:**
-- Visual breakdown by severity
-- Category-wise analysis
-- Priority recommendations
-
-### 4. Cortex Chat (AI Security Advisor)
-
-**Codebase-Aware Conversations:**
-- Knows your entire codebase after scanning
-- Understands all vulnerabilities found
-- Can explain any issue in detail
-- References specific files and line numbers
-- Provides architectural advice
-- Answers technical questions
-
-**What Cortex Can Do:**
-- Explain vulnerabilities in context
-- Help prioritize fixes
-- Suggest refactoring strategies
-- Compare scans over time
-- Answer "why is this vulnerable?"
-- Generate fix strategies
-- Provide business impact analysis
-
-**Multi-Modal Context:**
-- Load specific scans into conversation
-- Switch between different projects
-- Upload code snippets for review
-- Ask general security questions
-
-### 5. Scan History & Management
-
-**Dashboard:**
-- All scans listed chronologically
-- Quick stats (score, issues, date)
-- Status indicators (completed/in-progress/failed)
-- One-click to view reports
-- Repository management
-
-**Saved Repositories:**
-- Quick re-scan functionality
-- Track progress over time
-- Compare historical scans
-- See security score trends
-
-### 6. Authentication & User Management
-
-**Powered by Cortex Auth:**
-- Email/password authentication
-- Google OAuth
-- GitHub OAuth
-- Secure session management
-- User profiles
-- Multi-device support
-
-### 7. GitHub Integration
-
-**Repository Connection:**
-- Paste GitHub URL to scan
-- Auto-clone and analyze
-- Support for private repos (coming soon)
-- Handles any repository size
-- Automatic dependency detection
-
-### 8. Professional UI/UX
-
-**Design System:**
-- Dark theme optimized for developers
-- Responsive (mobile, tablet, desktop)
-- Professional color palette
-- Smooth animations
-- Loading states
-- Error handling
-
-**Navigation:**
-- Intuitive sidebar
-- Quick access to key features
-- Breadcrumb navigation
-- Search functionality (coming soon)
-
----
-
-## 🚀 Getting Started
+## Development
 
 ### Prerequisites
-- Node.js (v20 or higher)
-- npm, yarn, or pnpm
-- Supabase account
-- Resend account (for emails)
 
-### Quick Start
+- Node.js 20+
+- Supabase project (PostgreSQL + Auth)
+- API keys for at least one AI provider (OpenAI recommended)
+- Resend account (email)
+- Paddle account (billing — optional for local dev)
 
-1. **Clone and Install**
-   ```bash
-   git clone https://github.com/hamza-hafeez82/cortex-edr.git
-   cd cortex-edr
-   npm install
-   ```
+### Setup
 
-2. **Environment Setup**
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your keys
-   ```
+```bash
+git clone https://github.com/hamza-hafeez82/cortex-edr.git
+cd cortex-edr
+npm install
+```
 
-3. **Run Development Server**
-   ```bash
-   npm run dev
-   ```
+Create `.env.local` with the following required variables:
 
-4. **Start Scanning**
-   - Visit `http://localhost:3000`
-   - Paste your GitHub repository URL
-   - Watch the AI agents work in real-time
+```env
+# Auth
+NEXTAUTH_SECRET=          # min 32 chars
+NEXTAUTH_URL=http://localhost:3000
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# AI (at least one required)
+OPENAI_API_KEY=
+GEMINI_API_KEY=           # optional, fallback
+GROQ_API_KEY=             # optional, fallback
+OPENROUTER_API_KEY=       # optional, DeepSeek R1 routing
+
+# OAuth (optional)
+GITHUB_ID=
+GITHUB_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# GitHub (optional, improves rate limits)
+GITHUB_TOKEN=
+
+# Billing (optional)
+PADDLE_API_KEY=
+PADDLE_WEBHOOK_SECRET=
+
+# Email (optional)
+RESEND_API_KEY=
+```
+
+Apply database migrations:
+
+```bash
+# Run migrations 001–009 against your Supabase project
+# via Supabase CLI or SQL editor
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Next.js dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | ESLint |
+
+### CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to `main`:
+
+1. `npm ci`
+2. `npm run lint`
+3. `npm run build`
 
 ---
 
-## 💰 Pricing Plans
+## Engineering Decisions
 
-| Plan | Price | Monthly Scans | Features |
-|------|-------|---------------|----------|
-| **Free** | $0 | 5 scans | Basic scanning, reports, chat |
-| **Starter** | $9/month | 25 scans | Everything in Free + PDF export |
-| **Team** | $49/month | 100 scans | Everything in Starter + team features |
-| **Enterprise** | Custom | Unlimited | Custom integrations, SLA, support |
+Decisions worth noting for reviewers evaluating systems design:
+
+**Why multi-agent instead of one large prompt?**
+Single prompts degrade on large codebases — context windows fill with irrelevant code, and the model conflates security, architecture, and style concerns. Specialized agents with narrow mandates produce higher-precision findings and allow per-agent model selection (e.g. reasoning models for security, fast models for reconnaissance).
+
+**Why GitHub API over git clone?**
+Serverless and hobby-tier hosting often lacks a `git` binary and persistent filesystem. The API approach fetches only files needed per agent step (up to 100 per step, pattern-filtered), reducing I/O and memory. A `.cortex-tree` manifest preserves the full virtual file list for agents that need structural awareness without downloading every blob.
+
+**Why regex intent classification for chat?**
+LLM-based intent routing adds latency and cost to every message. Pattern matching against 9 intent categories with confidence scoring eliminates that overhead for the common case. The classifier extracts keywords used by the context retriever to scope database queries.
+
+**Why token-budgeted context compression?**
+Dumping all scan issues into every chat prompt wastes tokens and dilutes relevance. Per-intent budgets (50 tokens for metadata, up to 3,000 for fix guidance with full file content) keep prompts focused and costs predictable.
+
+**Why fire-and-forget pipeline execution?**
+Scan initiation returns immediately with a `scan_id`. The pipeline runs asynchronously in the same Node process. This avoids blocking the HTTP response for 2–5 minutes. Trade-off: no retry queue if the process crashes mid-scan. A dedicated job queue (Inngest, BullMQ) is the natural next step for production hardening.
 
 ---
 
-<div align="center">
+## Research Foundation
 
-**Built with ❤️ by [Hamza Hafeez Bhatti](https://linkedin.com/in/hamza-hafeez82)**
+The multi-agent orchestration model draws from **Project Cortex** — research on prefrontal-cortex-inspired AI architecture where specialized modules are coordinated by an executive controller with shared memory and hierarchical task decomposition.
 
-*19-year-old AI researcher from Lahore, Pakistan • Published AGI research → Commercial product*
+CortexEDR is a production application of that model applied to automated security analysis: each agent maps to a cognitive function, the orchestrator synthesizes outputs, and `agent_events` + Supabase JSONB columns serve as shared working memory.
 
-[Website](https://www.cortex-edr.com) • [LinkedIn](https://linkedin.com/in/hamza-hafeez82) • [GitHub](https://github.com/hamza-hafeez82)
+---
 
-⭐ **Star us on GitHub** to support the democratization of security!
+## Roadmap
 
-</div>
+| Status | Feature |
+|--------|---------|
+| Shipped | 7-agent scan pipeline, live visualization, Cortex Chat, PDF export, Paddle billing, tier gating |
+| Shipped | Multi-provider AI routing, usage analytics, billing reminder cron |
+| In progress | Referral system |
+| Planned | Private repository support, GitHub Actions integration, `.cortex-ignore` selective scanning |
+| Planned | Distributed rate limiting, dedicated scan job queue, persistent audit log table |
+| Planned | IDE plugins (VS Code, Cursor) |
+
+---
+
+## Engineer
+
+Hamza Hafeez is a Software Engineer and AI Systems Researcher focused on building intelligent, production-grade software at the intersection of artificial intelligence, cybersecurity, and distributed systems. His work emphasizes multi-agent architectures, secure software engineering, and developer tooling, with a particular interest in translating AI research into practical systems that solve real engineering problems.
+
+He is the founder of Upvista Digital and the author of Project Cortex, a research initiative exploring prefrontal-cortex-inspired multi-agent AI architectures. CortexEDR represents the production application of that research, combining AI orchestration, modern web engineering, and automated security analysis into a scalable platform for developers.
+
+- Website: https://www.cortex-edr.com
+- LinkedIn: https://linkedin.com/in/hamza-hafeez82
+- GitHub: https://github.com/hamza-hafeez82
+
+---
+
+## License
+
+MIT
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. For security vulnerabilities, follow the process in [SECURITY.md](SECURITY.md) — do not open public issues for security reports.
