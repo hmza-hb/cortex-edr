@@ -1,34 +1,99 @@
-name: Cortex CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+  NODE_ENV: production
+  NEXTAUTH_SECRET: ci-build-placeholder-secret-must-be-at-least-32-characters-long
+  NEXTAUTH_URL: https://app.cortex-edr.com
+  NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-with-sufficient-length-for-ci-build-validation-checks-xxxxxxxxxxxxxxxx
+  SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key-with-sufficient-length-for-ci-build-validation-checks-xxxxxxxxxxxxxxxx
+  RESEND_API_KEY: re_ci_placeholder_key_for_build_only
 
 jobs:
-  build-and-test:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-size: '20'
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Run Linter
+      - name: ESLint
         run: npm run lint
 
-      - name: Build Next.js Application
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npm run typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, typecheck]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
         run: npm run build
-        env:
-          NODE_ENV: test
-          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next
+          retention-days: 7
+          if-no-files-found: error
+
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, build]
+    steps:
+      - name: All checks passed
+        run: echo "Lint, typecheck, and build succeeded."
