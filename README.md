@@ -451,8 +451,8 @@ Hamza Hafeez is a Software Engineer and AI Systems Researcher focused on buildin
 He is the founder of Upvista Digital and the author of Project Cortex, a research initiative exploring prefrontal-cortex-inspired multi-agent AI architectures. CortexEDR represents the production application of that research, combining AI orchestration, modern web engineering, and automated security analysis into a scalable platform for developers.
 
 - Website: https://www.cortex-edr.com
-- LinkedIn: https://linkedin.com/in/hamza-hafeez82
-- GitHub: https://github.com/hamza-hafeez82
+- LinkedIn: https://linkedin.com/in/hmza-hb
+- GitHub: https://github.com/hmza-hb
 
 ---
 
