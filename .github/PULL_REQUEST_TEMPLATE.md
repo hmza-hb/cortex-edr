@@ -1,22 +1,34 @@
-## Description
-Please include a summary of the changes and the issue fixed. Include relevant motivation and context.
+## Summary
 
-Fixes # (issue reference)
+<!-- What changed and why? -->
 
 ## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Security patch / vulnerability fix
 
-## Security Checklist
-- [ ] I have verified that no secrets (API keys, passwords, private certificates) are committed.
-- [ ] I have checked for raw database queries and validated SQL parameterized inputs.
-- [ ] I have verified that user input is properly sanitized to prevent XSS/SSRF.
-- [ ] All package dependencies added have been checked for vulnerabilities (`npm audit`).
+- [ ] Bug fix
+- [ ] Feature
+- [ ] Refactor
+- [ ] Documentation
+- [ ] CI/CD or infrastructure
+- [ ] Security patch
 
-## How Has This Been Tested?
-Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce.
-- [ ] Automated Unit/Integration Tests
-- [ ] Manual Dashboard Flow Verification
-- [ ] CLI scan check
+## Checklist
+
+- [ ] Code follows existing project conventions
+- [ ] No secrets, tokens, or credentials committed
+- [ ] User input paths reviewed (XSS, SSRF, injection)
+- [ ] `npm run lint` passes locally
+- [ ] `npm run typecheck` passes locally
+- [ ] `npm run build` passes locally (if applicable)
+
+## Test Plan
+
+<!-- How was this verified? -->
+
+- [ ] Manual dashboard flow
+- [ ] API endpoint tested
+- [ ] Scan pipeline tested
+- [ ] Chat flow tested
+
+## Screenshots / Logs
+
+<!-- Optional. Redact sensitive data. -->
