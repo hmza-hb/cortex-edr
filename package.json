@@ -28,6 +28,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.41.0",
     "groq-sdk": "^0.37.0",
+    "histeeria": "^0.1.0",
     "inngest": "^3.52.6",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.564.0",

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import { supabaseService } from '@/lib/supabase/service';
 import { orchestrate } from '@/lib/chat/orchestrate';
 import { callAI } from '@/lib/agents/ai-router';
+import { flushHisteeria } from '@/lib/histeeria/client';
 
 function deriveThreadTitle(params: { message: string }) {
     const cleaned = (params.message || '').trim().replace(/\s+/g, ' ');
@@ -197,5 +198,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
         return NextResponse.json({ error: 'REPLAY_FAILED', message: 'Failed to replay message', details: msg }, { status: 500 });
+    } finally {
+        await flushHisteeria();
     }
 }

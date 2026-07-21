@@ -7,6 +7,7 @@ import path from 'path';
 import { AGENT_PROMPTS } from './prompts';
 import { AILogger } from './ai-logger';
 import { SYSTEM_CONFIG, TierId } from '../config/system';
+import { observeAICall, flushHisteeria } from '@/lib/histeeria/client';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -167,6 +168,7 @@ async function executeAICall(
     while (attempt < MAX_RETRIES) {
         try {
             let response = '';
+            let apiReasoning: string | null = null;
             let promptTokens = 0;
             let completionTokens = 0;
 
@@ -249,7 +251,9 @@ async function executeAICall(
 
                 if (!res.ok) throw new Error(`OpenRouter error: ${res.statusText} (${res.status})`);
                 const data = await res.json();
-                response = data.choices[0]?.message?.content || '[]';
+                const message = data.choices?.[0]?.message;
+                response = message?.content || '[]';
+                apiReasoning = message?.reasoning ?? message?.reasoning_content ?? null;
                 promptTokens = data.usage?.prompt_tokens || 0;
                 completionTokens = data.usage?.completion_tokens || 0;
             }
@@ -287,6 +291,25 @@ async function executeAICall(
                     agent_name: agentName
                 });
             }
+
+            observeAICall({
+                systemPrompt,
+                userPrompt,
+                rawOutput: response,
+                apiReasoning,
+                agentId: agentName.toLowerCase().replace(/\s+/g, '_'),
+                sessionId: scanId || threadId,
+                domain: threadId ? 'chat' : 'scan',
+                inputTokens: promptTokens,
+                outputTokens: completionTokens,
+                context: {
+                    agentName,
+                    agentNumber: agentId,
+                    modelId,
+                    source: threadId ? 'chat' : 'scan',
+                },
+                metadata: { modelId, costUsd: cost, durationMs },
+            });
 
             return response;
 
@@ -1310,6 +1333,8 @@ export async function runPipeline(scanId: string, repoUrl: string, tierKey: Tier
 
         // Still save AI logs on failure
         await logger.saveToSupabase(supabase);
+    } finally {
+        await flushHisteeria();
     }
 }
 

@@ -7,6 +7,7 @@ import { callAI } from '@/lib/agents/ai-router';
 import { executeToolCall } from '@/lib/chat/tools';
 import type { ChatIntent } from '@/lib/chat/intent-classifier';
 import { sanitizeAIResponse } from '@/lib/chat/sanitizer';
+import { flushHisteeria } from '@/lib/histeeria/client';
 
 function getLoopBudget(intent: ChatIntent): number {
     switch (intent) {
@@ -312,5 +313,7 @@ export async function POST(req: NextRequest) {
             },
             { status: 500 }
         );
+    } finally {
+        await flushHisteeria();
     }
 }

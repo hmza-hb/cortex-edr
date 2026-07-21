@@ -6,6 +6,7 @@ import { askGemini } from '@/lib/ai/gemini';
 import { askGroq } from '@/lib/ai/groq';
 import { askDeepSeek } from '@/lib/ai/deepseek';
 import { supabaseService } from '@/lib/supabase/service';
+import { observeAICall } from '@/lib/histeeria/client';
 
 function coerceToText(result: unknown): string {
     if (typeof result === 'string') return result;
@@ -105,6 +106,24 @@ export async function callAI(
 
                 console.log(`[AI Router] Logged usage: $${cost.toFixed(6)} for ${agentKey}`);
             }
+
+            observeAICall({
+                systemPrompt,
+                userPrompt,
+                rawOutput: coerceToText(result),
+                agentId: agentKey,
+                sessionId: options.threadId || options.scanId,
+                domain: options.threadId ? 'chat' : 'scan',
+                inputTokens: Math.ceil((systemPrompt.length + userPrompt.length) / 4),
+                outputTokens: Math.ceil(coerceToText(result).length / 4),
+                context: {
+                    agentKey,
+                    model,
+                    provider: provider.name,
+                    source: options.threadId ? 'chat' : 'scan',
+                },
+                metadata: { model, provider: provider.name, durationMs, userId: options.userId },
+            });
 
             // Try to parse JSON if the agent expects it
             try {

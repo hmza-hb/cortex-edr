@@ -74,7 +74,7 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 0,
             priceAnnual: 0,
             limits: {
-                maxScansPerMonth: 20,
+                maxScansPerMonth: "Unlimited",
                 maxRepositories: "Unlimited",
                 maxFilesPerScan: "Unlimited", 
                 retentionHours: "Unlimited",
