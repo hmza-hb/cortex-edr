@@ -96,11 +96,11 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 9,
             priceAnnual: 90,
             limits: {
-                maxScansPerMonth: 15,
-                maxRepositories: 5,
-                maxFilesPerScan: 1000, // Increased from 500
-                retentionDays: 30,
-                teamSeats: 1
+                maxScansPerMonth: "Unlimited",
+                maxRepositories: "Unlimited",
+                maxFilesPerScan: "Unlimited",
+                retentionDays: "Unlimited",
+                teamSeats: "Unlimited"
             },
             features: {
                 watermarkedPdf: false,
@@ -118,11 +118,11 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 49,
             priceAnnual: 490,
             limits: {
-                maxScansPerMonth: 50,
-                maxRepositories: 15,
-                maxFilesPerScan: 5000, // Increased from 2000
-                retentionDays: 90,
-                teamSeats: 5
+                maxScansPerMonth: "Unlimited",
+                maxRepositories: "Unlimited",
+                maxFilesPerScan: "Unlimited",
+                retentionDays: "Unlimited",
+                teamSeats: "Unlimited"
             },
             features: {
                 watermarkedPdf: false,
@@ -132,7 +132,7 @@ export const SYSTEM_CONFIG: {
                 detailedExplanations: true,
                 fixSuggestions: true,
                 executionReadyPrompts: true,
-                apiCallsPerMonth: 1000
+                apiCallsPerMonth: "Unlimited"
             }
         },
         [TierId.FORTRESS]: {
@@ -141,7 +141,7 @@ export const SYSTEM_CONFIG: {
             priceMonthly: 299,
             priceAnnual: 2990,
             limits: {
-                maxScansPerMonth: 500,
+                maxScansPerMonth: "Unlimited",
                 maxRepositories: "Unlimited",
                 maxFilesPerScan: "Unlimited",
                 retentionDays: "Unlimited",
