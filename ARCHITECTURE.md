@@ -4,7 +4,7 @@ Technical architecture reference for engineers reviewing or extending the platfo
 
 ## System Context
 
-CortexEDR is a Next.js monolith that orchestrates multi-agent AI analysis of GitHub repositories. Users authenticate via NextAuth, submit repository URLs, and receive structured security reports with a post-scan conversational advisor.
+Cortex is a Next.js monolith that orchestrates multi-agent AI analysis of GitHub repositories. Users authenticate via NextAuth, submit repository URLs, and receive structured security reports with a post-scan conversational advisor.
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
