@@ -1,4 +1,4 @@
-# CortexEDR
+# Cortex
 
 [![CI](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/ci.yml/badge.svg)](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/ci.yml)
 [![Security](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/security.yml/badge.svg)](https://github.com/hamza-hafeez82/cortex-edr/actions/workflows/security.yml)
@@ -8,7 +8,7 @@
 
 **AI-powered security auditing platform for modern codebases.**
 
-CortexEDR analyzes GitHub repositories through a multi-agent pipeline, producing structured vulnerability reports, architecture assessments, and a codebase-aware conversational advisor. The system is designed for developers and small teams who need actionable security analysis without enterprise SAST tooling overhead.
+Cortex analyzes GitHub repositories through a multi-agent pipeline, producing structured vulnerability reports, architecture assessments, and a codebase-aware conversational advisor. The system is designed for developers and small teams who need actionable security analysis without enterprise SAST tooling overhead.
 
 **Live:** [cortex-edr.com](https://www.cortex-edr.com) · **App:** [app.cortex-edr.com](https://app.cortex-edr.com)
 
