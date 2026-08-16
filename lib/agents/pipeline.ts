@@ -8,6 +8,8 @@ import { AGENT_PROMPTS } from './prompts';
 import { AILogger } from './ai-logger';
 import { SYSTEM_CONFIG, TierId } from '../config/system';
 import { observeAICall, flushHisteeria } from '@/lib/histeeria/client';
+import { buildSecurityGraph } from './security-graph';
+import { SAST_HUNTER, SYSTEM_ANALYST, SUPABASE_ANALYZER, GO_ANALYZER, ADVERSARIAL_REVIEWER } from './security-prompts';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,14 +73,11 @@ async function emit(scanId: string, agentId: number, agentName: string, eventTyp
 // STRATEGIC AI ROUTER (Tier-Based)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function getRoutingForAgent(agentId: number): { primary: string; fallback: string } {
-    const defaultFallback = 'groq-llama-3.3-70b-versatile';
+    if (agentId === 2) {
+        return { primary: 'openai-gpt-4o', fallback: 'gemini-2.0-flash' };
+    }
 
-    // Agent Mapping as per USER request:
-    // 1 (Recon), 3 (Arch), 4 (Quality), 5 (Debt) -> Gemini 2.0 Flash
-    // 2 (Security) -> Gemini 2.0 Flash (changed from DeepSeek R1)
-    // 6 (AI-Specific), 7 (Orchestrator) -> DeepSeek R1 (OpenRouter)
-
-    if ([1, 2, 3, 4, 5].includes(agentId)) {
+    if ([1, 3, 4, 5].includes(agentId)) {
         return { primary: 'openai-gpt-4o-mini', fallback: 'gemini-2.0-flash' };
     }
 
@@ -403,7 +402,7 @@ export function parseGitHubUrl(url: string): { owner: string; repo: string } {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const STEP_PATTERNS: Record<number, RegExp[]> = {
     1: [/package\.json$/, /tsconfig/, /next\.config/, /layout\./, /app\./, /main\./, /index\./, /server\./, /README/i],
-    2: [/api/, /auth/, /login/, /route\./, /middleware\./, /config\./, /server\./, /handler\./],
+    2: [/api/, /auth/, /login/, /route\./, /middleware\./, /config\./, /server\./, /handler\./, /\.go$/, /\.sql$/, /policy/i, /security/i, /rule/i],
     3: [/layout/, /app\./, /middleware/, /server/, /config/, /index\./],
     4: [/\.(ts|tsx|js|jsx)$/],
     5: [/\.(ts|tsx|js|jsx|json)$/],
@@ -577,7 +576,8 @@ export async function runGitConnect(scanId: string, repoUrl: string, tierKey: Ti
             /layout\.(ts|tsx|js|jsx)$/, /app\.(ts|tsx|js|jsx)$/, /main\.(ts|tsx|js|jsx)$/,
             /index\.(ts|tsx|js|jsx)$/, /server\.(ts|js)$/, /middleware\.(ts|js)$/,
             /route\.(ts|tsx|js|jsx)$/, /handler\.(ts|js)$/, /config\.(ts|tsx|js|jsx|json)$/,
-            /auth/, /login/, /README/i, /\.env\.example/
+            /auth/, /login/, /README/i, /\.env\.example/,
+            /\.go$/, /\.sql$/, /policy/i, /security/i, /rule/i
         ];
 
         const filesToDownload = importantFiles
@@ -732,6 +732,15 @@ export async function runReconnaissance(scanId: string, repoPath: string, logger
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AGENT 2: SECURITY SCANNER - The Defender
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function formatNumberedCode(code: string): string {
+    return code.split('\n')
+        .map((line, index) => `${String(index + 1).padStart(4, '0')} | ${line}`)
+        .join('\n');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AGENT 2: SECURITY SCANNER - The Defender
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export async function runSecurityScanner(
     scanId: string,
     repoPath: string,
@@ -744,20 +753,35 @@ export async function runSecurityScanner(
     try {
         await emit(scanId, 2, 'Security Scanner', 'started', 'Initializing deep security audit...');
 
-        // Only audit security-critical files — bounded to 15 to stay within token limits
-        const criticalFiles = fileTree.filter(f =>
-            f.includes('api') || f.includes('auth') ||
-            f.includes('login') || f.includes('route') ||
-            f.includes('middleware') || f.includes('config') ||
-            f.includes('server') || f.includes('handler')
-        ).slice(0, 15);
+        // ─────────────────────────────────────────────────────
+        // PHASE 1: BUILD SECURITY GRAPH
+        // ─────────────────────────────────────────────────────
+        await emit(scanId, 2, 'Security Scanner', 'processing', 'Phase 1: Building codebase security graph...');
+        const graph = buildSecurityGraph(repoPath, fileTree);
+        const graphSummary = graph.textSummary;
+
+        // ─────────────────────────────────────────────────────
+        // PHASE 2: SAST HUNTER (Mode A - Local File SAST)
+        // ─────────────────────────────────────────────────────
+        const criticalFiles = fileTree.filter(f => {
+            const lower = f.toLowerCase();
+            return (
+                lower.includes('api') || lower.includes('auth') ||
+                lower.includes('login') || lower.includes('route') ||
+                lower.includes('middleware') || lower.includes('config') ||
+                lower.includes('server') || lower.includes('handler') ||
+                lower.includes('policy') || lower.includes('security') ||
+                lower.includes('rule') ||
+                f.endsWith('.go') || f.endsWith('.sql')
+            );
+        }).slice(0, 25);
 
         await emit(scanId, 2, 'Security Scanner', 'processing',
-            `Auditing ${criticalFiles.length} security-critical files...`
+            `Phase 2: Running SAST Hunter on ${criticalFiles.length} critical files...`
         );
 
-        let allVulnerabilities: any[] = [];
-        const BATCH_SIZE = 2; // Smaller batches = more focused context per call
+        let candidateFindings: any[] = [];
+        const BATCH_SIZE = 2;
 
         for (let i = 0; i < criticalFiles.length; i += BATCH_SIZE) {
             const batch = criticalFiles.slice(i, i + BATCH_SIZE);
@@ -765,35 +789,188 @@ export async function runSecurityScanner(
                 const fileName = filePath.replace(repoPath, '');
                 try {
                     const code = fs.readFileSync(filePath, 'utf-8');
-                    // Skip very small files (not enough code) or huge files (too noisy)
                     if (code.length < 50 || code.length > 30000) return [];
+                    
+                    const numberedCode = formatNumberedCode(code);
                     const aiResponse = await callAI(
-                        AGENT_PROMPTS.security.systemPrompt,
-                        AGENT_PROMPTS.security.analysisPrompt(fileName, code, techStack),
-                        2, 'Security Scanner', logger, tierKey, userId, scanId
+                        SAST_HUNTER.systemPrompt,
+                        SAST_HUNTER.analysisPrompt(fileName, numberedCode, techStack, graphSummary),
+                        2, 'Security Scanner (Hunter)', logger, tierKey, userId, scanId
                     );
+
                     const vulns = parseAIResponse(aiResponse, []);
                     if (!Array.isArray(vulns)) return [];
-                    // Confidence gate: discard any finding without a line number or code snippet
-                    // (these are hallucinations — the model is guessing, not confirming)
-                    const confirmed = vulns.filter(v =>
-                        v.title && v.severity &&
-                        (v.line > 0 || v.codeSnippet) &&
-                        ['critical', 'high', 'medium', 'low'].includes(v.severity)
-                    );
-                    return confirmed.map(v => ({ ...v, fileName }));
+
+                    return vulns.map(v => ({
+                        ...v,
+                        fileName,
+                        mode: 'sast'
+                    }));
                 } catch { return []; }
             }));
-            allVulnerabilities.push(...batchResults.flat());
+            candidateFindings.push(...batchResults.flat());
 
             if (i + BATCH_SIZE < criticalFiles.length) {
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 1000));
             }
         }
 
+        // ─────────────────────────────────────────────────────
+        // PHASE 3: SYSTEM SECURITY ANALYST (Mode B - Cross-Boundary)
+        // ─────────────────────────────────────────────────────
+        await emit(scanId, 2, 'Security Scanner', 'processing', 'Phase 3: Performing cross-boundary system analysis...');
+        
+        const keyFiles = fileTree.filter(f => 
+            f.toLowerCase().includes('policy') || 
+            f.toLowerCase().includes('auth') ||
+            f.toLowerCase().includes('route') || 
+            f.toLowerCase().includes('middleware') ||
+            f.toLowerCase().includes('main.go')
+        ).slice(0, 5);
+
+        let keyFilesContent = '';
+        for (const kf of keyFiles) {
+            try {
+                const content = fs.readFileSync(kf, 'utf-8');
+                keyFilesContent += `\n// FILE: ${kf.replace(repoPath, '')}\n${content.substring(0, 2000)}\n`;
+            } catch {}
+        }
+
+        try {
+            const systemResponse = await callAI(
+                SYSTEM_ANALYST.systemPrompt,
+                SYSTEM_ANALYST.analysisPrompt(graphSummary, keyFilesContent, techStack),
+                2, 'Security Scanner (System Analyst)', logger, tierKey, userId, scanId
+            );
+            const systemVulns = parseAIResponse(systemResponse, []);
+            if (Array.isArray(systemVulns)) {
+                candidateFindings.push(...systemVulns.map(v => ({
+                    ...v,
+                    fileName: v.evidence?.[0]?.file || '',
+                    mode: 'system'
+                })));
+            }
+        } catch (e: any) {
+            console.error('[System Analyst Error]:', e.message);
+        }
+
+        // ── Supabase Dedicated Analyzer ──
+        if (graph.techContext.hasSupabase) {
+            await emit(scanId, 2, 'Security Scanner', 'processing', 'Supabase detected. Running SQL/RLS analyzer...');
+            const sqlFiles = fileTree.filter(f => f.endsWith('.sql')).slice(0, 3);
+            let sqlContent = '';
+            for (const sf of sqlFiles) {
+                try {
+                    const content = fs.readFileSync(sf, 'utf-8');
+                    sqlContent += `\n-- FILE: ${sf.replace(repoPath, '')}\n${content.substring(0, 2000)}\n`;
+                } catch {}
+            }
+
+            const appCodeFiles = fileTree.filter(f => f.includes('supabase') || f.includes('client')).slice(0, 3);
+            let appCodeContent = '';
+            for (const acf of appCodeFiles) {
+                try {
+                    const content = fs.readFileSync(acf, 'utf-8');
+                    appCodeContent += `\n// FILE: ${acf.replace(repoPath, '')}\n${content.substring(0, 2000)}\n`;
+                } catch {}
+            }
+
+            try {
+                const supaResponse = await callAI(
+                    SUPABASE_ANALYZER.systemPrompt,
+                    SUPABASE_ANALYZER.analysisPrompt(graphSummary, sqlContent, appCodeContent),
+                    2, 'Security Scanner (Supabase)', logger, tierKey, userId, scanId
+                );
+                const supaVulns = parseAIResponse(supaResponse, []);
+                if (Array.isArray(supaVulns)) {
+                    candidateFindings.push(...supaVulns.map(v => ({
+                        ...v,
+                        fileName: v.evidence?.[0]?.file || '',
+                        mode: 'supabase'
+                    })));
+                }
+            } catch (e: any) {
+                console.error('[Supabase Analyzer Error]:', e.message);
+            }
+        }
+
+        // ── Go Dedicated Analyzer ──
+        if (graph.techContext.hasGo) {
+            await emit(scanId, 2, 'Security Scanner', 'processing', 'Go codebase detected. Running Go security analyzer...');
+            const goFiles = fileTree.filter(f => f.endsWith('.go')).slice(0, 3);
+            for (const gf of goFiles) {
+                try {
+                    const code = fs.readFileSync(gf, 'utf-8');
+                    const numberedCode = formatNumberedCode(code);
+                    const fileName = gf.replace(repoPath, '');
+                    const goResponse = await callAI(
+                        GO_ANALYZER.systemPrompt,
+                        GO_ANALYZER.analysisPrompt(numberedCode, fileName),
+                        2, 'Security Scanner (Go)', logger, tierKey, userId, scanId
+                    );
+                    const goVulns = parseAIResponse(goResponse, []);
+                    if (Array.isArray(goVulns)) {
+                        candidateFindings.push(...goVulns.map(v => ({
+                            ...v,
+                            fileName,
+                            mode: 'go'
+                        })));
+                    }
+                } catch (e: any) {
+                    console.error('[Go Analyzer Error]:', e.message);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────
+        // PHASE 4: ADVERSARIAL REVIEWER
+        // ─────────────────────────────────────────────────────
+        let confirmedFindings: any[] = [];
+
+        if (candidateFindings.length > 0) {
+            await emit(scanId, 2, 'Security Scanner', 'processing',
+                `Phase 4: Running adversarial review on ${candidateFindings.length} candidate findings...`
+            );
+
+            try {
+                const reviewResponse = await callAI(
+                    ADVERSARIAL_REVIEWER.systemPrompt,
+                    ADVERSARIAL_REVIEWER.reviewPrompt(candidateFindings, graphSummary),
+                    2, 'Security Scanner (Reviewer)', logger, tierKey, userId, scanId
+                );
+                const reviewResult = parseAIResponse(reviewResponse, { reviews: [] });
+                const reviews = Array.isArray(reviewResult?.reviews) ? reviewResult.reviews : [];
+
+                candidateFindings.forEach((finding, index) => {
+                    const review = reviews.find((r: any) => r.index === index);
+                    const isConfirmed = review ? review.confirmed === true : true; // default to true if review missing
+                    
+                    if (isConfirmed) {
+                        confirmedFindings.push({
+                            ...finding,
+                            confidence: review?.adjustedConfidence ?? finding.confidence ?? 0.8,
+                            adversarialResult: {
+                                confirmed: true,
+                                reason: review?.reason ?? 'No adversarial objections.'
+                            }
+                        });
+                    } else {
+                        console.log(`[Reviewer Rejected]: "${finding.title}" - Reason: ${review?.reason}`);
+                    }
+                });
+            } catch (e: any) {
+                console.error('[Adversarial Reviewer Failed]:', e.message);
+                // Fallback: accept critical/high findings, discard low confidence
+                confirmedFindings = candidateFindings.filter(f => (f.confidence ?? 0.8) >= 0.7);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────
+        // PERSIST AND REPORT
+        // ─────────────────────────────────────────────────────
         // Deduplicate: same title + same file = keep highest severity only
         const seen = new Map<string, any>();
-        for (const v of allVulnerabilities) {
+        for (const v of confirmedFindings) {
             const key = `${(v.title || '').toLowerCase().trim()}|${v.fileName}`;
             const existing = seen.get(key);
             const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
@@ -801,33 +978,58 @@ export async function runSecurityScanner(
                 seen.set(key, v);
             }
         }
-        allVulnerabilities = Array.from(seen.values());
+        const finalFindings = Array.from(seen.values());
 
-        for (const vuln of allVulnerabilities) {
+        for (const vuln of finalFindings) {
+            // Build enriched description
+            let description = `${vuln.vulnerability || ''}\n\n`;
+            if (vuln.securityInvariant) {
+                description += `**SECURITY INVARIANT:** ${vuln.securityInvariant}\n\n`;
+            }
+            if (vuln.attackSurface) {
+                description += `**ATTACK SURFACE:** ${vuln.attackSurface}\n\n`;
+            }
+            if (vuln.attackPath && Array.isArray(vuln.attackPath)) {
+                description += `**ATTACK PATH:**\n${vuln.attackPath.map((step: string) => `- ${step}`).join('\n')}\n\n`;
+            }
+            description += `**EXPLOIT:** ${vuln.exploitScenario || 'N/A'}\n\n`;
+            description += `**IMPACT:** ${vuln.impact || 'N/A'}`;
+
+            // Normalize evidence to map to standard line number when possible
+            const lineNum = vuln.line ?? (vuln.evidence?.[0]?.line ?? 0);
+
             await supabase.from('issues').insert({
                 scan_id: scanId,
                 agent_id: 2,
                 category: 'security',
                 severity: vuln.severity || 'medium',
                 title: vuln.title,
-                description: `${vuln.vulnerability || ''}\n\nEXPLOIT: ${vuln.exploitScenario || 'N/A'}\n\nIMPACT: ${vuln.impact || 'N/A'}`,
+                description,
                 file_path: vuln.fileName || '',
-                line_number: vuln.line || 0,
+                line_number: lineNum,
                 code_snippet: vuln.codeSnippet || null,
                 fix_suggestion: `${vuln.fixExplanation || ''}\n\nFIX CODE:\n${vuln.fixCode || ''}`,
                 ai_prompt: vuln.aiPrompt || null,
-                metadata: { cwe: vuln.cwe, owasp: vuln.owasp }
+                metadata: {
+                    cwe: vuln.cwe,
+                    owasp: vuln.owasp,
+                    confidence: vuln.confidence,
+                    evidence: vuln.evidence,
+                    mode: vuln.mode,
+                    adversarialResult: vuln.adversarialResult
+                }
             });
+
             await emit(scanId, 2, 'Security Scanner', 'found_issue',
-                `${(vuln.severity || 'medium').toUpperCase()}: ${vuln.title} (${vuln.fileName}:${vuln.line || '?'})`
+                `${(vuln.severity || 'medium').toUpperCase()}: ${vuln.title} (${vuln.fileName}:${lineNum})`
             );
         }
 
         await emit(scanId, 2, 'Security Scanner', 'completed',
-            `Security audit complete. ${allVulnerabilities.length} vulnerabilities identified.`
+            `Security audit complete. ${finalFindings.length} vulnerabilities identified.`
         );
 
-        return allVulnerabilities;
+        return finalFindings;
     } catch (error: any) {
         await emit(scanId, 2, 'Security Scanner', 'error', `Security scan failed: ${error.message}`);
         return [];
