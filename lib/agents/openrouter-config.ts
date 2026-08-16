@@ -1,7 +1,7 @@
 export const OPENROUTER_MODELS: Record<string, Record<string, string>> = {
     vibe_coder: {
         recon: 'gpt-4o-mini',
-        security: 'gpt-4o-mini',
+        security: 'gpt-4o',
         architecture: 'gpt-4o-mini',
         quality: 'gpt-4o-mini',
         debt: 'gpt-4o-mini',
@@ -10,7 +10,7 @@ export const OPENROUTER_MODELS: Record<string, Record<string, string>> = {
     },
     developer: {
         recon: 'gpt-4o-mini',
-        security: 'gpt-4o-mini',
+        security: 'gpt-4o',
         architecture: 'gpt-4o-mini',
         quality: 'gpt-4o-mini',
         debt: 'gpt-4o-mini',
