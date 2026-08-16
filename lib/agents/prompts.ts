@@ -1,6 +1,8 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// SPECIALIZED AI AGENT PROMPTS — v2 (false-positive hardened)
+// SPECIALIZED AI AGENT PROMPTS — v3 (attack-boundary architecture)
+// Security Agent prompts live in security-prompts.ts
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+import { SAST_HUNTER } from './security-prompts';
 
 export const AGENT_PROMPTS = {
 
@@ -61,57 +63,14 @@ Return ONLY valid JSON (no markdown):
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // AGENT 2: SECURITY SCANNER - The Defender
+  // Prompts live in security-prompts.ts (v3 architecture).
+  // This shim keeps AGENT_PROMPTS.security working for
+  // any legacy callers while the pipeline uses SAST_HUNTER directly.
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   security: {
-    systemPrompt: `You are an Elite Security Researcher. Your job is to find REAL, CONFIRMED vulnerabilities only.
-
-CRITICAL FALSE-POSITIVE RULES — violating these disqualifies the entire report:
-1. ONLY report a vulnerability if you can see the vulnerable code DIRECTLY in the snippet provided.
-2. DO NOT report "potential" or "possible" issues you cannot confirm from the code shown.
-3. DO NOT report missing features (e.g. "no rate limiting") as vulnerabilities unless you see evidence the route is publicly exposed and unauthenticated.
-4. DO NOT report informational style issues — every finding must have a concrete attack vector.
-5. A finding with no exact line number and no code snippet is a hallucination — do NOT include it.
-6. If you are not 100% certain it is exploitable, do NOT include it.
-7. Max 5 findings per file. Quality over quantity.
-
-Think like a senior pentester writing a professional report their client will act on.`,
-
-    analysisPrompt: (fileName: string, code: string, techStack: any) => `
-SECURITY AUDIT: ${fileName}
-Stack: ${JSON.stringify(techStack).substring(0, 200)}
-
-CODE:
-${code.substring(0, 6000)}
-
-Check ONLY for issues you can CONFIRM from the code above:
-- SQL/NoSQL injection (string concatenation in queries)
-- XSS (unescaped user input rendered to DOM, dangerouslySetInnerHTML)
-- Auth bypass (missing auth guards on routes that clearly need them)
-- Hardcoded secrets/keys visible in the code
-- SSRF (unvalidated URL passed to fetch/axios)
-- Insecure direct object reference (user-controlled IDs with no ownership check)
-- Exposed sensitive data in logs or error responses
-
-Return ONLY valid JSON array. Empty array [] if nothing confirmed:
-[
-  {
-    "title": "Concise vulnerability title",
-    "severity": "critical|high|medium|low",
-    "line": 42,
-    "cwe": "CWE-79",
-    "owasp": "A03:2021",
-    "vulnerability": "Exact technical explanation referencing the specific code line.",
-    "exploitScenario": "Concrete step-by-step attack using this exact code path.",
-    "impact": "Specific consequence if exploited.",
-    "codeSnippet": "The exact 3-7 lines of vulnerable code",
-    "fixCode": "Drop-in replacement secure code",
-    "fixExplanation": "What to change and why.",
-    "aiPrompt": "Copy-paste Cursor/ChatGPT prompt to fix line ${'{'}line{'}'} in ${fileName}."
-  }
-]
-
-REMINDER: If you cannot point to the exact vulnerable line, do NOT include the finding.
-`
+    systemPrompt: SAST_HUNTER.systemPrompt,
+    analysisPrompt: (fileName: string, code: string, techStack: any) =>
+      SAST_HUNTER.analysisPrompt(fileName, code, techStack, ''),
   },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -300,11 +259,12 @@ The final topPriorities list should contain ONLY confirmed, high-confidence, hig
 Quality over quantity. A developer reading this should feel confident acting on every single item.`,
 
     synthesisPrompt: (allFindings: any, metadata: any) => {
-      // Slim down findings to prevent token overflow
       const securitySlim = (allFindings.security || []).slice(0, 10).map((i: any) => ({
         title: i.title, severity: i.severity, file: i.file_path, line: i.line_number,
         description: (i.description || '').substring(0, 300),
-        fix: (i.fix_suggestion || '').substring(0, 200)
+        fix: (i.fix_suggestion || '').substring(0, 200),
+        confidence: i.metadata?.confidence,
+        attackPath: i.metadata?.attackPath
       }));
       const archSlim = (allFindings.architecture || []).slice(0, 6).map((i: any) => ({
         title: i.title, severity: i.severity, file: i.file_path,
