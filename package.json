@@ -11,7 +11,7 @@
     "ci": "npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
-    "@auth/supabase-adapter": "^1.11.1",
+    "@auth/supabase-adapter": "^1.11.3",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@paddle/paddle-js": "^1.6.2",
@@ -20,7 +20,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-pdf/renderer": "^4.3.2",
-    "@supabase/ssr": "^0.8.0",
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.95.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "bcryptjs": "^3.0.3",
